@@ -12,7 +12,7 @@ jobs:
       - name: Ping /healthz
         id: healthcheck
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 https://zira-go-backend.onrender.com/healthz)
+         STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 https://zira-go-backend.onrender.com/healthz || echo "000")
           echo "Health check status: $STATUS"
           if [ "$STATUS" != "200" ]; then
             echo "failed=true" >> "$GITHUB_OUTPUT"
