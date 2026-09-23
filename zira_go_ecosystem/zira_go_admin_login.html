@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Zira Go — Master Administration</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0D061A;
+    --panel: #160D2E;
+    --panel-alt: #221545;
+    --line: #2E1D5B;
+    --accent: #8B5CF6;
+    --accent-2: #7C3AED;
+    --success: #10B981;
+    --danger: #EF4444;
+    --text: #F8FAFC;
+    --text-dim: #94A3B8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: radial-gradient(circle at 50% 10%, #2A1359 0%, #170A33 45%, #0D061A 100%);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+  }
+  .admin-box {
+    width: 100%;
+    max-width: 420px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    padding: 32px 28px;
+    box-shadow: 0 25px 70px rgba(0, 0, 0, 0.6), 0 0 50px rgba(139, 92, 246, 0.15);
+  }
+  .brand-center { text-align: center; margin-bottom: 28px; }
+  .logo-circle {
+    width: 72px; height: 72px; border-radius: 50%; background: #ffffff;
+    display: flex; align-items: center; justify-content: center; padding: 6px; margin: 0 auto 14px;
+    box-shadow: 0 0 25px rgba(139, 92, 246, 0.35);
+  }
+  .logo-circle img { width: 90%; height: 90%; object-fit: contain; }
+  h1 { font-family: 'Sora', sans-serif; font-size: 24px; font-weight: 800; color: #F8FAFC; }
+  h1 span { color: var(--accent); }
+  .badge-admin {
+    display: inline-block; background: rgba(139, 92, 246, 0.18); border: 1px solid rgba(139, 92, 246, 0.35);
+    color: var(--accent); font-size: 10.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+    padding: 4px 12px; border-radius: 999px; margin-top: 6px;
+  }
+  label { display: block; font-size: 13px; font-weight: 600; color: var(--text-dim); margin: 16px 0 6px; }
+  input {
+    width: 100%; padding: 14px 16px; border-radius: 12px; border: 1.5px solid var(--line);
+    background: var(--panel-alt); color: var(--text); font-size: 15px; outline: none; transition: border-color 0.2s;
+  }
+  input:focus { border-color: var(--accent); }
+  button.submit-btn {
+    width: 100%; padding: 16px; border: none; border-radius: 999px; margin-top: 24px;
+    background: linear-gradient(100deg, var(--accent), var(--accent-2)); color: #FFFFFF;
+    font-weight: 700; font-size: 16px; font-family: 'Sora', sans-serif; cursor: pointer;
+    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.35); transition: all 0.2s;
+  }
+  button.submit-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(139, 92, 246, 0.45); }
+  button.submit-btn:disabled { opacity: 0.6; cursor: default; }
+  .error-msg {
+    background: rgba(239, 68, 68, 0.15); border: 1px solid var(--danger); color: #FCA5A5;
+    border-radius: 12px; padding: 12px; font-size: 13px; margin-top: 16px; display: none;
+  }
+  .back-link { text-align: center; margin-top: 22px; font-size: 12.5px; }
+  .back-link a { color: var(--text-dim); text-decoration: none; transition: color 0.2s; }
+  .back-link a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="admin-box">
+  <div class="brand-center">
+    <div class="logo-circle"><img src="zira_go_logo.png" alt="Zira Go Logo"></div>
+    <h1>Zira <span>GO!</span></h1>
+    <div class="badge-admin">Master Intelligence & Control</div>
+  </div>
+
+  <form id="adminForm" onsubmit="handleAdminLogin(event)">
+    <label>Administrator Email</label>
+    <input type="email" id="adminEmail" required placeholder="admin@zirapay.com" autocomplete="email">
+
+    <label>Master Password</label>
+    <input type="password" id="adminPassword" required placeholder="••••••••" autocomplete="current-password">
+
+    <label>Telegram login code</label>
+    <div style="display:flex;gap:8px"><input type="text" id="adminTelegramOtp" required maxlength="6" inputmode="numeric" placeholder="6-digit code"><button type="button" onclick="requestTelegramOtp()" style="border:0;border-radius:10px;background:var(--accent);color:#fff;font-weight:700;padding:0 12px;white-space:nowrap">Send code</button></div>
+
+    <div class="error-msg" id="errorMsg"></div>
+
+    <button type="submit" class="submit-btn" id="btnLogin">Access Command Console →</button>
+  </form>
+
+  <div class="back-link">
+    <a href="zira_go_login.html">← Return to Campus Portal</a>
+  </div>
+</div>
+
+<script>
+  async function handleAdminLogin(e) {
+    e.preventDefault();
+    const errBox = document.getElementById('errorMsg');
+    errBox.style.display = 'none';
+    const btn = document.getElementById('btnLogin');
+    btn.disabled = true;
+    btn.textContent = 'Authenticating Console...';
+
+    const email = document.getElementById('adminEmail').value.trim();
+    const password = document.getElementById('adminPassword').value;
+
+    try {
+      const res = await fetch('/api/auth/login/admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, telegramOtp: document.getElementById('adminTelegramOtp').value.trim() })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Invalid administrator credentials.');
+
+      // Keep the admin session separate from student/driver sessions. This
+      // lets an administrator register/test an account in the same browser
+      // without silently losing access to the admin ledger.
+      localStorage.setItem('zira_admin_token', data.token);
+      localStorage.setItem('zira_admin_id', String(data.id || 1));
+
+      window.location.href = 'zira_go_admin.html';
+    } catch (err) {
+      errBox.textContent = err.message;
+      errBox.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Access Command Console →';
+    }
+  }
+
+  async function requestTelegramOtp() {
+    const email = document.getElementById('adminEmail').value.trim();
+    if (!email) return alert('Enter your administrator email first.');
+    const password = document.getElementById('adminPassword').value;
+    if (!password) return alert('Enter your password first.');
+    const res = await fetch('/api/auth/admin/telegram-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+    const data = await res.json();
+    alert(data.message || (res.ok ? 'Code sent.' : 'Could not send code.'));
+  }
+</script>
+</body>
+</html>

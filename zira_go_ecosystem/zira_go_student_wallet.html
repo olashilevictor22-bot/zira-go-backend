@@ -1,0 +1,3444 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Zira Go — Campus Life, Made Easier</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+<script>
+  (function() {
+    const saved = localStorage.getItem('zira_theme') || 'light';
+    document.documentElement.setAttribute('data-theme', saved);
+  })();
+</script>
+<style>
+  /* =========================================================================
+     DESIGN SYSTEM & THEME TOKENS
+     ========================================================================= */
+  :root, [data-theme="light"] {
+    --bg: #F8F9FD;
+    --panel: #FFFFFF;
+    --panel-alt: #F1F4F9;
+    --line: #E2E8F0;
+    --line-subtle: rgba(226, 232, 240, 0.8);
+    --accent: #6D28D9;
+    --accent-hover: #5B21B6;
+    --accent-light: #EDE9FE;
+    --accent-glow: rgba(109, 40, 217, 0.12);
+    --text: #0F172A;
+    --text-dim: #64748B;
+    --text-muted: #94A3B8;
+    --success: #059669;
+    --success-bg: rgba(5, 150, 105, 0.1);
+    --danger: #E11D48;
+    --warning: #D97706;
+    --card-shadow: 0 4px 20px -2px rgba(99, 102, 241, 0.05), 0 1px 3px rgba(0, 0, 0, 0.03);
+    --modal-overlay: rgba(15, 23, 42, 0.55);
+    --modal-shadow: 0 25px 65px rgba(15, 23, 42, 0.22);
+  }
+
+  [data-theme="dark"] {
+    --bg: #0D061A;
+    --panel: #160D2E;
+    --panel-alt: #221545;
+    --line: #2E1D5B;
+    --line-subtle: rgba(46, 29, 91, 0.8);
+    --accent: #8B5CF6;
+    --accent-hover: #7C3AED;
+    --accent-light: rgba(139, 92, 246, 0.2);
+    --accent-glow: rgba(139, 92, 246, 0.18);
+    --text: #F8FAFC;
+    --text-dim: #94A3B8;
+    --text-muted: #64748B;
+    --success: #34D399;
+    --success-bg: rgba(52, 211, 153, 0.12);
+    --danger: #FB7185;
+    --warning: #FBBF24;
+    --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    --modal-overlay: rgba(5, 2, 12, 0.78);
+    --modal-shadow: 0 25px 70px rgba(0, 0, 0, 0.7), 0 0 40px rgba(139, 92, 246, 0.15);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    min-height: 100vh;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.25s ease, color 0.25s ease;
+  }
+
+  h1, h2, h3, h4, .num, button { font-family: 'Sora', sans-serif; }
+  .script-font { font-family: 'Caveat', cursive; }
+
+  /* =========================================================================
+     APP CONTAINER (NO SIDEBAR ON IPAD, IPAD MINI, OR PHONE)
+     ========================================================================= */
+  #app-layout {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    width: 100%;
+    background: var(--bg);
+  }
+
+  /* Explicitly hide any sidebar on iPad and all devices as commanded */
+  #sidebar {
+    display: none !important;
+  }
+
+  #main-content {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  /* =========================================================================
+     TOP NAVIGATION BAR (COMPACT & SLEEK, NO GOOD MORNING STUDENT)
+     ========================================================================= */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 24px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--line);
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .header-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+  }
+
+  .brand-logo-wrap {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3px;
+    box-shadow: 0 4px 12px rgba(109, 40, 217, 0.18), 0 0 0 1.5px rgba(109, 40, 217, 0.15);
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .brand-logo-wrap img { width: 92%; height: 92%; object-fit: contain; }
+
+  .brand-wordmark {
+    font-size: 19px;
+    font-weight: 800;
+    color: var(--accent);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+  .brand-wordmark span { color: var(--text); }
+  .brand-sub {
+    font-size: 8.5px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
+
+  /* Search bar removed entirely for Phone, iPad Mini, and Tablet */
+
+
+  .top-right-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .btn-icon-pill {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--panel-alt);
+    border: 1.5px solid var(--line);
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .btn-icon-pill:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: translateY(-1px);
+  }
+  .notification-bell { position: relative; overflow: visible; }
+  .notification-count { position:absolute; right:-5px; top:-5px; min-width:17px; height:17px; padding:0 4px; border-radius:999px; background:#e11d48; color:#fff; border:2px solid var(--panel); font:800 10px/13px Inter,sans-serif; }
+  .pin-flow { display:flex; flex-direction:column; gap:14px; }
+  .pin-intro { margin:0; padding:12px 14px; border-radius:12px; background:rgba(109,40,217,.08); color:var(--text-dim); font-size:13px; line-height:1.5; }
+  .pin-upload-card { border:1px solid var(--line); border-radius:14px; padding:14px; background:var(--panel-alt); }
+  .pin-upload-card strong { display:block; margin-bottom:4px; font-size:13px; }
+  .pin-upload-card small { display:block; color:var(--text-dim); font-size:11.5px; line-height:1.4; margin-bottom:10px; }
+  .pin-upload-card input[type=file] { width:100%; font:inherit; font-size:12px; color:var(--text-dim); }
+  .selfie-preview { display:none; width:100%; max-height:220px; object-fit:cover; border-radius:12px; background:#050505; margin-top:10px; }
+  .recording-status { display:flex; align-items:center; gap:8px; min-height:28px; font-size:12px; color:var(--text-dim); }
+  .recording-dot { width:9px; height:9px; border-radius:50%; background:#94a3b8; }
+  .recording-status.live { color:#e11d48; font-weight:700; } .recording-status.live .recording-dot { background:#e11d48; box-shadow:0 0 0 5px rgba(225,29,72,.15); animation:pinPulse 1.1s infinite; }
+  .pin-code-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .pin-field { display:flex; flex-direction:column; gap:6px; font-size:12px; font-weight:700; }
+  .pin-field.full { grid-column:1/-1; }
+  .pin-field input { width:100%; border:1px solid var(--line); border-radius:10px; background:var(--panel-alt); color:var(--text); padding:12px; font:600 15px Inter,sans-serif; letter-spacing:1px; outline:none; }
+  .pin-field input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(109,40,217,.12); }
+  @keyframes pinPulse { 50% { transform:scale(.72); opacity:.6; } }
+
+  /* Sleek Student Profile Button */
+  .header-student-profile {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 3px 12px 3px 3px;
+    border-radius: 999px;
+    background: var(--panel-alt);
+    border: 1.5px solid var(--line);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    color: var(--text);
+    text-decoration: none;
+  }
+  .header-student-profile:hover {
+    border-color: var(--accent);
+    background: var(--panel);
+    box-shadow: 0 4px 14px rgba(109, 40, 217, 0.12);
+    transform: translateY(-1px);
+  }
+  .avatar-ring {
+    position: relative;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #7C3AED);
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13.5px;
+    font-weight: 800;
+    box-shadow: 0 2px 8px rgba(109, 40, 217, 0.3);
+    flex-shrink: 0;
+  }
+  .avatar-live-indicator {
+    position: absolute;
+    bottom: -1px;
+    right: -1px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #10B981;
+    border: 2px solid var(--panel);
+    box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+  }
+  .avatar-meta-info {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    line-height: 1.15;
+  }
+  .avatar-student-name {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .avatar-student-matric {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--text-dim);
+    font-family: 'Sora', sans-serif;
+  }
+  .avatar-chevron {
+    color: var(--text-dim);
+    transition: transform 0.2s;
+  }
+  .header-student-profile:hover .avatar-chevron {
+    transform: translateX(2px);
+    color: var(--accent);
+  }
+
+  /* Currency symbol spacing to eliminate number collision */
+  .naira-sym {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 700;
+    margin-right: 3px;
+    display: inline-block;
+  }
+
+  /* =========================================================================
+     NATIVE APP SPLASH SCREEN
+     ========================================================================= */
+  #splash-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: radial-gradient(circle at 50% 38%, #F3EEFF 0%, #EDE9FE 45%, #F8F9FD 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1), transform 0.45s ease;
+    pointer-events: all;
+  }
+  [data-theme="dark"] #splash-screen {
+    background: radial-gradient(circle at 50% 38%, #2A1359 0%, #170A33 50%, #0D061A 100%);
+  }
+  #splash-screen.hidden {
+    opacity: 0;
+    transform: scale(1.04);
+    pointer-events: none;
+  }
+  .splash-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 24px;
+  }
+  .splash-logo-circle {
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    background: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    box-shadow: 0 12px 36px rgba(109, 40, 217, 0.28), 0 0 0 4px rgba(109, 40, 217, 0.12);
+    animation: splashPulse 2s infinite ease-in-out;
+    margin-bottom: 18px;
+  }
+  .splash-logo-circle img {
+    width: 90%;
+    height: 90%;
+    object-fit: cover;
+    border-radius: 50%;
+  }
+  @keyframes splashPulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 12px 36px rgba(109, 40, 217, 0.28), 0 0 0 4px rgba(109, 40, 217, 0.12); }
+    50% { transform: scale(1.05); box-shadow: 0 16px 45px rgba(109, 40, 217, 0.4), 0 0 0 8px rgba(109, 40, 217, 0.2); }
+  }
+  .splash-brand {
+    font-family: 'Sora', sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: -0.02em;
+    margin-bottom: 4px;
+  }
+  .splash-brand span { color: var(--text); }
+  .splash-tagline {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 28px;
+  }
+  .splash-loader-track {
+    width: 140px;
+    height: 4px;
+    background: rgba(109, 40, 217, 0.15);
+    border-radius: 999px;
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 12px;
+  }
+  .splash-loader-bar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 40%;
+    background: linear-gradient(90deg, var(--accent), #A78BFA);
+    border-radius: 999px;
+    animation: splashLoad 1.2s infinite ease-in-out;
+  }
+  @keyframes splashLoad {
+    0% { left: -40%; width: 40%; }
+    50% { left: 40%; width: 60%; }
+    100% { left: 100%; width: 40%; }
+  }
+  .splash-status {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+
+  /* =========================================================================
+     MAIN DASHBOARD CONTENT
+     ========================================================================= */
+  main {
+    padding: 20px 24px 70px;
+    max-width: 980px;
+    width: 100%;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* =========================================================================
+     1. COMPACT HERO BANNER (REDUCED HEIGHT)
+     ========================================================================= */
+  .hero-banner {
+    background: linear-gradient(110deg, #160838 0%, #2A1063 55%, #4C1D95 100%);
+    border-radius: 20px;
+    padding: 18px 22px;
+    position: relative;
+    overflow: hidden;
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 125px;
+    box-shadow: 0 10px 30px rgba(22, 8, 56, 0.3);
+    border: 1px solid rgba(139, 92, 246, 0.25);
+  }
+
+  .hero-banner-bg-img {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 55%;
+    background-image: url('landmark_campus_banner.jpg');
+    background-size: cover;
+    background-position: center;
+    opacity: 0.82;
+    mask-image: linear-gradient(to right, transparent 0%, black 50%);
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 50%);
+    pointer-events: none;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    max-width: 480px;
+  }
+  .hero-tag {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    color: #A5F3FC;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .hero-title {
+    font-size: 21px;
+    font-weight: 800;
+    line-height: 1.15;
+    margin-bottom: 4px;
+    color: #FFFFFF;
+    letter-spacing: -0.02em;
+  }
+  .hero-desc {
+    font-size: 12.5px;
+    color: rgba(255, 255, 255, 0.85);
+    line-height: 1.4;
+    margin-bottom: 12px;
+  }
+  .hero-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .hero-btn-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #FFFFFF;
+    color: #4C1D95;
+    font-weight: 700;
+    font-size: 12px;
+    padding: 7px 16px;
+    border-radius: 999px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+  }
+  .hero-btn-pill:hover { transform: translateY(-1px); }
+  .hero-btn-outline {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.14);
+    color: #FFFFFF;
+    font-weight: 600;
+    font-size: 12px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    transition: all 0.2s;
+  }
+
+  .hero-brand-watermark {
+    position: absolute;
+    right: 20px;
+    bottom: 14px;
+    z-index: 2;
+    text-align: right;
+    pointer-events: none;
+  }
+  .hbw-wordmark {
+    font-size: 18px;
+    font-weight: 800;
+    color: #FFFFFF;
+    line-height: 1;
+  }
+  .hbw-slogan {
+    font-size: 14px;
+    color: #F5D0FE;
+    line-height: 1;
+    margin-top: 2px;
+  }
+
+  /* =========================================================================
+     2. INCREASED CAMPUS TRANSIT BALANCE BAR
+     ========================================================================= */
+  .transit-pass-bar {
+    background: var(--panel);
+    border: 1.5px solid var(--line);
+    border-radius: 18px;
+    padding: 18px 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: var(--card-shadow);
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .tpb-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .tpb-icon-badge {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: rgba(109, 40, 217, 0.1);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .tpb-info { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+  .tpb-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 3px;
+  }
+  .tpb-reg-no {
+    color: var(--text);
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+  }
+  .tpb-balance-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 10px;
+  }
+  /* INCREASED BALANCE FONT SIZE */
+  .tpb-balance-num {
+    font-size: 34px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    line-height: 1;
+    white-space: nowrap;
+  }
+  .tpb-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--success-bg);
+    color: var(--success);
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .live-pulse-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--success);
+    box-shadow: 0 0 8px var(--success);
+  }
+  .tpb-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .tpb-btn-fund {
+    background: linear-gradient(100deg, var(--accent), #7C3AED);
+    color: #FFFFFF;
+    border: none;
+    padding: 11px 22px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 13.5px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(109, 40, 217, 0.25);
+    transition: all 0.2s;
+  }
+  .tpb-btn-fund:hover { transform: translateY(-1px); }
+  .tpb-btn-code {
+    background: var(--panel-alt);
+    border: 1px solid var(--line);
+    color: var(--text);
+    padding: 11px 18px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 13.5px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tpb-btn-code:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* =========================================================================
+     3. THE 4 MAIN ACTION BUTTONS (STRICTLY IN A HORIZONTAL STRAIGHT LINE)
+     ========================================================================= */
+  .main-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    width: 100%;
+  }
+  .action-card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 16px 14px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 116px;
+    cursor: pointer;
+    transition: all 0.22s ease;
+    box-shadow: var(--card-shadow);
+    text-align: left;
+    position: relative;
+    overflow: hidden;
+  }
+  .action-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--accent);
+    box-shadow: 0 8px 24px rgba(109, 40, 217, 0.1);
+  }
+  .action-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .action-icon-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .action-arrow {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--panel-alt);
+    border: 1px solid var(--line);
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    transition: all 0.2s;
+  }
+  .action-card:hover .action-arrow {
+    background: var(--accent);
+    color: #FFFFFF;
+    border-color: var(--accent);
+  }
+  .action-title {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 2px;
+    line-height: 1.2;
+  }
+  .action-sub {
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.3;
+  }
+
+  /* Color themes for the 4 buttons */
+  .action-card.btn-rides .action-icon-circle { background: #EDE9FE; color: #6D28D9; }
+  .action-card.btn-errand .action-icon-circle { background: #FEF3C7; color: #D97706; }
+  .action-card.btn-wallet .action-icon-circle { background: #E0F2FE; color: #0284C7; }
+  .action-card.btn-history .action-icon-circle { background: #CCFBF1; color: #0D9488; }
+
+  /* =========================================================================
+     4. CAMPUS SPOTLIGHT (NO FOOD, NEED A RIDE HOME INCLUDED)
+     ========================================================================= */
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .section-title {
+    font-size: 17px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text);
+  }
+
+  .spotlight-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+  .spotlight-card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: var(--card-shadow);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    transition: all 0.22s;
+    min-height: 145px;
+  }
+  .spotlight-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+  }
+  .spotlight-body {
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    position: relative;
+    z-index: 2;
+  }
+  .spotlight-badge {
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 10.5px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    align-self: flex-start;
+  }
+  .spotlight-card.ridehome .spotlight-badge { background: #EDE9FE; color: #6D28D9; }
+  .spotlight-card.errandrunner .spotlight-badge { background: #FEF3C7; color: #D97706; }
+  .spotlight-card.essentials .spotlight-badge { background: #E0E7FF; color: #4338CA; }
+
+  .spotlight-heading {
+    font-size: 16px;
+    font-weight: 800;
+    margin-bottom: 3px;
+    color: var(--text);
+  }
+  .spotlight-desc {
+    font-size: 11.5px;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+    line-height: 1.4;
+  }
+  .spotlight-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    align-self: flex-start;
+    transition: all 0.2s;
+  }
+  .spotlight-card.ridehome .spotlight-btn { background: #6D28D9; color: #FFFFFF; }
+  .spotlight-card.errandrunner .spotlight-btn { background: #D97706; color: #FFFFFF; }
+  .spotlight-card.essentials .spotlight-btn { background: #4338CA; color: #FFFFFF; }
+
+  .spotlight-img-badge {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    width: 60px;
+    height: 60px;
+    opacity: 0.85;
+    pointer-events: none;
+  }
+
+  /* =========================================================================
+     5. TRENDING ON CAMPUS: SINGLE MOVING CAROUSEL BANNER
+     ========================================================================= */
+  .trending-carousel-wrapper {
+    position: relative;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: var(--card-shadow);
+    border: 1px solid var(--line);
+    background: var(--panel);
+    height: 155px;
+  }
+  .carousel-track {
+    display: flex;
+    height: 100%;
+    width: 100%;
+    transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .carousel-slide {
+    min-width: 100%;
+    height: 100%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    padding: 20px 24px;
+    color: #FFFFFF;
+    background-size: cover;
+    background-position: center;
+    overflow: hidden;
+  }
+  .carousel-slide-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(90deg, rgba(15, 7, 30, 0.88) 0%, rgba(25, 12, 50, 0.72) 60%, rgba(15, 7, 30, 0.45) 100%);
+    z-index: 1;
+  }
+  .slide-content {
+    position: relative;
+    z-index: 2;
+    max-width: 480px;
+  }
+  .slide-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(4px);
+    margin-bottom: 6px;
+  }
+  .slide-title {
+    font-size: 18px;
+    font-weight: 800;
+    margin-bottom: 3px;
+    color: #FFFFFF;
+  }
+  .slide-desc {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.85);
+    line-height: 1.35;
+    margin-bottom: 10px;
+  }
+  .slide-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: #FFFFFF;
+    color: #1E0E45;
+    font-size: 11.5px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+  }
+
+  /* Carousel Navigation Arrows */
+  .carousel-arrow-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 5;
+    transition: all 0.2s;
+  }
+  .carousel-arrow-btn:hover { background: rgba(109, 40, 217, 0.85); }
+  .carousel-arrow-prev { left: 12px; }
+  .carousel-arrow-next { right: 12px; }
+
+  /* Carousel Pagination Dots */
+  .carousel-dots {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 6px;
+    z-index: 5;
+  }
+  .carousel-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.4);
+    cursor: pointer;
+    transition: all 0.25s ease;
+  }
+  .carousel-dot.active {
+    width: 22px;
+    background: #FFFFFF;
+  }
+
+  /* =========================================================================
+     MODAL OVERLAYS & DIALOGS
+     ========================================================================= */
+  .modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: var(--modal-overlay);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    z-index: 100;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal-card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    width: 100%;
+    max-width: 440px;
+    padding: 24px;
+    box-shadow: var(--modal-shadow);
+    color: var(--text);
+    animation: modalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    max-height: 90vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  @keyframes modalPop { from { transform: scale(0.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  .modal-close {
+    background: var(--panel-alt);
+    border: 1px solid var(--line);
+    color: var(--text-dim);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+  button.primary {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 999px;
+    background: linear-gradient(100deg, var(--accent), var(--accent-hover));
+    color: #FFFFFF;
+    font-weight: 700;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 6px 20px rgba(109, 40, 217, 0.25);
+  }
+  button.primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(109, 40, 217, 0.35);
+  }
+  button.secondary {
+    width: 100%;
+    padding: 12px;
+    border-radius: 999px;
+    background: var(--panel-alt);
+    border: 1px solid var(--line);
+    color: var(--text);
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: all 0.2s ease;
+  }
+  button.secondary:hover { border-color: var(--accent); }
+
+  label { display: block; font-size: 13px; color: var(--text-dim); margin-bottom: 6px; text-align: left; }
+  input[type=text], input[type=number], select, textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1.5px solid var(--line);
+    background: var(--panel-alt);
+    color: var(--text);
+    font-size: 14.5px;
+    font-family: inherit;
+    margin-bottom: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+
+  /* Code Display inside Ride Modal */
+  .code-display {
+    font-family: 'Sora', monospace, sans-serif;
+    font-weight: 800;
+    font-size: 40px;
+    letter-spacing: 0.16em;
+    background: var(--panel-alt);
+    border: 1.5px dashed var(--accent);
+    border-radius: 18px;
+    padding: 16px 10px;
+    text-align: center;
+    color: var(--accent);
+    margin: 12px 0 8px;
+  }
+  .countdown {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 14px;
+  }
+  .countdown.expired { color: var(--danger); }
+
+  .active-lock-notice {
+    background: rgba(217, 119, 6, 0.1);
+    border: 1px solid rgba(217, 119, 6, 0.3);
+    border-radius: 12px;
+    padding: 10px 12px;
+    color: var(--warning);
+    font-size: 12px;
+    line-height: 1.4;
+    text-align: left;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  /* Toast Notification */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #0F172A;
+    color: #FFFFFF;
+    border: 1px solid #334155;
+    border-radius: 999px;
+    padding: 11px 22px;
+    font-size: 13px;
+    opacity: 0;
+    transition: opacity 0.25s;
+    pointer-events: none;
+    z-index: 200;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  }
+  .toast.show { opacity: 1; }
+
+  /* Code History Table / List */
+  .code-history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 14px;
+    background: var(--panel-alt);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    margin-bottom: 8px;
+  }
+  .code-status-pill {
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: capitalize;
+  }
+  .code-status-pill.active { background: var(--success-bg); color: var(--success); }
+  .code-status-pill.redeemed { background: rgba(109, 40, 217, 0.12); color: var(--accent); }
+  .code-status-pill.expired { background: rgba(148, 163, 184, 0.15); color: var(--text-muted); }
+
+
+  /* =========================================================================
+     6. BUS RIDE HOME (VACATION & INTERSTATE TRANSIT)
+     ========================================================================= */
+  .bus-filter-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+  .bus-card {
+    background: var(--panel-alt);
+    border: 1.5px solid var(--line);
+    border-radius: 18px;
+    padding: 16px;
+    margin-bottom: 12px;
+    transition: all 0.2s ease;
+    position: relative;
+  }
+  .bus-card:hover {
+    border-color: var(--accent);
+    box-shadow: 0 6px 20px rgba(109, 40, 217, 0.08);
+  }
+  .bus-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+    gap: 8px;
+  }
+  .bus-organizer {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .bus-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text);
+    margin: 2px 0 6px;
+  }
+  .bus-route {
+    font-size: 12.5px;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .bus-tags-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .bus-tag {
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .bus-tag.school { background: rgba(109, 40, 217, 0.12); color: var(--accent); border: 1px solid rgba(109, 40, 217, 0.25); }
+  .bus-tag.comfort { background: var(--success-bg); color: var(--success); }
+  .bus-tag.luggage { background: rgba(2, 132, 199, 0.1); color: #0284C7; }
+  .bus-tag.security { background: rgba(217, 119, 6, 0.1); color: var(--warning); }
+
+  .bus-footer-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--line);
+    padding-top: 12px;
+    margin-top: 4px;
+  }
+  .bus-fare {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text);
+    font-family: 'Sora', sans-serif;
+  }
+  .bus-fare span { font-size: 11px; font-weight: 600; color: var(--text-dim); }
+  .bus-reserve-btn {
+    background: linear-gradient(100deg, var(--accent), var(--accent-hover));
+    color: #FFFFFF;
+    border: none;
+    border-radius: 999px;
+    padding: 8px 18px;
+    font-weight: 700;
+    font-size: 12.5px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(109, 40, 217, 0.2);
+  }
+  .bus-reserve-btn:hover { transform: translateY(-1px); }
+
+  /* =========================================================================
+     7. PROFILE & INFO SCREEN STYLES
+     ========================================================================= */
+  .profile-hero-card {
+    background: linear-gradient(135deg, rgba(109, 40, 217, 0.15) 0%, rgba(124, 58, 237, 0.05) 100%);
+    border: 1.5px solid rgba(109, 40, 217, 0.25);
+    border-radius: 20px;
+    padding: 18px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 18px;
+  }
+  .profile-avatar-large {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #7C3AED);
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: 800;
+    box-shadow: 0 6px 18px rgba(109, 40, 217, 0.3);
+    flex-shrink: 0;
+  }
+  .profile-name { font-size: 17px; font-weight: 800; color: var(--text); }
+  .profile-matric { font-size: 12px; color: var(--text-dim); font-weight: 600; }
+  .profile-verified-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10.5px;
+    font-weight: 700;
+    background: var(--success-bg);
+    color: var(--success);
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-top: 4px;
+  }
+
+  .profile-menu-group {
+    background: var(--panel-alt);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    overflow: hidden;
+    margin-bottom: 14px;
+  }
+  .profile-group-label {
+    padding: 10px 16px 4px;
+    font-size: 10.5px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+  }
+  .profile-menu-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 13px 16px;
+    border-top: 1px solid var(--line);
+    cursor: pointer;
+    transition: background 0.15s;
+    text-decoration: none;
+    color: var(--text);
+  }
+  .profile-menu-item:first-of-type { border-top: none; }
+  .profile-menu-item:hover { background: rgba(109, 40, 217, 0.04); }
+  .pmi-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .pmi-icon-box {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .pmi-title { font-size: 13.5px; font-weight: 700; color: var(--text); }
+  .pmi-desc { font-size: 11px; color: var(--text-dim); }
+  .pmi-arrow { font-size: 14px; color: var(--text-muted); }
+
+  /* =========================================================================
+     RESPONSIVE BREAKPOINTS (IPAD, IPAD MINI, AND PHONE)
+     ========================================================================= */
+  @media (max-width: 767px) {
+    header {
+      padding: 10px 14px;
+      gap: 10px;
+    }
+    .brand-text-block { display: none; }
+    .brand-logo-wrap { width: 36px; height: 36px; min-width: 36px; }
+    .header-brand { gap: 0; }
+    .top-right-actions { gap: 8px; }
+    .btn-icon-pill { width: 34px; height: 34px; }
+    .header-student-profile {
+      padding: 3px 10px 3px 3px;
+      gap: 6px;
+    }
+    .avatar-ring { width: 30px; height: 30px; font-size: 12.5px; }
+    .avatar-student-name { display: none; }
+    .avatar-student-matric { font-size: 10.5px; }
+
+    main { padding: 14px 14px 75px; gap: 16px; }
+
+    /* Keep the 4 action buttons in a straight horizontal line */
+    .main-actions-grid {
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .action-card {
+      padding: 12px 6px;
+      min-height: 96px;
+      align-items: center;
+      text-align: center;
+      justify-content: center;
+    }
+    .action-card-top { margin-bottom: 6px; width: 100%; justify-content: center; }
+    .action-arrow { display: none; }
+    .action-icon-circle { width: 34px; height: 34px; }
+    .action-title { font-size: 11px; line-height: 1.25; }
+    .action-sub { display: none; }
+
+    /* Increase balance size on phone too */
+    .tpb-balance-num { font-size: 29px; }
+    .tpb-left { width: 100%; gap: 12px; }
+    .tpb-icon-badge { width: 44px; height: 44px; border-radius: 13px; }
+    .tpb-balance-row { gap: 7px; }
+    .tpb-status-pill { font-size: 10px; padding: 4px 8px; }
+    .transit-pass-bar { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .tpb-actions { width: 100%; }
+    .tpb-actions button { flex: 1; text-align: center; }
+
+    .spotlight-grid {
+      display: flex;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      padding-bottom: 4px;
+    }
+    .spotlight-card {
+      min-width: 260px;
+      min-height: 175px;
+      scroll-snap-align: start;
+    }
+
+    .hero-banner {
+      padding: 16px;
+      min-height: auto;
+    }
+    .hero-banner-bg-img { width: 80%; opacity: 0.5; }
+    .hero-brand-watermark { display: none; }
+    .hero-title { font-size: 19px; }
+    .modal-overlay { padding: 8px; align-items: flex-end; }
+    .modal-card { max-width: none !important; max-height: calc(100dvh - 16px); border-radius: 22px 22px 16px 16px; padding: 18px 16px; }
+    .profile-hero-card { padding: 14px; }
+    .profile-menu-item { padding: 12px 10px; }
+    .pmi-left { gap: 9px; min-width: 0; }
+    .pmi-title, .pmi-desc { overflow-wrap: anywhere; }
+    #modalBusRideHome > .modal-card { max-height: calc(100dvh - 16px) !important; }
+    #modalBusRideHome [style*="grid-template-columns"] { grid-template-columns: 1fr !important; gap: 0 !important; }
+    .bus-card { padding: 13px; }
+    .bus-card-header { flex-direction: column; }
+    .bus-card-header > div:last-child { text-align: left !important; }
+    .bus-footer-row { gap: 10px; align-items: center; }
+    .bus-reserve-btn { white-space: nowrap; padding: 10px 12px; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+<div id="adminPreviewBanner" style="display:none;position:sticky;top:0;z-index:999;background:#172033;color:#fff;padding:9px 14px;text-align:center;font:700 12px Inter,sans-serif">ADMIN READ-ONLY PREVIEW · Showing a sample student experience — no personal account data or actions are available.</div>
+
+<!-- =======================================================================
+     NATIVE APP SPLASH SCREEN
+     ======================================================================= -->
+<div id="splash-screen">
+  <div class="splash-center">
+    <div class="splash-logo-circle">
+      <img src="zira_go_logo.png" alt="Zira Go">
+    </div>
+    <div class="splash-brand">Zira <span>GO!</span></div>
+    <div class="splash-tagline">Landmark University • Campus Transit</div>
+    <div class="splash-loader-track">
+      <div class="splash-loader-bar"></div>
+    </div>
+    <div class="splash-status">Securing campus transit session...</div>
+  </div>
+</div>
+
+<div id="app-layout">
+
+  <!-- =======================================================================
+       TOP NAVIGATION BAR (CLEAN, SPACIOUS & NON-SQUEEZING)
+       ======================================================================= -->
+  <header>
+    <!-- Left Brand -->
+    <a href="zira_go_student_wallet.html" class="header-brand">
+      <div class="brand-logo-wrap">
+        <img src="zira_go_logo.png" alt="Zira Go">
+      </div>
+      <div class="brand-text-block">
+        <div class="brand-wordmark">Zira <span>GO!</span></div>
+        <div class="brand-sub">Landmark University</div>
+      </div>
+    </a>
+
+    <!-- Right Actions: Only 2 Clean Controls (Theme + Profile) -->
+    <div class="top-right-actions">
+      <button type="button" class="btn-icon-pill notification-bell" onclick="openNotifications()" title="Notifications">🔔<span id="notificationBadge" class="notification-count" hidden>0</span></button>
+      <button type="button" class="btn-icon-pill" onclick="toggleTheme()" title="Switch Light / Dark Theme">
+        <span id="themeIcon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        </span>
+      </button>
+
+      <!-- Sleek Profile Trigger Pill -->
+      <button type="button" class="header-student-profile" onclick="openProfileModal()" title="Student Profile & Settings">
+        <div class="avatar-ring">
+          <span class="avatar-letter">S</span>
+          <span class="avatar-live-indicator"></span>
+        </div>
+        <div class="avatar-meta-info">
+          <span class="avatar-student-matric" id="headerRegNoDisplay">LMU/20/1234</span>
+        </div>
+        <svg class="avatar-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- =======================================================================
+       MAIN DASHBOARD CONTENT
+       ======================================================================= -->
+  <div id="main-content">
+    <main>
+
+      <!-- 1. COMPACT HERO BANNER (REDUCED HEIGHT) -->
+      <section class="hero-banner">
+        <div class="hero-banner-bg-img"></div>
+        <div class="hero-content">
+          <div class="hero-tag">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+            <span>Landmark University</span>
+          </div>
+          <h1 class="hero-title">Campus Life, Made Easier.</h1>
+          <p class="hero-desc">Instant 30-min campus transit codes, errand runner dispatches, and student wallet.</p>
+          <div class="hero-actions">
+            <button type="button" class="hero-btn-pill" onclick="handleRideCodeButtonClick()">
+              <span>Ride Codes</span>
+              <span>→</span>
+            </button>
+            <button type="button" class="hero-btn-outline" onclick="openErrandModal()">
+              <span>Send on Errand</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="hero-brand-watermark">
+          <div class="hbw-wordmark">Zira GO!</div>
+          <div class="hbw-slogan script-font">Same Campus. Bigger Moves.</div>
+        </div>
+      </section>
+
+      <!-- 2. CAMPUS TRANSIT BALANCE BAR (INCREASED BALANCE FONT) -->
+      <section class="transit-pass-bar">
+        <div class="tpb-left">
+          <div class="tpb-icon-badge">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="4" width="18" height="14" rx="2"></rect><line x1="16" y1="2" x2="16" y2="4"></line><line x1="8" y1="2" x2="8" y2="4"></line><circle cx="7.5" cy="14.5" r="1.5"></circle><circle cx="16.5" cy="14.5" r="1.5"></circle><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+          </div>
+          <div class="tpb-info">
+            <span class="tpb-label">Campus transit balance · <b id="regNoDisplay" class="tpb-reg-no">LMU/20/1234</b></span>
+            <div class="tpb-balance-row">
+              <span class="tpb-balance-num num" id="balanceAmount"><span class="naira-sym">₦</span>1,200</span>
+              <span class="tpb-status-pill">
+                <span class="live-pulse-dot"></span>
+                <span>Tap to Ride • ₦250</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="tpb-actions">
+          <button type="button" class="tpb-btn-fund" onclick="openFundModal()">+ Fund Wallet</button>
+          <button type="button" class="tpb-btn-code" onclick="handleRideCodeButtonClick()">Get Ride Code</button>
+        </div>
+      </section>
+
+      <!-- 3. THE 4 MAIN ACTION BUTTONS (HORIZONTALLY ON A STRAIGHT LINE) -->
+      <section class="main-actions-grid">
+        <!-- Button 1: Ride Codes -->
+        <div class="action-card btn-rides" onclick="handleRideCodeButtonClick()">
+          <div class="action-card-top">
+            <div class="action-icon-circle">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="4" width="18" height="14" rx="2"></rect><circle cx="7.5" cy="14.5" r="1.5"></circle><circle cx="16.5" cy="14.5" r="1.5"></circle><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            </div>
+            <div class="action-arrow">→</div>
+          </div>
+          <div>
+            <div class="action-title">Ride Codes</div>
+            <div class="action-sub">30m Pass & History</div>
+          </div>
+        </div>
+
+        <!-- Button 2: Send on Errand -->
+        <div class="action-card btn-errand" onclick="openErrandModal()">
+          <div class="action-card-top">
+            <div class="action-icon-circle">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+            </div>
+            <div class="action-arrow">→</div>
+          </div>
+          <div>
+            <div class="action-title">Send on Errand</div>
+            <div class="action-sub">Inter-hall runner</div>
+          </div>
+        </div>
+
+        <!-- Button 3: Wallet -->
+        <div class="action-card btn-wallet" onclick="openFundModal()">
+          <div class="action-card-top">
+            <div class="action-icon-circle">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
+            </div>
+            <div class="action-arrow">→</div>
+          </div>
+          <div>
+            <div class="action-title">Wallet</div>
+            <div class="action-sub">Top up & pay easily</div>
+          </div>
+        </div>
+
+        <!-- Button 4: Transaction History -->
+        <div class="action-card btn-history" onclick="openHistoryModal()">
+          <div class="action-card-top">
+            <div class="action-icon-circle">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            </div>
+            <div class="action-arrow">→</div>
+          </div>
+          <div>
+            <div class="action-title">Ride History</div>
+            <div class="action-sub">Ledger & receipts</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. CAMPUS SPOTLIGHT (NO FOOD, NEED A RIDE HOME INCLUDED) -->
+      <section id="sec-campus-spotlight">
+        <div class="section-header">
+          <h2 class="section-title">
+            <span>🔥</span>
+            <span>Campus Spotlight</span>
+          </h2>
+          <span style="font-size:12.5px;color:var(--text-dim);font-weight:600">Landmark Hub</span>
+        </div>
+
+        <div class="spotlight-grid">
+          <!-- Card 1: Need a Bus Ride Home? (Vacation & Break Charters) -->
+          <div class="spotlight-card ridehome">
+            <div class="spotlight-body">
+              <div>
+                <span class="spotlight-badge">Vacation & Interstate</span>
+                <h3 class="spotlight-heading">Need a Bus Ride Home?</h3>
+                <p class="spotlight-desc">Student-organized vacation coaches leaving Landmark directly to your city.</p>
+              </div>
+              <button type="button" class="spotlight-btn" onclick="openBusRideHomeModal()">Find Buses →</button>
+            </div>
+            <div class="spotlight-img-badge">
+              <div style="width:52px;height:52px;border-radius:14px;background:rgba(109,40,217,0.12);display:flex;align-items:center;justify-content:center;color:var(--accent)">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="14" rx="2"></rect><circle cx="7.5" cy="14.5" r="1.5"></circle><circle cx="16.5" cy="14.5" r="1.5"></circle><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2: Send on Errand -->
+          <div class="spotlight-card errandrunner">
+            <div class="spotlight-body">
+              <div>
+                <span class="spotlight-badge">Campus Runner</span>
+                <h3 class="spotlight-heading">Send on Errand</h3>
+                <p class="spotlight-desc">Dispatch verified student runners to collect laundry, handouts, books and packages.</p>
+              </div>
+              <button type="button" class="spotlight-btn" onclick="openErrandModal()">Dispatch Now →</button>
+            </div>
+            <div class="spotlight-img-badge">
+              <div style="width:52px;height:52px;border-radius:14px;background:rgba(217,119,6,0.12);display:flex;align-items:center;justify-content:center;color:var(--warning)">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line></svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 3: Campus Essentials -->
+          <div class="spotlight-card essentials">
+            <div class="spotlight-body">
+              <div>
+                <span class="spotlight-badge">Hostel Gear</span>
+                <h3 class="spotlight-heading">Campus Essentials</h3>
+                <p class="spotlight-desc">Fast charging cables, power banks, stationery & study kits delivered across halls.</p>
+              </div>
+              <button type="button" class="spotlight-btn" onclick="nextSlide()">Explore Hub →</button>
+            </div>
+            <div class="spotlight-img-badge">
+              <img src="ads/ad_pulse_gadgets.jpg" alt="Gear" style="width:52px;height:52px;border-radius:12px;object-fit:cover">
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. TRENDING ON CAMPUS: SINGLE MOVING CAROUSEL BANNER (NO FOOD) -->
+      <section id="sec-trending-campus">
+        <div class="section-header">
+          <h2 class="section-title">
+            <span>⭐</span>
+            <span>Trending on Campus</span>
+          </h2>
+          <span style="font-size:12.5px;color:var(--text-dim);font-weight:600">Student Brands</span>
+        </div>
+
+        <div class="trending-carousel-wrapper" id="trendingCarousel">
+          <div class="carousel-track" id="carouselTrack">
+            <!-- Slide 1: Pulse Gadgets (Student Tech) -->
+            <div class="carousel-slide" style="background-image: url('ads/ad_pulse_gadgets.jpg')">
+              <div class="carousel-slide-overlay"></div>
+              <div class="slide-content">
+                <span class="slide-badge">⚡ Student Tech • 15% Off</span>
+                <h3 class="slide-title">Pulse Gadgets & Accessories</h3>
+                <p class="slide-desc">High-speed type-C charging cables, power banks & night-study audio gear.</p>
+                <button type="button" class="slide-btn" onclick="showToast('Pulse Gadgets items available at campus pickup station!')">Explore Store →</button>
+              </div>
+            </div>
+
+            <!-- Slide 2: Kulture Threads (Student Fashion & Merch) -->
+            <div class="carousel-slide" style="background-image: url('ads/ad_kulture_threads.jpg')">
+              <div class="carousel-slide-overlay"></div>
+              <div class="slide-content">
+                <span class="slide-badge">🎨 Campus Merch & Streetwear</span>
+                <h3 class="slide-title">Kulture Threads Collection</h3>
+                <p class="slide-desc">Landmark campus hoodies, oversized tees, tote bags & custom student apparel.</p>
+                <button type="button" class="slide-btn" onclick="showToast('Kulture Threads custom hoodies available on order!')">View Drops →</button>
+              </div>
+            </div>
+
+            <!-- Slide 3: Landmark Campus Transit Express -->
+            <div class="carousel-slide" style="background-image: url('landmark_campus_banner.jpg')">
+              <div class="carousel-slide-overlay"></div>
+              <div class="slide-content">
+                <span class="slide-badge">🚌 Campus Express Shuttles</span>
+                <h3 class="slide-title">Fast Morning Lecture Passes</h3>
+                <p class="slide-desc">Skip queues with instant 30-minute shuttle passcodes. Fixed ₦250 fare.</p>
+                <button type="button" class="slide-btn" onclick="handleRideCodeButtonClick()">Get Ride Code →</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Carousel Controls -->
+          <button type="button" class="carousel-arrow-btn carousel-arrow-prev" onclick="prevSlide()" title="Previous slide">‹</button>
+          <button type="button" class="carousel-arrow-btn carousel-arrow-next" onclick="nextSlide()" title="Next slide">›</button>
+
+          <!-- Carousel Dots -->
+          <div class="carousel-dots" id="carouselDots">
+            <span class="carousel-dot active" onclick="goToSlide(0)"></span>
+            <span class="carousel-dot" onclick="goToSlide(1)"></span>
+            <span class="carousel-dot" onclick="goToSlide(2)"></span>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+</div>
+
+<!-- =======================================================================
+     MODALS
+     ======================================================================= -->
+
+<!-- 1. SEND ON ERRAND MODAL -->
+<div class="modal-overlay" id="modalErrand">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:34px;height:34px;border-radius:50%;background:rgba(217,119,6,0.12);color:var(--warning);display:flex;align-items:center;justify-content:center">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line></svg>
+        </div>
+        <h3 style="margin:0;font-size:18px">Send on Errand</h3>
+      </div>
+      <button class="modal-close" onclick="closeModal('modalErrand')">✕</button>
+    </div>
+
+    <p style="color:var(--text-dim);font-size:13px;line-height:1.5;margin-bottom:16px">
+      Dispatch a trusted student campus runner to deliver laundry, books, or essentials between halls.
+    </p>
+
+    <form onsubmit="event.preventDefault(); submitErrand();">
+      <label>Pickup Location</label>
+      <select id="errandPickup" required>
+        <option value="Commercial Center / Bakery">Commercial Center / Campus Bakery</option>
+        <option value="Male Hall 1 (Abraham)">Male Hall 1 (Abraham Hall)</option>
+        <option value="Male Hall 2 (Joseph)">Male Hall 2 (Joseph Hall)</option>
+        <option value="Female Hall 1 (Sarah)">Female Hall 1 (Sarah Hall)</option>
+        <option value="Female Hall 2 (Deborah)">Female Hall 2 (Deborah Hall)</option>
+        <option value="Chapel Plaza / Bookshop">Chapel Plaza / Bookshop</option>
+        <option value="Library Complex">Library Complex</option>
+      </select>
+
+      <label>Dropoff Destination</label>
+      <select id="errandDropoff" required>
+        <option value="Female Hall 1 (Sarah)">Female Hall 1 (Sarah Hall)</option>
+        <option value="Female Hall 2 (Deborah)">Female Hall 2 (Deborah Hall)</option>
+        <option value="Male Hall 1 (Abraham)">Male Hall 1 (Abraham Hall)</option>
+        <option value="Male Hall 2 (Joseph)">Male Hall 2 (Joseph Hall)</option>
+        <option value="Library Complex">Library Complex</option>
+        <option value="College of Engineering">College of Engineering</option>
+      </select>
+
+      <label>Item / Task Description</label>
+      <input type="text" id="errandDesc" placeholder="e.g. Pick up handouts & laundry" required>
+
+      <label>Delivery Urgency & Benchmark Speed</label>
+      <div style="display:flex;gap:10px;margin-bottom:12px">
+        <button type="button" id="btnErrandStd" onclick="selectErrandSpeed('standard')" style="flex:1;padding:10px 12px;border-radius:14px;border:1.5px solid var(--accent);background:var(--panel-alt);font-size:13px;font-weight:700;color:var(--accent);cursor:pointer">
+          Standard (₦200)<br><span style="font-size:10.5px;font-weight:400;color:var(--text-dim)">Within 25 mins</span>
+        </button>
+        <button type="button" id="btnErrandExp" onclick="selectErrandSpeed('express')" style="flex:1;padding:10px 12px;border-radius:14px;border:1px solid var(--line);background:var(--panel-alt);font-size:13px;font-weight:600;color:var(--text);cursor:pointer">
+          Express (₦350)<br><span style="font-size:10.5px;font-weight:400;color:var(--text-dim)">Priority (10 mins)</span>
+        </button>
+      </div>
+
+      <label style="font-weight:700">Your Proposed Fee Offer (₦)</label>
+      <div style="position:relative;margin-bottom:8px">
+        <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-weight:800;font-size:16px;color:var(--text)">₦</span>
+        <input type="number" id="errandCustomOffer" value="200" min="100" step="50" oninput="onCustomOfferInput()" style="padding-left:34px;margin-bottom:0;font-weight:800;font-size:16px;color:var(--accent)">
+      </div>
+      <div style="background:rgba(217,119,6,0.08);border:1px solid rgba(217,119,6,0.25);border-radius:12px;padding:9px 12px;margin-bottom:16px;display:flex;align-items:flex-start;gap:8px;font-size:11.5px;color:var(--warning);line-height:1.4">
+        <span>💡</span>
+        <span><b>Bargaining Enabled:</b> Campus runners can accept your proposed offer or reply with a counter-offer.</span>
+      </div>
+
+      <button type="submit" class="primary" id="btnDispatchErrand">Dispatch with Offer (₦200)</button>
+      <button type="button" class="secondary" onclick="closeModal('modalErrand')">Cancel</button>
+    </form>
+  </div>
+</div>
+
+<!-- 2. ERRAND DISPATCH CONFIRMATION MODAL -->
+<div class="modal-overlay" id="modalErrandReceipt">
+  <div class="modal-card" style="text-align:center">
+    <div style="width:58px;height:58px;border-radius:50%;background:rgba(5,150,105,0.12);color:var(--success);display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    </div>
+    <h3 style="font-size:19px;margin-bottom:4px">Errand Offer Broadcasted!</h3>
+    <span style="font-size:12px;color:var(--text-dim)" id="errRcpDate">Just now</span>
+
+    <div style="background:var(--panel-alt);border:1px solid var(--line);border-radius:16px;padding:16px;margin:18px 0;text-align:left;display:flex;flex-direction:column;gap:10px;font-size:13px">
+      <div style="display:flex;justify-content:space-between;color:var(--text-dim)"><span>Tracking Code</span><b style="color:var(--accent);font-family:'Sora'" id="errRcpCode">ZG-ERR-4921</b></div>
+      <div style="display:flex;justify-content:space-between;color:var(--text-dim)"><span>Package</span><span style="color:var(--text)" id="errRcpDesc">Handouts & laundry</span></div>
+      <div style="display:flex;justify-content:space-between;color:var(--text-dim)"><span>Route</span><span style="color:var(--text)" id="errRcpRoute">Commercial → Sarah Hall</span></div>
+      <div style="display:flex;justify-content:space-between;color:var(--text-dim)"><span>Estimated Arrival</span><b style="color:var(--success)" id="errRcpEta">15 mins</b></div>
+      <div style="display:flex;justify-content:space-between;color:var(--text-dim)"><span>Offer Status</span><b style="color:var(--warning)">Awaiting Acceptance / Reply</b></div>
+      <div style="height:1px;background:var(--line);margin:4px 0"></div>
+      <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700"><span>Your Offered Fee</span><span style="color:var(--accent)" id="errRcpFee">₦200</span></div>
+    </div>
+
+    <button type="button" class="primary" onclick="closeModal('modalErrandReceipt')">Done</button>
+  </div>
+</div>
+
+<!-- 3. RIDE PASSCODE MODAL (30-Min Strict Validity, Copy, Save Image, Lock Notice) -->
+<div class="modal-overlay" id="modalCode">
+  <div class="modal-card" style="text-align:center;max-width:440px">
+    <div class="modal-header">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:34px;height:34px;border-radius:50%;background:rgba(109,40,217,0.12);display:flex;align-items:center;justify-content:center;color:var(--accent)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="4" width="18" height="14" rx="2"></rect><circle cx="7.5" cy="14.5" r="1.5"></circle><circle cx="16.5" cy="14.5" r="1.5"></circle><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+        </div>
+        <h3 style="margin:0;font-size:18px">Campus Ride Pass</h3>
+      </div>
+      <button class="modal-close" onclick="closeModal('modalCode')">✕</button>
+    </div>
+
+    <!-- Pass Preview Card -->
+    <div style="background:var(--panel-alt);border:1.5px solid var(--line);border-radius:20px;padding:16px;margin-bottom:14px;position:relative;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:11.5px">
+        <span style="font-weight:700;color:var(--accent);letter-spacing:0.05em;text-transform:uppercase">One-Time Shuttle Pass</span>
+        <span id="codeStatusBadge" style="display:inline-flex;align-items:center;gap:5px;background:var(--success-bg);color:var(--success);padding:3px 9px;border-radius:999px;font-weight:700">
+          <span style="width:6px;height:6px;border-radius:50%;background:var(--success)"></span> Active
+        </span>
+      </div>
+
+      <div class="code-display" id="codeDisplay">--- ---</div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--text-dim);border-top:1px solid var(--line);padding-top:10px">
+        <span>Matric: <b style="color:var(--text)" id="codeRegNo">LMU/20/1234</b></span>
+        <span>Expires: <b style="color:var(--text)" id="codeExpiryTime">--:--</b></span>
+      </div>
+    </div>
+
+    <!-- Countdown Timer -->
+    <div class="countdown" id="codeCountdown">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+      <span id="codeCountdownText">Valid for 30:00</span>
+    </div>
+
+    <!-- Active Lock Warning (Shown when active code prevents new generation) -->
+    <div class="active-lock-notice" id="activeLockNotice" style="display:none">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:2px"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+      <span>You have an active ride code in progress. Another code cannot be generated until this code expires (30 min) or is used by your shuttle driver.</span>
+    </div>
+
+    <!-- Copy & Save Image Action Grid -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <button type="button" id="btnCopyCode" class="secondary" onclick="copyRideCode()" style="display:flex;align-items:center;justify-content:center;gap:7px;margin:0;padding:12px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+        <span id="copyBtnText">Copy Code</span>
+      </button>
+
+      <button type="button" id="btnSaveCodeImage" class="secondary" onclick="saveRideCodeImage()" style="display:flex;align-items:center;justify-content:center;gap:7px;margin:0;padding:12px;background:rgba(109,40,217,0.08);border-color:rgba(109,40,217,0.3);color:var(--accent)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        <span id="saveImgBtnText">Save Image</span>
+      </button>
+    </div>
+
+    <canvas id="passCardCanvas" width="960" height="560" style="display:none"></canvas>
+
+    <!-- Code Action Buttons: Generate (Locked if Active) and View All Codes -->
+    <button class="primary" id="btnGenerateCodeAction" onclick="requestNewCode()" style="margin-bottom:8px">Generate Fresh Code</button>
+    <button type="button" class="secondary" onclick="openAllCodesModal()" style="margin-top:0;display:flex;align-items:center;justify-content:center;gap:6px">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+      <span>View All Codes (History)</span>
+    </button>
+  </div>
+</div>
+
+<!-- 4. ALL CODES MODAL (View Active, Used, and Expired Codes) -->
+<div class="modal-overlay" id="modalAllCodes">
+  <div class="modal-card" style="max-width:460px">
+    <div class="modal-header">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:34px;height:34px;border-radius:50%;background:rgba(109,40,217,0.12);display:flex;align-items:center;justify-content:center;color:var(--accent)">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="14" rx="2"></rect><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+        </div>
+        <h3 style="margin:0;font-size:18px">All Ride Codes</h3>
+      </div>
+      <button class="modal-close" onclick="closeModal('modalAllCodes')">✕</button>
+    </div>
+
+    <!-- Filter Pills -->
+    <div style="display:flex;gap:8px;margin-bottom:14px;overflow-x:auto;padding-bottom:2px" id="codeFilterPills">
+      <button type="button" class="tab-btn-pill active" onclick="filterCodeHistory('all')" id="fltAll">All</button>
+      <button type="button" class="tab-btn-pill" onclick="filterCodeHistory('active')" id="fltActive">Active</button>
+      <button type="button" class="tab-btn-pill" onclick="filterCodeHistory('redeemed')" id="fltUsed">Used</button>
+      <button type="button" class="tab-btn-pill" onclick="filterCodeHistory('expired')" id="fltExpired">Expired</button>
+    </div>
+
+    <style>
+      .tab-btn-pill {
+        padding: 5px 14px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+        background: var(--panel-alt);
+        border: 1px solid var(--line);
+        color: var(--text-dim);
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .tab-btn-pill.active {
+        background: var(--accent);
+        color: #FFFFFF;
+        border-color: var(--accent);
+      }
+    </style>
+
+    <div id="allCodesList" style="max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:6px">
+      <div style="text-align:center;padding:24px;color:var(--text-dim);font-size:13px">Loading codes...</div>
+    </div>
+
+    <button type="button" class="secondary" style="margin-top:14px" onclick="closeModal('modalAllCodes')">Back to Dashboard</button>
+  </div>
+</div>
+
+<!-- 5. FUND WALLET MODAL (Korapay & Flutterwave) -->
+<div class="modal-overlay" id="modalFund">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:34px;height:34px;border-radius:50%;background:rgba(109,40,217,0.12);display:flex;align-items:center;justify-content:center;color:var(--accent)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        </div>
+        <h3 style="margin:0;font-size:18px">Fund Campus Wallet</h3>
+      </div>
+      <button class="modal-close" onclick="closeModal('modalFund')">✕</button>
+    </div>
+
+    <label>Select Amount</label>
+    <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:8px;margin-bottom:14px">
+      <button type="button" class="secondary" style="margin:0;padding:10px" onclick="selectAmount(500)">₦500</button>
+      <button type="button" class="secondary" style="margin:0;padding:10px" onclick="selectAmount(1000)">₦1,000</button>
+      <button type="button" class="secondary" style="margin:0;padding:10px" onclick="selectAmount(2000)">₦2,000</button>
+      <button type="button" class="secondary" style="margin:0;padding:10px" onclick="selectAmount(5000)">₦5,000</button>
+    </div>
+
+    <label>Or Enter Custom Amount (₦)</label>
+    <input type="number" id="fundInput" value="1000" min="250" step="50" oninput="renderFeeBreakdown()">
+
+    <label>Select Payment Gateway</label>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <button type="button" id="gwKorapay" onclick="selectGateway('korapay')" style="padding:14px;border-radius:14px;border:1.5px solid var(--accent);background:var(--panel-alt);color:var(--text);font-size:13px;font-weight:700;cursor:pointer;text-align:left">
+        <div>Korapay</div>
+        <span style="font-size:11px;font-weight:400;color:var(--text-dim)">Transfer & Card</span>
+      </button>
+      <button type="button" id="gwFlutterwave" onclick="selectGateway('flutterwave')" style="padding:14px;border-radius:14px;border:1px solid var(--line);background:var(--panel-alt);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;text-align:left">
+        <div>Flutterwave</div>
+        <span style="font-size:11px;font-weight:400;color:var(--text-dim)">Card / USSD</span>
+      </button>
+    </div>
+
+    <div style="background:var(--panel-alt);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:18px;font-size:13px;display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;justify-content:space-between;color:var(--text-dim)"><span>Funding Amount:</span><span id="feeAmountLine">₦1,000</span></div>
+      <div style="display:flex;justify-content:space-between;color:var(--text-dim)"><span>Processing Fee:</span><span>₦100</span></div>
+      <div style="display:flex;justify-content:space-between;font-weight:700;border-top:1px solid var(--line);padding-top:6px"><span>Total Payable:</span><span style="color:var(--success)" id="feeTotalLine">₦1,100</span></div>
+    </div>
+
+    <button type="button" class="primary" onclick="submitFunding()">Proceed to Checkout</button>
+    <button type="button" class="secondary" onclick="closeModal('modalFund')">Cancel</button>
+  </div>
+</div>
+
+<!-- 6. FUNDING LOADING OVERLAY -->
+<div class="modal-overlay" id="modalLoading" style="z-index:150">
+  <div class="modal-card" style="text-align:center;padding:36px 24px">
+    <div style="width:50px;height:50px;border:3.5px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 18px"></div>
+    <h4 id="loadingTitle" style="font-size:17px;margin-bottom:6px">Connecting to Gateway...</h4>
+    <p id="loadingSubtitle" style="color:var(--text-dim);font-size:13px;line-height:1.5;margin:0">
+      Securely contacting payment provider. Please do not close this window.
+    </p>
+  </div>
+</div>
+<style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+
+<!-- 7. DIGITAL RECEIPT MODAL -->
+<div class="modal-overlay" id="modalReceipt" style="z-index:150">
+  <div class="modal-card" style="padding:24px;max-width:440px">
+    <div style="text-align:center;margin-bottom:16px">
+      <div style="width:54px;height:54px;border-radius:50%;background:var(--success-bg);color:var(--success);display:inline-flex;align-items:center;justify-content:center;margin-bottom:10px">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      </div>
+      <h3 style="font-size:18px;margin-bottom:3px">Wallet Funded Successfully</h3>
+      <span style="font-size:12px;color:var(--text-dim)" id="rcpDate">Today</span>
+    </div>
+
+    <div style="background:var(--panel-alt);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:16px;display:flex;flex-direction:column;gap:9px;font-size:13px">
+      <div style="display:flex;justify-content:space-between;color:var(--text-dim)"><span>Receipt No</span><b style="color:var(--text)" id="rcpNumber">ZG-RCP-0000</b></div>
+      <div style="display:flex;justify-content:space-between;color:var(--text-dim)"><span>Reference</span><span style="color:var(--text);font-family:monospace" id="rcpRef">ZG_PAY_000</span></div>
+      <div style="display:flex;justify-content:space-between;color:var(--text-dim)"><span>Gateway</span><b style="color:var(--text)" id="rcpGateway">Korapay</b></div>
+      <div style="display:flex;justify-content:space-between;color:var(--text-dim)"><span>Matric Number</span><b style="color:var(--text)" id="rcpRegNo">LMU/20/1234</b></div>
+      <div style="height:1px;background:var(--line);margin:3px 0"></div>
+      <div style="display:flex;justify-content:space-between;color:var(--text-dim)"><span>Amount Credited</span><b style="color:var(--text)" id="rcpAmount">₦1,000</b></div>
+      <div style="display:flex;justify-content:space-between;font-size:14.5px;font-weight:800"><span>Total Paid</span><span style="color:var(--success)" id="rcpTotal">₦1,100</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;color:var(--accent)"><span>New Balance</span><span id="rcpNewBalance">₦2,200</span></div>
+    </div>
+
+    <button type="button" class="primary" onclick="window.print()" style="margin-bottom:8px">Print / Save Receipt</button>
+    <button type="button" class="secondary" onclick="closeModal('modalReceipt')">Done</button>
+  </div>
+</div>
+
+<!-- 8. TRANSACTION HISTORY MODAL -->
+<div class="modal-overlay" id="modalHistory">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3>Transaction & Ride Ledger</h3>
+      <button class="modal-close" onclick="closeModal('modalHistory')">✕</button>
+    </div>
+    <div id="fullTx" style="max-height:360px;overflow-y:auto;display:flex;flex-direction:column;gap:8px"></div>
+    <button class="secondary" style="margin-top:16px" onclick="closeModal('modalHistory')">Close</button>
+  </div>
+</div>
+
+<!-- 9. FULL STUDENT PROFILE & INFO MODAL -->
+<div class="modal-overlay" id="modalProfileInfo">
+  <div class="modal-card" style="max-width:460px">
+    <div class="modal-header">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:34px;height:34px;border-radius:50%;background:var(--accent-light);color:var(--accent);display:flex;align-items:center;justify-content:center">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+        </div>
+        <h3 style="margin:0;font-size:18px">Student Profile & Info</h3>
+      </div>
+      <button class="modal-close" onclick="closeModal('modalProfileInfo')">✕</button>
+    </div>
+
+    <!-- Student Identity Hero Card -->
+    <div class="profile-hero-card">
+        <div class="profile-avatar-large" id="profAvatar">S</div>
+        <div style="flex:1;min-width:0">
+        <div class="profile-name" id="profName">Student</div>
+        <div class="profile-matric"><span id="profRegNo">—</span></div>
+        <div class="profile-verified-badge">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <span>Verified Student Rider</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Transit Balance Bar inside Profile -->
+    <div style="background:var(--panel-alt);border:1px solid var(--line);border-radius:16px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase">Campus Transit Balance</div>
+        <div style="font-size:22px;font-weight:800;color:var(--text);font-family:'Sora'" id="profBalanceDisplay">₦1,200</div>
+      </div>
+      <button type="button" class="bus-reserve-btn" onclick="closeModal('modalProfileInfo'); openFundModal();">+ Fund</button>
+    </div>
+
+    <!-- Group 1: Security & Protection -->
+    <div class="profile-menu-group">
+      <div class="profile-group-label">Security & Authentication</div>
+      <div class="profile-menu-item" onclick="openChangePinModal()">
+        <div class="pmi-left">
+          <div class="pmi-icon-box" style="background:rgba(109,40,217,0.1);color:var(--accent)">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          </div>
+          <div>
+            <div class="pmi-title">Change Wallet PIN</div>
+            <div class="pmi-desc">Update 4-digit ride & fund security code</div>
+          </div>
+        </div>
+        <span class="pmi-arrow">›</span>
+      </div>
+
+      <div class="profile-menu-item" onclick="toggleBiometrics()">
+        <div class="pmi-left">
+          <div class="pmi-icon-box" style="background:rgba(5,150,105,0.1);color:var(--success)">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 0 0-10 10c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.1-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"/></svg>
+          </div>
+          <div>
+            <div class="pmi-title">Biometric / FaceID Quick Unlock</div>
+            <div class="pmi-desc" id="bioStatusLabel">Active on this device</div>
+          </div>
+        </div>
+        <span class="pmi-arrow" style="font-size:12px;font-weight:700;color:var(--success)">ON</span>
+      </div>
+    </div>
+
+    <!-- Group 2: Campus Opportunities -->
+    <div class="profile-menu-group">
+      <div class="profile-group-label">Opportunities & Campus Hub</div>
+      <div class="profile-menu-item" onclick="openPlaceAdvertModal()">
+        <div class="pmi-left">
+          <div class="pmi-icon-box" style="background:rgba(217,119,6,0.1);color:var(--warning)">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+          </div>
+          <div>
+            <div class="pmi-title">Place an Advert on Zira Go</div>
+            <div class="pmi-desc">Feature your student brand on the Trending Banner</div>
+          </div>
+        </div>
+        <span class="pmi-arrow">›</span>
+      </div>
+
+      <div class="profile-menu-item" onclick="openBecomeRunnerModal()">
+        <div class="pmi-left">
+          <div class="pmi-icon-box" style="background:rgba(2,132,199,0.1);color:#0284C7">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line></svg>
+          </div>
+          <div>
+            <div class="pmi-title">Become an Errand Runner</div>
+            <div class="pmi-desc">Earn ₦200 - ₦350 per trip during free periods</div>
+          </div>
+        </div>
+        <span class="pmi-arrow">›</span>
+      </div>
+    </div>
+
+    <!-- Group 3: Support & Desk -->
+    <div class="profile-menu-group">
+      <div class="profile-group-label">Helpdesk & Policies</div>
+      <a href="https://wa.me/2348000000000?text=Hi%20ZiraPay,%20I%20need%20student%20support%20for%20Landmark%20campus%20transit." target="_blank" class="profile-menu-item">
+        <div class="pmi-left">
+          <div class="pmi-icon-box" style="background:rgba(37,211,102,0.12);color:#25D366">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+          </div>
+          <div>
+            <div class="pmi-title">Transport Desk on WhatsApp</div>
+            <div class="pmi-desc">Live official support & lost item inquiries</div>
+          </div>
+        </div>
+        <span class="pmi-arrow">↗</span>
+      </a>
+
+      <div class="profile-menu-item" onclick="closeModal('modalProfileInfo'); openTelegramModal();">
+        <div class="pmi-left">
+          <div class="pmi-icon-box" style="background:rgba(109,40,217,0.1);color:var(--accent)">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </div>
+          <div>
+            <div class="pmi-title">Telegram Bot (@Zirago_bot)</div>
+            <div class="pmi-desc">Generate codes & check ledger via bot</div>
+          </div>
+        </div>
+        <span class="pmi-arrow">›</span>
+      </div>
+    </div>
+
+    <!-- Sign out -->
+    <button type="button" class="secondary" onclick="signOutStudent()" style="margin-top:8px;color:var(--danger);border-color:rgba(225,29,72,0.35);font-weight:700">
+      Sign Out of Student Account
+    </button>
+  </div>
+</div>
+
+<!-- 10. CHANGE PIN MODAL -->
+<div class="modal-overlay" id="modalChangePin">
+  <div class="modal-card" style="max-width:420px">
+    <div class="modal-header">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:34px;height:34px;border-radius:50%;background:rgba(109,40,217,0.12);color:var(--accent);display:flex;align-items:center;justify-content:center">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        </div>
+        <h3 style="margin:0;font-size:18px">Change Wallet PIN</h3>
+      </div>
+      <button class="modal-close" onclick="closeChangePinModal()">✕</button>
+    </div>
+
+    <div id="pinRequestStep" class="pin-flow">
+      <p class="pin-intro"><b>Identity check required.</b><br>Upload an ID, then make a short selfie video saying your full name and registration number.</p>
+      <div class="pin-upload-card"><strong>1. Upload your student ID</strong><small>Your ID card, admission letter, or another clear document showing your details.</small><input type="file" id="pinIdentityDocument" accept="image/jpeg,image/png,image/webp,application/pdf"></div>
+      <div class="pin-upload-card"><strong>2. Record a selfie video</strong><small>Look at the camera and say your full name and registration number. A red indicator confirms recording is in progress.</small><div id="selfieCameraStatus" class="recording-status"><span class="recording-dot"></span><span id="selfieStatusText">Not recorded yet</span><span id="selfieRecordingTime" style="margin-left:auto;font-variant-numeric:tabular-nums"></span></div><video id="selfieCameraPreview" class="selfie-preview" autoplay playsinline muted></video><button type="button" class="primary" id="btnSelfieRecord" onclick="toggleSelfieRecording()" style="margin-top:10px">● Record selfie video</button><button type="button" class="secondary" id="btnRetakeSelfie" onclick="retakeSelfieVideo()" style="display:none;margin-top:8px">Record again</button><div style="text-align:center;color:var(--text-dim);font-size:11px;margin:10px 0 7px">or upload an existing selfie video</div><input type="file" id="pinSelfieVideo" accept="video/mp4,video/quicktime,video/webm" onchange="selectSelfieVideo(this)"></div>
+      <button type="button" class="primary" onclick="submitPinChangeRequest()">Submit for identity review</button>
+    </div>
+    <div id="pinApprovedStep" style="display:none"><p id="pinRequestStatus" class="pin-intro"></p><button id="btnGeneratePinCode" type="button" class="primary" style="display:none;margin-bottom:12px" onclick="generatePinApprovalCode()">Generate approval code</button><div id="pinCodeForm" class="pin-code-grid" style="display:none"><label class="pin-field full">Approval code from email<input id="pinApprovalCode" inputmode="numeric" maxlength="6" placeholder="6-digit code"></label><label class="pin-field">New wallet PIN<input id="pinNew" type="password" inputmode="numeric" maxlength="4" placeholder="••••"></label><label class="pin-field">Confirm PIN<input id="pinConfirm" type="password" inputmode="numeric" maxlength="4" placeholder="••••"></label><button type="button" class="primary" style="grid-column:1/-1" onclick="confirmPinChange()">Set new PIN securely</button></div></div>
+    <button type="button" class="secondary" onclick="closeChangePinModal()">Close</button>
+  </div>
+</div>
+
+<!-- 11. PLACE ADVERT MODAL -->
+<div class="modal-overlay" id="modalPlaceAdvert">
+  <div class="modal-card" style="max-width:460px">
+    <div class="modal-header">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:34px;height:34px;border-radius:50%;background:rgba(217,119,6,0.12);color:var(--warning);display:flex;align-items:center;justify-content:center">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+        </div>
+        <h3 style="margin:0;font-size:18px">Place an Advert</h3>
+      </div>
+      <button class="modal-close" onclick="closeModal('modalPlaceAdvert')">✕</button>
+    </div>
+
+    <p style="color:var(--text-dim);font-size:13px;line-height:1.5;margin-bottom:14px">
+      Feature your campus brand or service on the <b>Trending on Campus</b> carousel to reach all students!
+    </p>
+
+    <form onsubmit="event.preventDefault(); submitAdvert();">
+      <label>Brand / Business Name</label>
+      <input type="text" id="adBrandName" placeholder="e.g. Campus Fixes & Tech" required>
+
+      <label>Category</label>
+      <select id="adCategory" required>
+        <option value="Student Tech & Gadgets">Student Tech & Gadgets</option>
+        <option value="Campus Fashion & Apparel">Campus Merch & Apparel</option>
+        <option value="Academics & Handouts">Handouts, Books & Printing</option>
+        <option value="Hostel Essentials & Services">Hostel Essentials & Services</option>
+      </select>
+
+      <label>Promotion Headline</label>
+      <input type="text" id="adHeadline" placeholder="e.g. Fast iPhone & Type-C Cables • 20% Off" required>
+
+      <label>Offer Details & WhatsApp Link</label>
+      <textarea id="adDetails" rows="2" placeholder="Describe your offer and pickup point (e.g. DM +234 80X XXX XXXX for hostel delivery)" required style="resize:none"></textarea>
+
+      <div style="background:var(--panel-alt);border:1px dashed var(--accent);border-radius:14px;padding:12px;text-align:center;margin-bottom:16px;cursor:pointer" onclick="document.getElementById('adFileInput').click()">
+        <input type="file" id="adFileInput" accept="image/*" style="display:none" onchange="previewAdImage(event)">
+        <div id="adUploadPreviewText" style="font-size:12.5px;color:var(--accent);font-weight:700">
+          📷 Attach Promo Banner Image (Optional)
+        </div>
+      </div>
+
+      <button type="submit" class="primary">Submit Advert for Placement</button>
+      <button type="button" class="secondary" onclick="closeModal('modalPlaceAdvert')">Cancel</button>
+    </form>
+  </div>
+</div>
+
+<!-- 12. BECOME AN ERRAND RUNNER MODAL -->
+<div class="modal-overlay" id="modalBecomeRunner">
+  <div class="modal-card" style="max-width:440px;text-align:center">
+    <div style="width:58px;height:58px;border-radius:50%;background:rgba(2,132,199,0.12);color:#0284C7;display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line></svg>
+    </div>
+    <h3 style="font-size:19px;margin-bottom:4px">Become a Campus Runner</h3>
+    <p style="font-size:12.5px;color:var(--text-dim);line-height:1.5;margin-bottom:16px">
+      Earn between <b>₦200 to ₦350 per trip</b> delivering packages, laundry, and books between halls during your lecture breaks.
+    </p>
+
+    <div style="background:var(--panel-alt);border:1px solid var(--line);border-radius:16px;padding:14px;text-align:left;display:flex;flex-direction:column;gap:8px;font-size:12.5px;margin-bottom:18px">
+      <div style="display:flex;align-items:center;gap:8px"><span>⚡</span> <b>Flexible Schedule:</b> Accept tasks only when you are free.</div>
+      <div style="display:flex;align-items:center;gap:8px"><span>💳</span> <b>Instant Payout:</b> Delivery earnings credited directly to your Zira Go wallet.</div>
+      <div style="display:flex;align-items:center;gap:8px"><span>🎓</span> <b>Verified Students:</b> Exclusively open to registered LMU students.</div>
+    </div>
+
+    <button type="button" class="primary" onclick="showToast('Runner application submitted! You will receive confirmation on WhatsApp.'); closeModal('modalBecomeRunner');">Register as Student Runner</button>
+    <button type="button" class="secondary" onclick="closeModal('modalBecomeRunner')">Close</button>
+  </div>
+</div>
+
+<!-- 13. BUS RIDE HOME MODAL (INTERSTATE & VACATION TRANSIT) -->
+<div class="modal-overlay" id="modalBusRideHome">
+  <div class="modal-card" style="max-width:540px;max-height:92vh">
+    <div class="modal-header">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:36px;height:36px;border-radius:50%;background:rgba(109,40,217,0.12);color:var(--accent);display:flex;align-items:center;justify-content:center">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="14" rx="2"></rect><circle cx="7.5" cy="14.5" r="1.5"></circle><circle cx="16.5" cy="14.5" r="1.5"></circle><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+        </div>
+        <div>
+          <h3 style="margin:0;font-size:18px">Bus Ride Home</h3>
+          <div style="font-size:11.5px;color:var(--text-dim)">Student Vacation Coaches & Charters</div>
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modalBusRideHome')">✕</button>
+    </div>
+
+    <p style="color:var(--text-dim);font-size:12.5px;line-height:1.45;margin-bottom:14px">
+      Book your seat on student-council organized and approved vacation coaches traveling directly from Landmark campus to your home city.
+    </p>
+
+    <!-- Search / Filter Grid -->
+    <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:10px;margin-bottom:10px">
+      <div>
+        <label style="margin-bottom:4px;font-size:12px;font-weight:700">Destination City</label>
+        <select id="busDestFilter" onchange="filterBuses()" style="margin-bottom:0;padding:10px 12px;font-size:13px">
+          <option value="all">All Destinations</option>
+          <option value="Lagos">Lagos (Berger, Ikeja & Lekki)</option>
+          <option value="Abuja">Abuja (Utako & Central Area)</option>
+          <option value="Ibadan">Ibadan (Iwo Road & Challenge)</option>
+          <option value="Port Harcourt">Port Harcourt (Waterlines & GRA)</option>
+          <option value="Benin City">Benin City (Uselu & Ring Road)</option>
+          <option value="Ilorin">Ilorin (Post Office & Tipper)</option>
+          <option value="Enugu">Enugu (Holy Ghost Park)</option>
+          <option value="Abeokuta">Abeokuta (Panseke & Kuto)</option>
+        </select>
+      </div>
+
+      <div>
+        <label style="margin-bottom:4px;font-size:12px;font-weight:700">Departure Date</label>
+        <input type="date" id="busDateFilter" value="2026-09-26" onchange="filterBuses()" style="margin-bottom:0;padding:10px 12px;font-size:13px">
+      </div>
+    </div>
+
+    <!-- Category Pills -->
+    <div class="bus-filter-bar">
+      <button type="button" class="tab-btn-pill active" onclick="setBusCategoryFilter('all', this)">All Transports</button>
+      <button type="button" class="tab-btn-pill" onclick="setBusCategoryFilter('school', this)">Organized by School</button>
+      <button type="button" class="tab-btn-pill" onclick="setBusCategoryFilter('coaster', this)">Executive Coaster</button>
+      <button type="button" class="tab-btn-pill" onclick="setBusCategoryFilter('sienna', this)">Express Sienna</button>
+    </div>
+
+    <!-- Bus Listings Container -->
+    <div id="busListingsContainer" style="max-height:360px;overflow-y:auto;padding-right:2px;display:flex;flex-direction:column;gap:10px">
+      <!-- Generated via JS -->
+    </div>
+
+    <button type="button" class="secondary" style="margin-top:14px" onclick="closeModal('modalBusRideHome')">Close</button>
+  </div>
+</div>
+
+<!-- 14. BUS BOARDING TICKET MODAL -->
+<div class="modal-overlay" id="modalBusTicket" style="z-index:160">
+  <div class="modal-card" style="max-width:440px;text-align:center">
+    <div style="width:56px;height:56px;border-radius:50%;background:var(--success-bg);color:var(--success);display:inline-flex;align-items:center;justify-content:center;margin-bottom:10px">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    </div>
+    <h3 style="font-size:19px;margin-bottom:2px">Seat Reserved Successfully!</h3>
+    <span style="font-size:12px;color:var(--text-dim)">Official Landmark Vacation Transit Pass</span>
+
+    <div style="background:var(--panel-alt);border:1.5px dashed var(--accent);border-radius:18px;padding:18px;margin:16px 0;text-align:left;display:flex;flex-direction:column;gap:10px;font-size:13px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="color:var(--text-dim)">Boarding Pass ID</span>
+        <b style="color:var(--accent);font-family:'Sora';font-size:15px" id="ticketIdDisplay">LMU-BUS-7842</b>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="color:var(--text-dim)">Transport Service</span>
+        <b style="color:var(--text)" id="ticketBusName">Student Council Executive Coaster</b>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="color:var(--text-dim)">Destination</span>
+        <span style="color:var(--text);font-weight:700" id="ticketDestDisplay">Lagos (Berger & Ikeja)</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="color:var(--text-dim)">Departure Date & Time</span>
+        <b style="color:var(--success)" id="ticketDateTimeDisplay">Fri, 26 Sep • 06:30 AM</b>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="color:var(--text-dim)">Boarding Point</span>
+        <span style="color:var(--text)">Senate Car Park / Main Gate</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="color:var(--text-dim)">Allocated Seat</span>
+        <span style="background:rgba(109,40,217,0.12);color:var(--accent);padding:2px 8px;border-radius:999px;font-weight:700" id="ticketSeatDisplay">Seat #14 (Window)</span>
+      </div>
+      <div style="height:1px;background:var(--line);margin:3px 0"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:14.5px;font-weight:800">
+        <span>Fare</span>
+        <span style="color:var(--text)" id="ticketFareDisplay">₦12,500</span>
+      </div>
+    </div>
+
+    <button type="button" class="primary" onclick="window.print()" style="margin-bottom:8px">Print / Save Boarding Pass</button>
+    <button type="button" class="secondary" onclick="closeModal('modalBusTicket'); closeModal('modalBusRideHome');">Done</button>
+  </div>
+</div>
+
+<!-- 10. TELEGRAM BOT MODAL -->
+<div class="modal-overlay" id="modalTelegram">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3>Zira Go on Telegram</h3>
+      <button class="modal-close" onclick="closeModal('modalTelegram')">✕</button>
+    </div>
+    <p style="color:var(--text-dim);font-size:13px;line-height:1.5;margin-bottom:14px">
+      Generate ride codes, check balances, and fund your wallet directly inside Telegram when offline or on poor network!
+    </p>
+    <div style="background:var(--panel-alt);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:16px;font-size:12.5px;display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;justify-content:space-between"><code>/ride</code> <span>Instant 30-min ride code</span></div>
+      <div style="display:flex;justify-content:space-between"><code>/balance</code> <span>Check wallet balance</span></div>
+      <div style="display:flex;justify-content:space-between"><code>/fund 1000</code> <span>Top up payment link</span></div>
+      <div style="display:flex;justify-content:space-between"><code>/support</code> <span>Transport desk help</span></div>
+    </div>
+    <div id="telegramLinkStart"><button type="button" class="primary" style="width:100%" onclick="generateTelegramLink()">Link my Telegram account</button></div>
+    <div id="telegramLinkCode" style="display:none;text-align:center;background:var(--panel-alt);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:8px"><div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;font-weight:800;letter-spacing:.7px">Your secure link code</div><div id="telegramLinkCodeValue" style="font:800 28px/1.3 monospace;letter-spacing:5px;color:var(--accent);margin:6px 0"></div><div id="telegramLinkExpiry" style="font-size:11px;color:var(--text-dim);margin-bottom:12px"></div><a id="telegramDeepLink" target="_blank" class="primary" style="display:block;text-decoration:none">Open Telegram &amp; link now →</a></div>
+    <button class="secondary" onclick="closeModal('modalTelegram')">Close</button>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast" id="toast">Notice</div>
+<div class="modal-overlay" id="modalNotifications"><div class="modal-card"><div class="modal-header"><h3 style="margin:0">Notifications</h3><button class="modal-close" onclick="closeModal('modalNotifications')">✕</button></div><div id="notificationList" style="display:flex;flex-direction:column;gap:8px"></div></div></div>
+<div class="modal-overlay" id="modalNotificationPopup"><div class="modal-card" style="max-width:430px;overflow:hidden"><button class="modal-close" onclick="dismissNotificationPopup()" style="position:absolute;right:14px;top:14px;z-index:2;background:rgba(255,255,255,.9)">✕</button><img id="notificationPopupImage" alt="Notification banner" style="display:none;width:100%;max-height:220px;object-fit:cover"><div style="padding:20px"><div id="notificationPopupType" style="font-size:11px;font-weight:800;color:var(--accent);text-transform:uppercase;margin-bottom:7px">New notification</div><h3 id="notificationPopupTitle" style="margin:0 0 8px"></h3><p id="notificationPopupBody" style="margin:0;color:var(--text-dim);line-height:1.5;white-space:pre-line"></p><div style="display:flex;gap:8px;margin-top:18px"><button class="secondary" style="flex:1" onclick="dismissNotificationPopup()">Later</button><button class="primary" style="flex:1" onclick="readCurrentNotification()">Mark as read</button></div></div></div></div>
+
+<!-- Floating live-agent entry point, kept outside the profile so it is available everywhere. -->
+<button type="button" id="liveAgentButton" onclick="openLiveAgent()" aria-label="Speak to a live agent" style="position:fixed;right:16px;bottom:18px;z-index:90;border:0;border-radius:999px;padding:12px 16px;background:linear-gradient(100deg,var(--accent),var(--accent-hover));color:#fff;font-weight:800;box-shadow:0 8px 24px rgba(109,40,217,.34);cursor:pointer">💬 Live agent</button>
+<div class="modal-overlay" id="modalLiveAgent" style="z-index:180">
+  <div class="modal-card" style="max-width:420px">
+    <div class="modal-header"><div><h3 style="margin:0">Speak to a live agent</h3><div style="font-size:12px;color:var(--text-dim);margin-top:3px">The campus transport desk will see your message.</div></div><button class="modal-close" onclick="closeModal('modalLiveAgent')">✕</button></div>
+    <div id="supportThread" style="display:grid;gap:8px;margin-bottom:12px"></div>
+    <label>Your contact</label><input id="supportContact" type="text" placeholder="Phone number or email">
+    <label>What can we help with?</label><select id="supportCategory"><option value="ride">Ride / driver</option><option value="wallet">Wallet / payment</option><option value="account">Account</option><option value="other">Other</option></select>
+    <label>Message</label><textarea id="supportMessage" rows="5" placeholder="Describe the issue so an agent can help."></textarea>
+    <button type="button" class="primary" onclick="sendSupportMessage()">Start support conversation</button>
+  </div>
+</div>
+
+<!-- =======================================================================
+     APPLICATION LOGIC & SCRIPTS
+     ======================================================================= -->
+<script>
+const ADMIN_PREVIEW = new URLSearchParams(window.location.search).get('adminPreview') === 'student';
+let STUDENT_REG_NO = ADMIN_PREVIEW ? 'LMU/23/01030' : (localStorage.getItem('zira_reg_no') || '—');
+let STUDENT_NAME = ADMIN_PREVIEW ? 'Student Preview' : (localStorage.getItem('zira_name') || 'Student');
+const STUDENT_TOKEN = localStorage.getItem('zira_token');
+if (!ADMIN_PREVIEW && (!STUDENT_TOKEN || localStorage.getItem('zira_role') !== 'student')) window.location.href = 'zira_go_login.html?role=student';
+const studentHeaders = { 'Authorization': `Bearer ${STUDENT_TOKEN}` };
+let balance = 0;
+let codeTimer = null;
+let codeSecondsLeft = 1800; // 30 minutes
+let currentRideCode = '------';
+let currentRideCodeFormatted = '--- ---';
+let codeExpiryDate = new Date(Date.now() + 30 * 60 * 1000);
+let hasActiveCodeRunning = false;
+let selectedGateway = 'korapay';
+let selectedErrandFee = 200;
+let cachedAllCodes = [];
+
+let transactions = [];
+if (ADMIN_PREVIEW) {
+  document.getElementById('adminPreviewBanner').style.display='block';
+  window.addEventListener('click', event => { const action=event.target.closest('button, a'); if (!action || action.matches('[onclick*="toggleTheme"], .modal-close')) return; event.preventDefault(); event.stopImmediatePropagation(); showToast('This is an admin read-only preview. Sign in as a student to use this action.'); }, true);
+}
+
+// ------------------------------------------------------------------
+// Modal Helpers
+// ------------------------------------------------------------------
+function openModal(id) { document.getElementById(id).classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); if (id === 'modalChangePin') stopSelfieCamera(); }
+function openFundModal() { openModal('modalFund'); }
+function openErrandModal() { openModal('modalErrand'); }
+function openHistoryModal() { renderFullTx(); openModal('modalHistory'); }
+function openProfileModal() {
+  const regEl = document.getElementById('profRegNo');
+  if (regEl) regEl.textContent = STUDENT_REG_NO;
+  const nameEl = document.getElementById('profName');
+  const avatarEl = document.getElementById('profAvatar');
+  if (nameEl) nameEl.textContent = STUDENT_NAME;
+  if (avatarEl) avatarEl.textContent = STUDENT_NAME.charAt(0).toUpperCase();
+  const balEl = document.getElementById('profBalanceDisplay');
+  if (balEl) balEl.textContent = `₦${balance.toLocaleString()}`;
+  openModal('modalProfileInfo');
+}
+let activePinRequest = null, selfieCameraStream = null, selfieRecorder = null, selfieChunks = [], selfieRecordedFile = null, selfieTimer = null, selfieStartedAt = null, selfiePreviewUrl = null;
+function openChangePinModal() { closeModal('modalProfileInfo'); openModal('modalChangePin'); loadPinRequestStatus(); }
+function closeChangePinModal() { stopSelfieCamera(); closeModal('modalChangePin'); }
+async function loadPinRequestStatus() { const step=document.getElementById('pinRequestStep'),approved=document.getElementById('pinApprovedStep'),status=document.getElementById('pinRequestStatus'),codeForm=document.getElementById('pinCodeForm'),generate=document.getElementById('btnGeneratePinCode'); step.style.display='flex'; approved.style.display='none'; try { const res=await fetch('/api/pin/status',{headers:{Authorization:`Bearer ${localStorage.getItem('zira_token')||''}`}}); const data=await res.json(); activePinRequest=data.request; if(!data.request)return; step.style.display='none';approved.style.display='block';const hasCode=data.request.approval_code_expires_at && new Date(data.request.approval_code_expires_at)>new Date();status.textContent=data.request.status==='approved'?(hasCode?'Your approval code is active. Enter the code from your email and choose a new PIN.':'Approved. Generate your one-time code when you are ready; it will be sent to your email and expires after 15 minutes.'):data.request.status==='pending'?'Your identity review is being checked. You will receive an in-app notification once it is approved.':`Request status: ${data.request.status}. ${data.request.review_note||''}`;generate.style.display=data.request.status==='approved'&&!hasCode?'block':'none';codeForm.style.display=data.request.status==='approved'&&hasCode?'grid':'none'; } catch (_) { status.textContent='Sign in to submit a secure PIN-change request.'; } }
+async function generatePinApprovalCode() { const button=document.getElementById('btnGeneratePinCode');button.disabled=true;button.textContent='Sending secure code…';try { const res=await fetch('/api/pin/generate-code',{method:'POST',headers:{Authorization:`Bearer ${localStorage.getItem('zira_token')||''}`}});const data=await res.json();if(!res.ok)throw new Error(data.message);showToast(data.message);await loadPinRequestStatus(); } catch(e) { showToast(e.message||'Could not generate an approval code.');button.disabled=false;button.textContent='Generate approval code'; } }
+function setSelfieStatus(message, live=false, time='') { const status=document.getElementById('selfieCameraStatus');status.classList.toggle('live',live);document.getElementById('selfieStatusText').textContent=message;document.getElementById('selfieRecordingTime').textContent=time; }
+function formatSelfieTime(seconds) { return `0:${String(Math.max(0,Math.floor(seconds))).padStart(2,'0')}`; }
+async function toggleSelfieRecording() { if(selfieRecorder?.state==='recording') return finishSelfieRecording(); try { stopSelfieCamera(); selfieCameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:true}); const preview=document.getElementById('selfieCameraPreview');preview.srcObject=selfieCameraStream;preview.muted=true;preview.controls=false;preview.style.display='block';selfieChunks=[];selfieRecorder=new MediaRecorder(selfieCameraStream);selfieRecorder.ondataavailable=e=>{if(e.data.size)selfieChunks.push(e.data)};selfieRecorder.onstop=saveSelfieRecording;selfieRecorder.start();selfieStartedAt=Date.now();document.getElementById('btnSelfieRecord').textContent='■ Stop recording';document.getElementById('btnSelfieRecord').classList.add('danger');setSelfieStatus('Recording now — speak clearly',true,'0:00');selfieTimer=setInterval(()=>setSelfieStatus('Recording now — speak clearly',true,formatSelfieTime((Date.now()-selfieStartedAt)/1000)),250); } catch(e) { showToast('Camera access was not granted. You can upload an existing selfie video instead.'); } }
+function finishSelfieRecording() { if(selfieRecorder?.state==='recording')selfieRecorder.stop(); }
+function saveSelfieRecording() { clearInterval(selfieTimer);selfieRecordedFile=new File([new Blob(selfieChunks,{type:'video/webm'})],'selfie-verification.webm',{type:'video/webm'}); const preview=document.getElementById('selfieCameraPreview');if(selfiePreviewUrl)URL.revokeObjectURL(selfiePreviewUrl);selfiePreviewUrl=URL.createObjectURL(selfieRecordedFile); if(selfieCameraStream)selfieCameraStream.getTracks().forEach(t=>t.stop());selfieCameraStream=null;preview.srcObject=null;preview.src=selfiePreviewUrl;preview.muted=false;preview.controls=true;preview.style.display='block';document.getElementById('btnSelfieRecord').style.display='none';document.getElementById('btnRetakeSelfie').style.display='block';setSelfieStatus('Selfie video recorded and ready',false,formatSelfieTime((Date.now()-selfieStartedAt)/1000)); }
+function retakeSelfieVideo() { selfieRecordedFile=null;document.getElementById('pinSelfieVideo').value='';const preview=document.getElementById('selfieCameraPreview');preview.removeAttribute('src');preview.style.display='none';document.getElementById('btnSelfieRecord').style.display='block';document.getElementById('btnSelfieRecord').textContent='● Record selfie video';document.getElementById('btnSelfieRecord').classList.remove('danger');document.getElementById('btnRetakeSelfie').style.display='none';setSelfieStatus('Not recorded yet'); }
+function selectSelfieVideo(input) { if(!input.files[0])return; selfieRecordedFile=null;const preview=document.getElementById('selfieCameraPreview');preview.srcObject=null;preview.src=URL.createObjectURL(input.files[0]);preview.controls=true;preview.muted=false;preview.style.display='block';document.getElementById('btnSelfieRecord').style.display='none';document.getElementById('btnRetakeSelfie').style.display='block';setSelfieStatus('Video selected and ready',false); }
+function stopSelfieCamera() { clearInterval(selfieTimer);if(selfieRecorder?.state==='recording')selfieRecorder.stop();if(selfieCameraStream){selfieCameraStream.getTracks().forEach(track=>track.stop());selfieCameraStream=null;} }
+async function submitPinChangeRequest() { const doc=document.getElementById('pinIdentityDocument').files[0],video=selfieRecordedFile||document.getElementById('pinSelfieVideo').files[0];if(!doc||!video)return showToast('Please attach your identity document and record or select a selfie video.');const form=new FormData();form.append('identityDocument',doc);form.append('selfieVideo',video);try { const res=await fetch('/api/pin/request',{method:'POST',headers:{Authorization:`Bearer ${localStorage.getItem('zira_token')||''}`},body:form});const data=await res.json();if(!res.ok)throw new Error(data.message);showToast('Identity review submitted.');loadPinRequestStatus(); } catch(e){showToast(e.message||'Could not submit your review.');} }
+async function confirmPinChange() { const pin=document.getElementById('pinNew').value,confirm=document.getElementById('pinConfirm').value,code=document.getElementById('pinApprovalCode').value;if(pin!==confirm)return showToast('The new PIN entries do not match.');try { const res=await fetch('/api/pin/confirm',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${localStorage.getItem('zira_token')||''}`},body:JSON.stringify({requestId:activePinRequest?.id,code,newPin:pin})});const data=await res.json();if(!res.ok)throw new Error(data.message);closeModal('modalChangePin');showToast('Wallet PIN changed successfully.'); } catch(e){showToast(e.message||'Could not change your PIN.');} }
+function openPlaceAdvertModal() { closeModal('modalProfileInfo'); openModal('modalPlaceAdvert'); }
+function openBecomeRunnerModal() { closeModal('modalProfileInfo'); openModal('modalBecomeRunner'); }
+function openBusRideHomeModal() { renderBuses(); openModal('modalBusRideHome'); }
+function openPinSupportModal() { openProfileModal(); }
+let telegramLinkTimer = null;
+function openTelegramModal() { openModal('modalTelegram'); }
+async function generateTelegramLink() { const button=document.querySelector('#telegramLinkStart button'); button.disabled=true;button.textContent='Creating secure link…';try { const res=await fetch('/api/telegram/link-code',{method:'POST',headers:studentHeaders});const data=await res.json();if(!res.ok)throw new Error(data.message||'Could not create a Telegram link.');document.getElementById('telegramLinkStart').style.display='none';document.getElementById('telegramLinkCode').style.display='block';document.getElementById('telegramLinkCodeValue').textContent=data.code;document.getElementById('telegramDeepLink').href=data.deepLink||`https://t.me/zirago_bot?start=${data.code}`;let left=Number(data.ttlSeconds||600);clearInterval(telegramLinkTimer);const expiry=()=>{document.getElementById('telegramLinkExpiry').textContent=left>0?`Expires in ${Math.floor(left/60)}:${String(left%60).padStart(2,'0')}`:'This code expired. Generate a new link.';if(left--<=0){clearInterval(telegramLinkTimer);document.getElementById('telegramDeepLink').style.pointerEvents='none';document.getElementById('telegramDeepLink').style.opacity='.5';}};expiry();telegramLinkTimer=setInterval(expiry,1000);}catch(e){showToast(e.message||'Could not create a Telegram link.');button.disabled=false;button.textContent='Link my Telegram account';} }
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+function updateBalanceDisplay() {
+  const el = document.getElementById('balanceAmount');
+  if (el) el.innerHTML = `<span class="naira-sym">₦</span>${balance.toLocaleString()}`;
+  const profEl = document.getElementById('profBalanceDisplay');
+  if (profEl) profEl.innerHTML = `<span class="naira-sym">₦</span>${balance.toLocaleString()}`;
+}
+
+function signOutStudent() {
+  localStorage.removeItem('zira_token');
+  window.location.href = 'zira_go_login.html?role=student';
+}
+let studentNotifications = [];
+let currentPopupNotification = null;
+function notificationText(value) { const node=document.createElement('div'); node.textContent=value||''; return node.innerHTML; }
+function setNotificationBadge() { const count=studentNotifications.filter(n=>!n.read_at).length, badge=document.getElementById('notificationBadge'); if(!badge)return; badge.hidden=!count; badge.textContent=count>99?'99+':count; }
+function renderNotificationList() { const box=document.getElementById('notificationList'); if(!box)return; box.innerHTML=studentNotifications.length?studentNotifications.map(n=>`<button type="button" onclick="markNotificationRead(${n.id})" style="text-align:left;border:1px solid var(--line);border-radius:12px;background:${n.read_at?'var(--panel-alt)':'rgba(109,40,217,.08)'};padding:12px;color:var(--text);cursor:pointer"><div style="display:flex;justify-content:space-between;gap:8px"><b>${notificationText(n.title)}</b>${n.read_at?'':'<span style="color:var(--accent);font-size:11px">NEW</span>'}</div>${n.image_url?`<img src="${notificationText(n.image_url)}" alt="" style="width:100%;max-height:130px;object-fit:cover;border-radius:8px;margin:8px 0">`:''}<span style="font-size:12px;color:var(--text-dim);white-space:pre-line">${notificationText(n.body)}</span></button>`).join(''):'<span style="color:var(--text-dim)">You are all caught up.</span>'; }
+async function fetchNotifications(allowPopup=true) { try { const r=await fetch('/api/notifications',{headers:studentHeaders}); if(!r.ok)return; studentNotifications=await r.json(); setNotificationBadge(); renderNotificationList(); const next=studentNotifications.find(n=>!n.read_at && !sessionStorage.getItem(`zira_notice_seen_${n.id}`)); if(allowPopup && next) showNotificationPopup(next); } catch (_) {} }
+async function openNotifications() { openModal('modalNotifications'); await fetchNotifications(false); }
+async function markNotificationRead(id) { await fetch(`/api/notifications/${id}/read`,{method:'POST',headers:studentHeaders}); const row=studentNotifications.find(n=>n.id===id); if(row)row.read_at=new Date().toISOString(); setNotificationBadge(); renderNotificationList(); }
+function showNotificationPopup(n) { currentPopupNotification=n; sessionStorage.setItem(`zira_notice_seen_${n.id}`,'1'); document.getElementById('notificationPopupType').textContent=n.type==='broadcast'?'Campus update':'New notification'; document.getElementById('notificationPopupTitle').textContent=n.title; document.getElementById('notificationPopupBody').textContent=n.body; const image=document.getElementById('notificationPopupImage'); image.style.display=n.image_url?'block':'none'; image.src=n.image_url||''; openModal('modalNotificationPopup'); }
+function dismissNotificationPopup() { closeModal('modalNotificationPopup'); currentPopupNotification=null; }
+async function readCurrentNotification() { if(currentPopupNotification) await markNotificationRead(currentPopupNotification.id); dismissNotificationPopup(); }
+
+// ------------------------------------------------------------------
+// 1. Trending Banner Carousel Functionality
+// ------------------------------------------------------------------
+let currentSlideIndex = 0;
+const totalSlides = 3;
+let carouselInterval = null;
+
+function updateCarousel() {
+  const track = document.getElementById('carouselTrack');
+  const dots = document.querySelectorAll('.carousel-dot');
+  if (track) {
+    track.style.transform = `translateX(-${currentSlideIndex * 100}%)`;
+  }
+  dots.forEach((d, idx) => {
+    d.classList.toggle('active', idx === currentSlideIndex);
+  });
+}
+
+function nextSlide() {
+  currentSlideIndex = (currentSlideIndex + 1) % totalSlides;
+  updateCarousel();
+}
+
+function prevSlide() {
+  currentSlideIndex = (currentSlideIndex - 1 + totalSlides) % totalSlides;
+  updateCarousel();
+}
+
+function goToSlide(idx) {
+  currentSlideIndex = idx;
+  updateCarousel();
+  resetCarouselInterval();
+}
+
+function startCarouselAutoplay() {
+  carouselInterval = setInterval(nextSlide, 4500);
+}
+
+function resetCarouselInterval() {
+  clearInterval(carouselInterval);
+  startCarouselAutoplay();
+}
+
+// Pause carousel on hover / resume on leave
+const carouselWrapper = document.getElementById('trendingCarousel');
+if (carouselWrapper) {
+  carouselWrapper.addEventListener('mouseenter', () => clearInterval(carouselInterval));
+  carouselWrapper.addEventListener('mouseleave', () => resetCarouselInterval());
+
+  // Touch Swipe
+  let startX = 0;
+  carouselWrapper.addEventListener('touchstart', (e) => {
+    startX = e.touches[0].clientX;
+  }, { passive: true });
+  carouselWrapper.addEventListener('touchend', (e) => {
+    const diff = startX - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 40) {
+      if (diff > 0) nextSlide();
+      else prevSlide();
+      resetCarouselInterval();
+    }
+  }, { passive: true });
+}
+
+// ------------------------------------------------------------------
+// 2. Strict One-Time Ride Code Generation & Locking
+// ------------------------------------------------------------------
+async function handleRideCodeButtonClick() {
+  openModal('modalCode');
+  await checkOrFetchActiveCode();
+}
+
+// Checks if an active unexpired code exists from backend
+async function checkOrFetchActiveCode() {
+  try {
+    const res = await fetch('/api/trips/code/active', { headers: studentHeaders });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.activeCode) {
+        displayCodeData(data.activeCode, true);
+        return;
+      }
+    }
+  } catch (err) {
+    console.warn('Active check failed, falling back to generate:', err);
+  }
+
+  // No active code found: generate new one
+  await requestNewCode();
+}
+
+async function requestNewCode() {
+  try {
+    const res = await fetch('/api/trips/code/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...studentHeaders },
+      body: JSON.stringify({})
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      displayCodeData(data, data.isExisting);
+    } else {
+      showToast(data.message || 'Error generating ride code.');
+    }
+  } catch (err) {
+    console.error('Code generate error:', err);
+    showToast('Could not generate a ride code. Check your connection and try again.');
+  }
+}
+
+function displayCodeData(data, isExistingActive) {
+  currentRideCode = data.code;
+  currentRideCodeFormatted = data.formatted || `${data.code.slice(0, 3)} ${data.code.slice(3)}`;
+  codeSecondsLeft = data.ttlSeconds || 1800;
+  if (data.expiresAt) codeExpiryDate = new Date(data.expiresAt);
+  else codeExpiryDate = new Date(Date.now() + codeSecondsLeft * 1000);
+
+  document.getElementById('codeDisplay').textContent = currentRideCodeFormatted;
+  document.getElementById('codeRegNo').textContent = STUDENT_REG_NO;
+  document.getElementById('codeExpiryTime').textContent = codeExpiryDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+  hasActiveCodeRunning = isExistingActive || codeSecondsLeft > 0;
+  const lockNotice = document.getElementById('activeLockNotice');
+  const genBtn = document.getElementById('btnGenerateCodeAction');
+
+  if (hasActiveCodeRunning && codeSecondsLeft > 0) {
+    lockNotice.style.display = 'flex';
+    genBtn.disabled = true;
+    genBtn.textContent = 'Active Code Running (Locked)';
+    genBtn.style.opacity = '0.6';
+    genBtn.style.cursor = 'not-allowed';
+  } else {
+    lockNotice.style.display = 'none';
+    genBtn.disabled = false;
+    genBtn.textContent = 'Generate Fresh Code';
+    genBtn.style.opacity = '1';
+    genBtn.style.cursor = 'pointer';
+  }
+
+  startCountdownTimer();
+}
+
+function startCountdownTimer() {
+  clearInterval(codeTimer);
+  updateCountdownUI();
+  codeTimer = setInterval(() => {
+    codeSecondsLeft--;
+    updateCountdownUI();
+    if (codeSecondsLeft <= 0) {
+      clearInterval(codeTimer);
+      hasActiveCodeRunning = false;
+      const el = document.getElementById('codeCountdown');
+      el.innerHTML = `<span>Code expired (30m reached). You can now generate a fresh pass.</span>`;
+      el.classList.add('expired');
+      const lockNotice = document.getElementById('activeLockNotice');
+      lockNotice.style.display = 'none';
+      const genBtn = document.getElementById('btnGenerateCodeAction');
+      genBtn.disabled = false;
+      genBtn.textContent = 'Generate Fresh Code';
+      genBtn.style.opacity = '1';
+      genBtn.style.cursor = 'pointer';
+    }
+  }, 1000);
+}
+
+function updateCountdownUI() {
+  const m = Math.floor(Math.max(0, codeSecondsLeft) / 60);
+  const s = Math.max(0, codeSecondsLeft) % 60;
+  const textEl = document.getElementById('codeCountdownText');
+  const timeStr = `${m}:${s < 10 ? '0' : ''}${s}`;
+  if (textEl) textEl.textContent = `Valid for ${timeStr}`;
+}
+
+function copyRideCode() {
+  if (!currentRideCode || currentRideCode === '------') return;
+  navigator.clipboard.writeText(currentRideCode).then(() => {
+    const b = document.getElementById('copyBtnText');
+    if (b) { b.textContent = '✓ Copied!'; setTimeout(() => b.textContent = 'Copy Code', 2000); }
+    showToast(`Code ${currentRideCodeFormatted} copied to clipboard!`);
+  });
+}
+
+function saveRideCodeImage() {
+  if (!currentRideCode || currentRideCode === '------') return;
+  const canvas = document.getElementById('passCardCanvas');
+  const ctx = canvas.getContext('2d');
+  const btn = document.getElementById('saveImgBtnText');
+  if (btn) btn.textContent = 'Saving...';
+
+  const logoImg = new Image();
+  logoImg.crossOrigin = 'anonymous';
+  logoImg.src = 'zira_go_logo.png';
+
+  const draw = () => {
+    const bgGrad = ctx.createLinearGradient(0, 0, 960, 560);
+    bgGrad.addColorStop(0, '#100726');
+    bgGrad.addColorStop(0.5, '#1E1045');
+    bgGrad.addColorStop(1, '#2D1466');
+    ctx.fillStyle = bgGrad;
+    ctx.roundRect(0, 0, 960, 560, 28);
+    ctx.fill();
+
+    ctx.strokeStyle = '#8B5CF6';
+    ctx.lineWidth = 3;
+    ctx.roundRect(1.5, 1.5, 957, 557, 28);
+    ctx.stroke();
+
+    // Logo Circle
+    ctx.beginPath();
+    ctx.arc(80, 74, 34, 0, Math.PI * 2);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fill();
+    ctx.drawImage(logoImg, 48, 42, 64, 64);
+
+    ctx.fillStyle = '#A78BFA';
+    ctx.font = '800 28px "Sora"';
+    ctx.fillText('Zira', 130, 74);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillText('GO!', 194, 74);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.font = '600 12px sans-serif';
+    ctx.fillText('CAMPUS TAP & MOVE • LANDMARK UNIVERSITY', 130, 96);
+
+    // Code Box
+    ctx.fillStyle = 'rgba(18, 10, 36, 0.85)';
+    ctx.roundRect(46, 150, 868, 220, 22);
+    ctx.fill();
+
+    ctx.fillStyle = '#A78BFA';
+    ctx.font = '700 13px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('OFFICIAL ONE-TIME RIDE PASSCODE', 480, 195);
+
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = '800 70px "Sora"';
+    ctx.fillText(currentRideCodeFormatted, 480, 285);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.font = '500 14px sans-serif';
+    ctx.fillText('Present this 6-digit code to your shuttle driver upon boarding.', 480, 340);
+
+    // Details Row
+    ctx.textAlign = 'left';
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = '600 11px sans-serif';
+    ctx.fillText('STUDENT REG NO', 56, 420);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = '700 16px "Sora"';
+    ctx.fillText(STUDENT_REG_NO, 56, 444);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fillText('VALIDITY', 340, 420);
+    ctx.fillStyle = '#34D399';
+    ctx.fillText('30 Minutes (Active)', 340, 444);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fillText('EXPIRES', 620, 420);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillText(codeExpiryDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }), 620, 444);
+
+    // Download PNG
+    const dataUrl = canvas.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.download = `ZiraGo_Pass_${currentRideCode}.png`;
+    a.href = dataUrl;
+    a.click();
+
+    if (btn) { btn.textContent = '✓ Saved Image!'; setTimeout(() => btn.textContent = 'Save Image', 2500); }
+    showToast('Transit pass image saved!');
+  };
+
+  if (logoImg.complete) draw();
+  else { logoImg.onload = draw; logoImg.onerror = draw; }
+}
+
+// ------------------------------------------------------------------
+// 3. View All Codes Modal (History, Active, Used, Expired)
+// ------------------------------------------------------------------
+async function openAllCodesModal() {
+  closeModal('modalCode');
+  openModal('modalAllCodes');
+  await loadCodeHistory();
+}
+
+async function loadCodeHistory() {
+  const container = document.getElementById('allCodesList');
+  container.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-dim);font-size:13px">Loading codes...</div>`;
+
+  try {
+    const res = await fetch('/api/trips/code/history', { headers: studentHeaders });
+    if (res.ok) {
+      const data = await res.json();
+      cachedAllCodes = data.codes || [];
+      renderFilteredCodes('all');
+    } else {
+      container.innerHTML = `<div style="text-align:center;padding:20px;color:var(--danger);font-size:13px">Failed to load code history.</div>`;
+    }
+  } catch (err) {
+    container.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-dim);font-size:13px">Could not connect to history.</div>`;
+  }
+}
+
+function filterCodeHistory(status) {
+  document.querySelectorAll('.tab-btn-pill').forEach(b => b.classList.remove('active'));
+  if (status === 'all') document.getElementById('fltAll').classList.add('active');
+  if (status === 'active') document.getElementById('fltActive').classList.add('active');
+  if (status === 'redeemed') document.getElementById('fltUsed').classList.add('active');
+  if (status === 'expired') document.getElementById('fltExpired').classList.add('active');
+  renderFilteredCodes(status);
+}
+
+function renderFilteredCodes(statusFilter) {
+  const container = document.getElementById('allCodesList');
+  let list = cachedAllCodes;
+  if (statusFilter !== 'all') {
+    list = cachedAllCodes.filter(c => c.status === statusFilter);
+  }
+
+  if (!list.length) {
+    container.innerHTML = `<div style="text-align:center;padding:28px;color:var(--text-dim);font-size:13px">No ${statusFilter === 'all' ? '' : statusFilter} codes found.</div>`;
+    return;
+  }
+
+  container.innerHTML = list.map(c => {
+    const dateStr = new Date(c.createdAt).toLocaleDateString('en-US', {
+      month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+    const statusLabel = c.status === 'active' ? '● Active' : (c.status === 'redeemed' ? '✓ Used' : '✕ Expired');
+    return `
+      <div class="code-history-item">
+        <div>
+          <div style="font-family:'Sora',monospace;font-size:16px;font-weight:800;color:var(--text);letter-spacing:0.06em">
+            ${c.formatted || c.code}
+          </div>
+          <div style="font-size:11px;color:var(--text-dim);margin-top:2px">${dateStr}</div>
+        </div>
+        <div style="text-align:right">
+          <span class="code-status-pill ${c.status}">${statusLabel}</span>
+          ${c.status === 'active' ? `<div style="margin-top:4px"><button type="button" onclick="selectActiveCodeFromHistory('${c.code}', '${c.formatted}', '${c.expiresAt}')" style="background:none;border:none;color:var(--accent);font-size:11px;font-weight:700;cursor:pointer">View Pass →</button></div>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function selectActiveCodeFromHistory(code, formatted, expiresAt) {
+  closeModal('modalAllCodes');
+  const remainingSeconds = Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000));
+  displayCodeData({
+    code,
+    formatted,
+    expiresAt,
+    ttlSeconds: remainingSeconds
+  }, true);
+  openModal('modalCode');
+}
+
+// ------------------------------------------------------------------
+// 4. Send on Errand Feature
+// ------------------------------------------------------------------
+// ------------------------------------------------------------------
+// 4. Send on Errand Feature (with Custom Offer & Bargaining)
+// ------------------------------------------------------------------
+function selectErrandSpeed(speed) {
+  const btnStd = document.getElementById('btnErrandStd');
+  const btnExp = document.getElementById('btnErrandExp');
+  const offerInput = document.getElementById('errandCustomOffer');
+  const dispatchBtn = document.getElementById('btnDispatchErrand');
+
+  if (speed === 'standard') {
+    selectedErrandFee = 200;
+    btnStd.style.borderColor = 'var(--accent)';
+    btnStd.style.color = 'var(--accent)';
+    btnExp.style.borderColor = 'var(--line)';
+    btnExp.style.color = 'var(--text)';
+  } else {
+    selectedErrandFee = 350;
+    btnExp.style.borderColor = 'var(--accent)';
+    btnExp.style.color = 'var(--accent)';
+    btnStd.style.borderColor = 'var(--line)';
+    btnStd.style.color = 'var(--text)';
+  }
+  if (offerInput) offerInput.value = selectedErrandFee;
+  if (dispatchBtn) dispatchBtn.textContent = `Dispatch with Offer (₦${selectedErrandFee})`;
+}
+
+function onCustomOfferInput() {
+  const offerInput = document.getElementById('errandCustomOffer');
+  const val = parseInt(offerInput.value, 10) || 100;
+  selectedErrandFee = Math.max(100, val);
+  const dispatchBtn = document.getElementById('btnDispatchErrand');
+  if (dispatchBtn) dispatchBtn.textContent = `Dispatch with Offer (₦${selectedErrandFee})`;
+}
+
+function submitErrand() {
+  const pickup = document.getElementById('errandPickup').value;
+  const dropoff = document.getElementById('errandDropoff').value;
+  const desc = document.getElementById('errandDesc').value.trim();
+  const offerVal = parseInt(document.getElementById('errandCustomOffer').value, 10);
+  if (offerVal) selectedErrandFee = offerVal;
+
+  if (balance < selectedErrandFee) {
+    showToast('Insufficient wallet balance for offered fee.');
+    openFundModal();
+    return;
+  }
+
+  balance -= selectedErrandFee;
+  updateBalanceDisplay();
+  closeModal('modalErrand');
+
+  const code = 'ZG-ERR-' + Math.floor(1000 + Math.random() * 9000);
+  document.getElementById('errRcpCode').textContent = code;
+  document.getElementById('errRcpDesc').textContent = desc || 'Handouts & items';
+  document.getElementById('errRcpRoute').textContent = `${pickup.split(' ')[0]} → ${dropoff.split(' ')[0]}`;
+  document.getElementById('errRcpFee').textContent = `₦${selectedErrandFee.toLocaleString()}`;
+  document.getElementById('errRcpEta').textContent = selectedErrandFee >= 350 ? '8-10 mins (Express)' : '18-25 mins (Standard)';
+  document.getElementById('errRcpDate').textContent = 'Just now';
+
+  transactions.unshift({
+    id: Date.now(),
+    type: 'debit',
+    desc: `Campus Errand Offer: ${desc} (₦${selectedErrandFee})`,
+    meta: 'Just now',
+    amount: selectedErrandFee
+  });
+
+  openModal('modalErrandReceipt');
+  showToast(`Errand offer of ₦${selectedErrandFee} broadcasted to campus runners!`);
+}
+
+// ------------------------------------------------------------------
+// 4B. Profile Security, Advert Placement & Bus Transit Logic
+// ------------------------------------------------------------------
+let biometricsActive = true;
+function toggleBiometrics() {
+  biometricsActive = !biometricsActive;
+  const lbl = document.getElementById('bioStatusLabel');
+  if (lbl) lbl.textContent = biometricsActive ? 'Active on this device' : 'Disabled';
+  showToast(biometricsActive ? 'Biometric / FaceID quick unlock enabled' : 'Biometric unlock disabled');
+}
+
+function submitChangePin() {
+  const np = document.getElementById('pinNew').value;
+  const cp = document.getElementById('pinConfirm').value;
+
+  if (np !== cp) {
+    showToast('New PIN and confirmation do not match.');
+    return;
+  }
+  if (np.length !== 4) {
+    showToast('PIN must be exactly 4 digits.');
+    return;
+  }
+
+  showToast('✓ Wallet PIN updated successfully!');
+  closeModal('modalChangePin');
+  document.getElementById('pinCurrent').value = '';
+  document.getElementById('pinNew').value = '';
+  document.getElementById('pinConfirm').value = '';
+}
+
+function previewAdImage(e) {
+  const file = e.target.files[0];
+  if (file) {
+    const textEl = document.getElementById('adUploadPreviewText');
+    if (textEl) textEl.textContent = `✓ Image selected: ${file.name}`;
+  }
+}
+
+function submitAdvert() {
+  const brand = document.getElementById('adBrandName').value.trim();
+  const headline = document.getElementById('adHeadline').value.trim();
+  const cat = document.getElementById('adCategory').value;
+
+  closeModal('modalPlaceAdvert');
+  showToast(`✓ Advert for "${brand}" submitted for placement review!`);
+
+  // Dynamically append new slide to Trending on Campus carousel
+  const track = document.getElementById('carouselTrack');
+  const dotsContainer = document.getElementById('carouselDots');
+  if (track) {
+    const slide = document.createElement('div');
+    slide.className = 'carousel-slide';
+    slide.style.backgroundImage = `url('landmark_campus_banner.jpg')`;
+    slide.innerHTML = `
+      <div class="carousel-slide-overlay"></div>
+      <div class="slide-content">
+        <span class="slide-badge">⭐ Student Brand • ${cat}</span>
+        <h3 class="slide-title">${brand}</h3>
+        <p class="slide-desc">${headline}</p>
+        <button type="button" class="slide-btn" onclick="showToast('Contacting ${brand} on campus...')">Contact Brand →</button>
+      </div>
+    `;
+    track.appendChild(slide);
+
+    if (dotsContainer) {
+      const dot = document.createElement('span');
+      dot.className = 'carousel-dot';
+      const newIndex = track.children.length - 1;
+      dot.onclick = () => goToSlide(newIndex);
+      dotsContainer.appendChild(dot);
+    }
+  }
+}
+
+// ------------------------------------------------------------------
+// 4C. Student Vacation Bus Transit Data & Filter
+// ------------------------------------------------------------------
+const busSchedules = [
+  {
+    id: 1,
+    title: 'Landmark Student Council Executive Coaster',
+    organizer: 'Organized by School / Student Council',
+    isSchool: true,
+    category: 'coaster',
+    dest: 'Lagos',
+    destDetail: 'Lagos (Berger, Ikeja & Lekki)',
+    date: '2026-09-26',
+    dateDisplay: 'Fri, 26 Sep 2026',
+    departureTime: '06:30 AM',
+    boardingPoint: 'Senate Car Park / Main Gate',
+    fare: 12500,
+    seatsTotal: 30,
+    seatsRemaining: 12,
+    features: ['Comfortable AC Coaster', 'Guaranteed Luggage Space', 'Security Escort Approved']
+  },
+  {
+    id: 2,
+    title: 'Campus Kulture Luxury AC Coach',
+    organizer: 'Campus Kulture Official Charter',
+    isSchool: false,
+    category: 'coaster',
+    dest: 'Abuja',
+    destDetail: 'Abuja (Utako & Central Area)',
+    date: '2026-09-26',
+    dateDisplay: 'Fri, 26 Sep 2026',
+    departureTime: '06:00 AM',
+    boardingPoint: 'Chapel Plaza Car Park',
+    fare: 14000,
+    seatsTotal: 32,
+    seatsRemaining: 8,
+    features: ['Luxury AC Coach', 'Free WiFi & USB Charging', 'Luggage Space Guaranteed']
+  },
+  {
+    id: 3,
+    title: 'South-West Student Union Coaster',
+    organizer: 'Organized by School / Student Council',
+    isSchool: true,
+    category: 'coaster',
+    dest: 'Ibadan',
+    destDetail: 'Ibadan (Iwo Road & Challenge)',
+    date: '2026-09-26',
+    dateDisplay: 'Fri, 26 Sep 2026',
+    departureTime: '07:00 AM',
+    boardingPoint: 'Senate Car Park',
+    fare: 8500,
+    seatsTotal: 30,
+    seatsRemaining: 16,
+    features: ['Comfortable AC Coaster', 'Direct Non-stop Transit', 'Student Union Verified']
+  },
+  {
+    id: 4,
+    title: 'Delta & Edo Student Express Sienna',
+    organizer: 'Executive Student Charter',
+    isSchool: false,
+    category: 'sienna',
+    dest: 'Benin City',
+    destDetail: 'Benin City (Uselu & Ring Road)',
+    date: '2026-09-26',
+    dateDisplay: 'Fri, 26 Sep 2026',
+    departureTime: '06:45 AM',
+    boardingPoint: 'Commercial Center Car Park',
+    fare: 11000,
+    seatsTotal: 7,
+    seatsRemaining: 3,
+    features: ['Express Sienna', 'AC Fully Operational', 'Express Highway Transit']
+  },
+  {
+    id: 5,
+    title: 'South-South Executive Vacation Coach',
+    organizer: 'Organized by School / Student Council',
+    isSchool: true,
+    category: 'coaster',
+    dest: 'Port Harcourt',
+    destDetail: 'Port Harcourt (Waterlines & GRA)',
+    date: '2026-09-26',
+    dateDisplay: 'Fri, 26 Sep 2026',
+    departureTime: '05:30 AM',
+    boardingPoint: 'Senate Car Park',
+    fare: 18500,
+    seatsTotal: 28,
+    seatsRemaining: 9,
+    features: ['Comfortable AC Coaster', 'Security Escort Approved', 'Guaranteed Luggage Space']
+  },
+  {
+    id: 6,
+    title: 'Kwara Metro Daily Shuttle',
+    organizer: 'Campus Transit Hub',
+    isSchool: false,
+    category: 'sienna',
+    dest: 'Ilorin',
+    destDetail: 'Ilorin (Post Office & Tipper Garage)',
+    date: '2026-09-26',
+    dateDisplay: 'Fri, 26 Sep 2026',
+    departureTime: '08:00 AM',
+    boardingPoint: 'Landmark Main Gate',
+    fare: 3500,
+    seatsTotal: 7,
+    seatsRemaining: 4,
+    features: ['Express Sienna', 'Fast Daily Transit']
+  }
+];
+
+let selectedBusCategory = 'all';
+
+function setBusCategoryFilter(cat, btn) {
+  selectedBusCategory = cat;
+  document.querySelectorAll('#modalBusRideHome .tab-btn-pill').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderBuses();
+}
+
+function filterBuses() {
+  renderBuses();
+}
+
+function renderBuses() {
+  const container = document.getElementById('busListingsContainer');
+  if (!container) return;
+
+  const destFilter = document.getElementById('busDestFilter').value;
+
+  let filtered = busSchedules.filter(b => {
+    if (destFilter !== 'all' && b.dest !== destFilter) return false;
+    if (selectedBusCategory === 'school' && !b.isSchool) return false;
+    if (selectedBusCategory === 'coaster' && b.category !== 'coaster') return false;
+    if (selectedBusCategory === 'sienna' && b.category !== 'sienna') return false;
+    return true;
+  });
+
+  if (!filtered.length) {
+    container.innerHTML = `
+      <div style="text-align:center;padding:32px 16px;color:var(--text-dim);font-size:13px">
+        <div style="font-size:28px;margin-bottom:8px">🚌</div>
+        <b>No student transports found for this selection.</b>
+        <p style="font-size:12px;margin-top:4px">Try selecting "All Destinations" or check other categories.</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = filtered.map(b => {
+    return `
+      <div class="bus-card">
+        <div class="bus-card-header">
+          <div>
+            <div class="bus-organizer">
+              <span>●</span>
+              <span>${b.organizer}</span>
+            </div>
+            <h4 class="bus-title">${b.title}</h4>
+            <div class="bus-route">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+              <span>Landmark Campus → <b>${b.destDetail}</b></span>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <span style="font-size:10.5px;font-weight:700;color:var(--accent);background:rgba(109,40,217,0.1);padding:3px 8px;border-radius:999px">
+              ${b.seatsRemaining} seats left
+            </span>
+          </div>
+        </div>
+
+        <div class="bus-tags-wrap">
+          ${b.isSchool ? `<span class="bus-tag school">🏛 Organized by School / Student Council</span>` : ''}
+          ${b.features.map(f => `<span class="bus-tag comfort">✓ ${f}</span>`).join('')}
+        </div>
+
+        <div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--text-dim);margin-bottom:10px;background:var(--panel);padding:8px 12px;border-radius:10px">
+          <div>🕒 <b>${b.departureTime}</b> (${b.dateDisplay})</div>
+          <div>📍 <b>${b.boardingPoint}</b></div>
+        </div>
+
+        <div class="bus-footer-row">
+          <div class="bus-fare">
+            ₦${b.fare.toLocaleString()} <span>/ seat</span>
+          </div>
+          <button type="button" class="bus-reserve-btn" onclick="reserveBusSeat(${b.id})">
+            Reserve Seat →
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function reserveBusSeat(busId) {
+  const bus = busSchedules.find(b => b.id === busId);
+  if (!bus) return;
+
+  if (bus.seatsRemaining <= 0) {
+    showToast('Sorry, this bus is fully booked.');
+    return;
+  }
+
+  const ticketCode = 'LMU-BUS-' + Math.floor(1000 + Math.random() * 9000);
+  const seatNum = Math.floor(1 + Math.random() * (bus.seatsTotal - 2));
+
+  document.getElementById('ticketIdDisplay').textContent = ticketCode;
+  document.getElementById('ticketBusName').textContent = bus.title;
+  document.getElementById('ticketDestDisplay').textContent = bus.destDetail;
+  document.getElementById('ticketDateTimeDisplay').textContent = `${bus.dateDisplay} • ${bus.departureTime}`;
+  document.getElementById('ticketSeatDisplay').textContent = `Seat #${seatNum} (Reserved)`;
+  document.getElementById('ticketFareDisplay').textContent = `₦${bus.fare.toLocaleString()}`;
+
+  bus.seatsRemaining--;
+
+  transactions.unshift({
+    id: Date.now(),
+    type: 'debit',
+    desc: `Vacation Transit: ${bus.dest} (${ticketCode})`,
+    meta: 'Just now',
+    amount: bus.fare
+  });
+
+  openModal('modalBusTicket');
+  showToast(`Seat reserved on ${bus.title}!`);
+}
+
+// ------------------------------------------------------------------
+// 5. Wallet Funding Flow (Korapay & Flutterwave)
+// ------------------------------------------------------------------
+function selectAmount(amt) {
+  document.getElementById('fundInput').value = amt;
+  renderFeeBreakdown();
+}
+
+function renderFeeBreakdown() {
+  const amt = parseInt(document.getElementById('fundInput').value, 10) || 0;
+  const fee = amt > 0 ? 100 : 0;
+  document.getElementById('feeAmountLine').textContent = `₦${amt.toLocaleString()}`;
+  document.getElementById('feeTotalLine').textContent = `₦${(amt + fee).toLocaleString()}`;
+}
+
+function selectGateway(gw) {
+  selectedGateway = gw;
+  document.getElementById('gwKorapay').style.borderColor = gw === 'korapay' ? 'var(--accent)' : 'var(--line)';
+  document.getElementById('gwFlutterwave').style.borderColor = gw === 'flutterwave' ? 'var(--accent)' : 'var(--line)';
+}
+
+async function submitFunding() {
+  const amt = parseInt(document.getElementById('fundInput').value, 10);
+  if (!amt || amt < 250) {
+    showToast('Minimum funding amount is ₦250');
+    return;
+  }
+
+  closeModal('modalFund');
+  const gwLabel = selectedGateway === 'flutterwave' ? 'Flutterwave' : 'Korapay';
+  document.getElementById('loadingTitle').textContent = `Connecting to ${gwLabel}...`;
+  document.getElementById('loadingSubtitle').textContent = 'Initializing secure transport checkout...';
+  openModal('modalLoading');
+
+  try {
+    const initRes = await fetch('/api/wallet/fund/initialize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...studentHeaders },
+      body: JSON.stringify({ amount: amt, gateway: selectedGateway })
+    });
+
+    const initData = await initRes.json();
+    if (!initRes.ok || !initData.reference) throw new Error(initData.message || 'Initialization failed.');
+
+    document.getElementById('loadingTitle').textContent = 'Processing Payment...';
+    document.getElementById('loadingSubtitle').textContent = `Verifying transaction reference ${initData.reference}...`;
+
+    // Live gateways require the customer to complete checkout on the provider's secure page.
+    if (initData.mode === 'live' && initData.checkoutUrl) {
+      window.location.assign(initData.checkoutUrl);
+      return;
+    }
+
+    await new Promise(r => setTimeout(r, 1200));
+
+    const verifyRes = await fetch('/api/wallet/fund/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...studentHeaders },
+      body: JSON.stringify({ reference: initData.reference, gateway: selectedGateway })
+    });
+
+    const verifyData = await verifyRes.json();
+    closeModal('modalLoading');
+
+    if (verifyRes.ok && verifyData.success) {
+      balance = verifyData.receipt.newBalance;
+      updateBalanceDisplay();
+
+      document.getElementById('rcpDate').textContent = new Date().toLocaleDateString('en-US', {
+        month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
+      });
+      document.getElementById('rcpNumber').textContent = verifyData.receipt.receiptNumber;
+      document.getElementById('rcpRef').textContent = verifyData.receipt.reference;
+      document.getElementById('rcpGateway').textContent = selectedGateway === 'flutterwave' ? 'Flutterwave (Card / USSD)' : 'Korapay Bank Transfer';
+      document.getElementById('rcpRegNo').textContent = STUDENT_REG_NO;
+      document.getElementById('rcpAmount').textContent = `₦${amt.toLocaleString()}`;
+      document.getElementById('rcpTotal').textContent = `₦${(amt + 100).toLocaleString()}`;
+      document.getElementById('rcpNewBalance').textContent = `₦${balance.toLocaleString()}`;
+
+      openModal('modalReceipt');
+      loadBackendWallet();
+    } else {
+      showToast(verifyData.message || 'Payment verification failed.');
+    }
+  } catch (err) {
+    closeModal('modalLoading');
+    showToast(err.message || 'Connection error. Please try again.');
+  }
+}
+
+// ------------------------------------------------------------------
+// 6. Backend Wallet Ledger & History
+// ------------------------------------------------------------------
+async function loadBackendWallet() {
+  try {
+    const res = await fetch('/api/wallet/transactions', { headers: studentHeaders });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.balance !== undefined) { balance = data.balance; updateBalanceDisplay(); }
+      transactions = data.transactions || [];
+    }
+  } catch (e) {}
+}
+
+function renderFullTx() {
+  const container = document.getElementById('fullTx');
+  if (!transactions.length) { container.innerHTML = '<div style="padding:18px;text-align:center;color:var(--text-dim)">No verified wallet transactions yet.</div>'; return; }
+  container.innerHTML = transactions.map(t => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:var(--panel-alt);border-radius:12px">
+      <div>
+        <div style="font-weight:700;font-size:13.5px">${t.desc}</div>
+        <div style="font-size:11.5px;color:var(--text-dim)">${t.meta || 'Recent'} · ${t.status === 'success' ? 'Completed' : t.status === 'pending' ? 'Pending payment' : t.status || 'Pending'}</div>
+      </div>
+      <div style="font-weight:800;color:${t.status !== 'success' ? 'var(--warning)' : (['debit','ride_debit','admin_debit'].includes(t.type) ? 'var(--danger)' : 'var(--success)')}">
+        ${t.status !== 'success' ? '₦' : (['debit','ride_debit','admin_debit'].includes(t.type) ? '-' : '+₦')}${Number(t.amount).toLocaleString()}
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme') || 'light';
+  const next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('zira_theme', next);
+}
+
+function applyAdminModuleOverrides() {
+  // Spotlight
+  if (localStorage.getItem('zira_module_spotlight') === 'false') {
+    const secSpotlight = document.getElementById('sec-campus-spotlight');
+    if (secSpotlight) secSpotlight.style.display = 'none';
+  }
+  // Interstate Bus
+  if (localStorage.getItem('zira_module_bus') === 'false') {
+    const busCard = document.querySelector('.spotlight-card.ridehome');
+    if (busCard) busCard.style.display = 'none';
+  }
+  // Errand Runner
+  if (localStorage.getItem('zira_module_errand') === 'false') {
+    const errandCard = document.querySelector('.spotlight-card.errandrunner');
+    if (errandCard) errandCard.style.display = 'none';
+  }
+}
+
+// ------------------------------------------------------------------
+// Page Initialization
+// ------------------------------------------------------------------
+document.addEventListener('DOMContentLoaded', () => {
+  const hReg = document.getElementById('headerRegNoDisplay');
+  if (hReg) hReg.textContent = STUDENT_REG_NO;
+  const bReg = document.getElementById('regNoDisplay');
+  if (bReg) bReg.textContent = STUDENT_REG_NO;
+  loadStudentProfile();
+  applyAdminModuleOverrides();
+  updateBalanceDisplay();
+  startCarouselAutoplay();
+  loadBackendWallet();
+  fetchNotifications();
+  setInterval(() => fetchNotifications(), 60000);
+  renderBuses();
+  resumeHostedPayment();
+  loadPublicExperience();
+});
+
+async function loadStudentProfile() {
+  try { const res=await fetch('/api/auth/me',{headers:studentHeaders}); if(!res.ok)return; const data=await res.json(); STUDENT_NAME=data.fullName||STUDENT_NAME; STUDENT_REG_NO=data.regNo||STUDENT_REG_NO; balance=Number(data.walletBalance||balance); localStorage.setItem('zira_name',STUDENT_NAME);localStorage.setItem('zira_reg_no',STUDENT_REG_NO);['headerRegNoDisplay','regNoDisplay','profRegNo'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=STUDENT_REG_NO;});const nameEl=document.getElementById('profName'),avatar=document.getElementById('profAvatar');if(nameEl)nameEl.textContent=STUDENT_NAME;if(avatar)avatar.textContent=STUDENT_NAME.charAt(0).toUpperCase();updateBalanceDisplay(); } catch (_) {} }
+
+async function loadPublicExperience() {
+  try {
+    const configRes = await fetch('/api/public/config');
+    const config = configRes.ok ? await configRes.json() : null;
+    if (config) {
+      const title = document.querySelector('.hero-title'), desc = document.querySelector('.hero-desc'), tag = document.querySelector('.hero-tag');
+      if (title && config.heroTitle) title.textContent = config.heroTitle;
+      if (desc && config.heroDesc) desc.textContent = config.heroDesc;
+      if (tag && config.heroTagline) tag.lastChild.textContent = ` ${config.heroTagline}`;
+      const hour=new Date().getHours(), scheduled=config.heroSchedule;
+      const isScheduled=scheduled?.url && Number.isInteger(Number(scheduled.startHour)) && Number.isInteger(Number(scheduled.endHour)) && (Number(scheduled.startHour)<=Number(scheduled.endHour) ? hour>=Number(scheduled.startHour)&&hour<Number(scheduled.endHour) : hour>=Number(scheduled.startHour)||hour<Number(scheduled.endHour));
+      const mediaUrl=isScheduled?scheduled.url:config.heroBannerImage, mediaType=isScheduled?(scheduled.type||config.heroMediaType):(config.heroMediaType||'image');
+      const bg=document.querySelector('.hero-banner-bg-img');
+      if (bg && mediaUrl) { if(mediaType==='video'){bg.innerHTML=`<video autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover"><source src="${mediaUrl}"></video>`;bg.style.backgroundImage='none';}else{bg.innerHTML='';bg.style.backgroundImage=`url("${mediaUrl}")`; } }
+    }
+  } catch (_) { /* App remains usable offline. */ }
+}
+
+async function resumeHostedPayment() {
+  const params = new URLSearchParams(window.location.search);
+  const reference = params.get('paymentRef');
+  const gateway = params.get('gateway');
+  if (!reference || !gateway) return;
+  window.history.replaceState({}, '', window.location.pathname);
+  openModal('modalLoading');
+  document.getElementById('loadingTitle').textContent = 'Confirming payment…';
+  try {
+    const res = await fetch('/api/wallet/fund/verify', { method: 'POST', headers: { 'Content-Type': 'application/json', ...studentHeaders }, body: JSON.stringify({ reference, gateway }) });
+    const data = await res.json();
+    closeModal('modalLoading');
+    if (!res.ok || !data.success) throw new Error(data.message || 'Payment was not confirmed.');
+    balance = data.receipt.newBalance;
+    updateBalanceDisplay();
+    showToast('Payment confirmed and wallet updated.');
+    loadBackendWallet();
+  } catch (err) { closeModal('modalLoading'); showToast(err.message); }
+}
+
+async function sendSupportMessage() {
+  const contact = document.getElementById('supportContact').value.trim();
+  const message = document.getElementById('supportMessage').value.trim();
+  if (!contact || !message) return showToast('Please add your contact and message.');
+  try {
+    const res = await fetch('/api/support/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contact, message, category: document.getElementById('supportCategory').value, role: 'student', studentId: Number(localStorage.getItem('zira_id')) || null, name: localStorage.getItem('zira_name') || 'Student' }) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Could not send your message.');
+    document.getElementById('supportMessage').value=''; showToast(`Message sent. Reference: ${data.ticketId}`); loadSupportThread();
+  } catch (err) { showToast(err.message); }
+}
+async function openLiveAgent() { openModal('modalLiveAgent'); await loadSupportThread(); }
+async function loadSupportThread() { const box=document.getElementById('supportThread');if(!box)return;try { const res=await fetch('/api/support/my',{headers:studentHeaders});const data=await res.json();if(!res.ok)throw new Error();const tickets=data.tickets||[];box.innerHTML=tickets.length?tickets.map(t=>`<div style="padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--panel-alt);font-size:12px"><div style="display:flex;justify-content:space-between;gap:8px"><b>${t.category}</b><span style="color:${t.status==='resolved'?'var(--success)':'var(--accent)'};font-weight:700">${t.status==='resolved'?'Resolved':'Open'}</span></div><div style="margin-top:5px">You: ${t.message}</div>${t.admin_reply?`<div style="margin-top:7px;padding-top:7px;border-top:1px solid var(--line);color:var(--accent)"><b>Support:</b> ${t.admin_reply}</div>`:''}</div>`).join(''):'<span style="font-size:12px;color:var(--text-dim)">No support conversations yet.</span>';}catch(_){box.innerHTML='';} }
+
+// Dismiss splash screen smoothly after load
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    const splash = document.getElementById('splash-screen');
+    if (splash) splash.classList.add('hidden');
+  }, 950);
+});
+</script>
+</body>
+</html>

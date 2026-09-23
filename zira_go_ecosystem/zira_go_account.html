@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Zira Go — Account</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script>
+  (function() {
+    const saved = localStorage.getItem('zira_theme') || 'light';
+    document.documentElement.setAttribute('data-theme', saved);
+  })();
+</script>
+<style>
+  :root, [data-theme="light"] {
+    --bg: #F8F9FD;
+    --panel: #FFFFFF;
+    --panel-alt: #F1F3F9;
+    --line: #E2E8F0;
+    --accent: #7C3AED;
+    --accent-2: #6D28D9;
+    --success: #059669;
+    --danger: #E11D48;
+    --gold: #D97706;
+    --text: #0F172A;
+    --text-dim: #64748B;
+    --card-shadow: 0 10px 30px -4px rgba(0, 0, 0, 0.06), 0 4px 12px -2px rgba(0, 0, 0, 0.03);
+  }
+  [data-theme="dark"] {
+    --bg: #120A24;
+    --panel: #1B1240;
+    --panel-alt: #271A56;
+    --line: #3B2C74;
+    --accent: #8B5CF6;
+    --accent-2: #B79CFB;
+    --success: #34D399;
+    --danger: #FB7185;
+    --gold: #F5B942;
+    --text: #F4F1FB;
+    --text-dim: #A99FCB;
+    --card-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: radial-gradient(circle at 50% -10%, #EDE9FE 0%, var(--bg) 60%);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    min-height: 100vh;
+    transition: background 0.25s, color 0.25s;
+  }
+  [data-theme="dark"] body {
+    background: radial-gradient(circle at 50% -10%, #291658 0%, var(--bg) 60%);
+  }
+  h1, h2, h3, .num, button { font-family: 'Sora', sans-serif; }
+  #app {
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease;
+  }
+  @media (min-width: 768px) {
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 30px 20px;
+    }
+    #app {
+      max-width: 520px;
+      width: 100%;
+      min-height: auto;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+    }
+    [data-theme="dark"] #app {
+      background: rgba(27, 18, 64, 0.65);
+      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.6), 0 0 50px rgba(139, 92, 246, 0.12);
+    }
+  }
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--line);
+  }
+  .brand-lockup {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .logo-circle-badge {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    border-radius: 50%;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3px;
+    box-shadow: 0 4px 14px rgba(124, 58, 237, 0.18), 0 0 0 2px rgba(124, 58, 237, 0.12);
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+  [data-theme="dark"] .logo-circle-badge {
+    box-shadow: 0 4px 14px rgba(139, 92, 246, 0.45), 0 0 0 2px rgba(255, 255, 255, 0.2);
+  }
+  .logo-circle-badge img {
+    width: 92%;
+    height: 92%;
+    object-fit: contain;
+  }
+  .back-btn { background: var(--panel); border: 1px solid var(--line); color: var(--text); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; text-decoration: none; }
+  .back-btn:hover { border-color: var(--accent); background: var(--panel-alt); }
+  header h1 { font-size: 17px; margin: 0; }
+  main { flex: 1; padding: 20px; padding-bottom: 40px; }
+
+  .section-title { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); margin: 26px 0 10px; }
+  .section-title:first-child { margin-top: 0; }
+
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 20px; box-shadow: var(--card-shadow); }
+  .card + .card { margin-top: 12px; }
+  .card h3 { margin: 0 0 4px; font-size: 16px; }
+  .card p.desc { margin: 0 0 16px; color: var(--text-dim); font-size: 13.5px; line-height: 1.5; }
+
+  .status-pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; font-size: 12.5px; font-weight: 600; }
+  .status-pill.linked { background: rgba(5, 150, 105, 0.12); color: var(--success); }
+  .status-pill.unlinked { background: rgba(100, 116, 139, 0.12); color: var(--text-dim); }
+  .status-pill.locked { background: rgba(124, 58, 237, 0.12); color: var(--accent); }
+  .status-pill.pending { background: rgba(217, 119, 6, 0.12); color: var(--gold); }
+
+  label { display: block; font-size: 13px; color: var(--text-dim); margin: 14px 0 6px; }
+  label:first-of-type { margin-top: 2px; }
+  input, select { width: 100%; padding: 13px 14px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--panel-alt); color: var(--text); font-size: 15px; font-family: 'Inter', sans-serif; transition: border-color 0.2s; }
+  input:focus, select:focus { outline: none; border-color: var(--accent); }
+
+  button.primary { width: 100%; padding: 14px; border: none; border-radius: 999px; margin-top: 16px; background: linear-gradient(100deg, var(--accent), var(--accent-2)); color: #FFFFFF; font-weight: 700; font-size: 15px; cursor: pointer; box-shadow: 0 6px 20px rgba(124, 58, 237, 0.25); transition: all 0.2s ease; }
+  button.primary:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(124, 58, 237, 0.35); }
+  button.primary:disabled { opacity: 0.55; cursor: default; }
+  button.secondary { width: 100%; padding: 13px; border-radius: 999px; background: var(--panel-alt); border: 1px solid var(--line); color: var(--text); font-weight: 600; font-size: 14.5px; cursor: pointer; margin-top: 10px; transition: all 0.2s ease; }
+  button.secondary:hover { border-color: var(--accent); }
+
+  .locked-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .locked-row:last-child { border-bottom: none; }
+  .locked-row .k { color: var(--text-dim); }
+  .locked-row .v { font-weight: 600; }
+
+  .lock-note { display: flex; gap: 10px; background: var(--panel-alt); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-top: 14px; font-size: 13px; color: var(--text-dim); line-height: 1.5; }
+  .lock-note .icon { font-size: 16px; }
+
+  .msg-box { border-radius: 12px; padding: 12px 14px; font-size: 13.5px; margin-top: 14px; display: none; }
+  .msg-box.show { display: block; }
+  .msg-box.ok { background: rgba(52,211,153,0.12); border: 1px solid var(--success); color: var(--success); }
+  .msg-box.err { background: rgba(251,113,133,0.12); border: 1px solid var(--danger); color: var(--danger); }
+
+  .code-box { text-align: center; padding: 18px 0 6px; }
+  .code-box .code { font-size: 30px; font-weight: 800; letter-spacing: 0.08em; color: var(--accent-2); margin-bottom: 4px; }
+  .code-box .ttl { font-size: 12.5px; color: var(--text-dim); }
+  a.deep-link { display: block; text-align: center; margin-top: 14px; padding: 13px; border-radius: 999px; background: var(--panel-alt); border: 1px solid var(--line); color: var(--text); font-weight: 600; font-size: 14.5px; text-decoration: none; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div style="display:flex;align-items:center;gap:12px">
+      <a class="back-btn" href="#" onclick="goBack()">←</a>
+      <div class="brand-lockup">
+        <div class="logo-circle-badge">
+          <img src="zira_go_logo.png" alt="Zira Go Logo">
+        </div>
+        <div>
+          <h1 style="margin:0;font-size:17px">Account & Payouts</h1>
+          <span style="font-size:10.5px;color:var(--accent-2);font-weight:600">DRIVER WITHDRAWAL & TELEGRAM</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="section-title">Telegram</div>
+    <div class="card">
+      <h3>Link your Telegram <span id="tgStatus" class="status-pill unlinked">Not linked</span></h3>
+      <p class="desc" id="tgDesc">Link Telegram to get instant ride alerts and — if you're a student — generate ride codes without opening this app.</p>
+
+      <div id="tgUnlinkedView">
+        <button class="primary" onclick="generateLinkCode()">Generate link code</button>
+        <div id="tgCodeBox" style="display:none">
+          <div class="code-box">
+            <div class="code" id="tgCode">------</div>
+            <div class="ttl" id="tgTtl">Expires in 10:00</div>
+          </div>
+          <a class="deep-link" id="tgDeepLink" href="#" target="_blank">Open in Telegram →</a>
+        </div>
+      </div>
+      <div id="tgLinkedView" style="display:none">
+        <div class="locked-row"><span class="k">Status</span><span class="v">Connected</span></div>
+      </div>
+      <div class="msg-box" id="tgMsg"></div>
+    </div>
+
+    <div class="section-title">Bank account</div>
+    <div class="card" id="bankCard">
+      <!-- rendered by renderBankSection() -->
+    </div>
+  </main>
+</div>
+
+<script>
+  // DEMO_MODE mirrors the driver panel / student wallet pattern — flip to false
+  // and point API_BASE at your real server once this is deployed.
+  // Account and payout settings always use the authenticated live API.
+  const DEMO_MODE = false;
+  const API_BASE = '/api';
+
+  const token = localStorage.getItem('zira_token');
+  const role = localStorage.getItem('zira_role') || 'student'; // 'student' | 'driver'
+  const BOT_USERNAME = 'zirago_bot'; // Keep this aligned with TELEGRAM_BOT_USERNAME in .env.
+
+  if (!DEMO_MODE && !token) {
+    window.location.href = 'zira_go_login.html';
+  }
+
+  function goBack() {
+    window.location.href = role === 'student' ? 'zira_go_student_wallet.html' : 'zira_go_driver_panel.html';
+  }
+
+  function authHeaders() {
+    return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+  }
+
+  // ---------------- Telegram linking ----------------
+  let tgTimer = null;
+
+  async function generateLinkCode() {
+    document.getElementById('tgMsg').classList.remove('show');
+    if (DEMO_MODE) {
+      showLinkCode('482913', 600);
+      return;
+    }
+    try {
+      const res = await fetch(`${API_BASE}/telegram/link-code`, { method: 'POST', headers: authHeaders() });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Could not generate a code.');
+      showLinkCode(data.code, data.ttlSeconds || 600, data.deepLink);
+    } catch (err) {
+      showMsg('tgMsg', 'err', err.message);
+    }
+  }
+
+  function showLinkCode(code, ttlSeconds, deepLink) {
+    document.getElementById('tgCodeBox').style.display = 'block';
+    document.getElementById('tgCode').textContent = code;
+    document.getElementById('tgDeepLink').href = deepLink || `https://t.me/${BOT_USERNAME}?start=${code}`;
+    let remaining = ttlSeconds;
+    clearInterval(tgTimer);
+    const tick = () => {
+      const m = Math.floor(remaining / 60), s = remaining % 60;
+      document.getElementById('tgTtl').textContent = `Expires in ${m}:${String(s).padStart(2, '0')}`;
+      if (remaining <= 0) { clearInterval(tgTimer); document.getElementById('tgCodeBox').style.display = 'none'; }
+      remaining--;
+    };
+    tick();
+    tgTimer = setInterval(tick, 1000);
+  }
+
+  async function loadTelegramStatus() {
+    if (DEMO_MODE) return; // demo starts unlinked
+    try {
+      const res = await fetch(`${API_BASE}/telegram/status`, { headers: authHeaders() });
+      const data = await res.json();
+      if (data.linked) {
+        document.getElementById('tgStatus').textContent = 'Linked';
+        document.getElementById('tgStatus').className = 'status-pill linked';
+        document.getElementById('tgUnlinkedView').style.display = 'none';
+        document.getElementById('tgLinkedView').style.display = 'block';
+      }
+    } catch (err) { /* non-fatal — leave the unlinked view up */ }
+  }
+
+  // ---------------- Bank account ----------------
+  let bankState = DEMO_MODE
+    ? { bank_locked: false, bank_account_name: null, bank_name: null, bank_account_number: null, pendingRequest: null }
+    : null;
+  let liveBanks = [];
+  function bankOptions(selected = '') { return `<option value="">Select your bank</option>${liveBanks.map(b => `<option value="${b.code}" ${b.code===selected?'selected':''}>${b.name}</option>`).join('')}`; }
+
+  async function loadLiveBanks() {
+    try { const res = await fetch(`${API_BASE}/bank/banks`, { headers: authHeaders() }); const data=await res.json(); if (!res.ok) throw new Error(data.message || 'Could not load banks'); liveBanks=data.banks||[]; if (!liveBanks.length) throw new Error('No banks were returned'); }
+    catch (err) { liveBanks=[]; console.warn('[Live bank list]', err.message); }
+  }
+
+  async function loadBankState() {
+    if (DEMO_MODE) return renderBankSection();
+    try {
+      const [accRes, statusRes] = await Promise.all([
+        fetch(`${API_BASE}/bank/account`, { headers: authHeaders() }),
+        fetch(`${API_BASE}/bank/change-request/status`, { headers: authHeaders() })
+      ]);
+      const acc = await accRes.json();
+      const pendingRequest = await statusRes.json();
+      bankState = { ...acc, pendingRequest: (pendingRequest && pendingRequest.status === 'pending') ? pendingRequest : null };
+    } catch (err) {
+      bankState = { bank_locked: false, error: true };
+    }
+    renderBankSection();
+  }
+
+  function renderBankSection() {
+    const card = document.getElementById('bankCard');
+    const s = bankState;
+
+    if (s.pendingRequest) {
+      card.innerHTML = `
+        <h3>Bank account <span class="status-pill pending">Change pending</span></h3>
+        <p class="desc">Your request to update this account is being reviewed by a ZiraGo admin. You'll be notified once it's decided.</p>
+        <div class="locked-row"><span class="k">Requested bank</span><span class="v">${s.pendingRequest.requested_bank_name}</span></div>
+        <div class="locked-row"><span class="k">Requested account</span><span class="v">••••${String(s.pendingRequest.requested_account_number).slice(-4)}</span></div>
+        <div class="locked-row"><span class="k">Submitted</span><span class="v">${new Date(s.pendingRequest.created_at).toLocaleDateString()}</span></div>
+      `;
+      return;
+    }
+
+    if (s.bank_locked) {
+      card.innerHTML = `
+        <h3>Bank account <span class="status-pill locked">Verified & locked</span></h3>
+        <p class="desc">This is where your ride earnings and withdrawals go. The name below was verified directly with your bank and can't be edited here.</p>
+        <div class="locked-row"><span class="k">Account name</span><span class="v">${s.bank_account_name}</span></div>
+        <div class="locked-row"><span class="k">Bank</span><span class="v">${s.bank_name}</span></div>
+        <div class="locked-row"><span class="k">Account number</span><span class="v">••••${String(s.bank_account_number).slice(-4)}</span></div>
+        <div class="lock-note"><span class="icon">🔒</span><span>Need to change it? Submit a request below — a ZiraGo admin reviews every change before it takes effect, so no one can quietly redirect your payouts.</span></div>
+        <button class="secondary" onclick="showChangeRequestForm()">Request a change</button>
+        <div id="changeRequestForm" style="display:none">${changeRequestFormHtml()}</div>
+        <div class="msg-box" id="bankMsg"></div>
+      `;
+      return;
+    }
+
+    card.innerHTML = `
+      <h3>Bank account <span class="status-pill unlinked">Not verified</span></h3>
+      <p class="desc">Add the account your ride earnings should go to. We verify it with your bank first — once verified, the name is locked to protect your payouts.</p>
+      ${verifyFormHtml()}
+      <div class="msg-box" id="bankMsg"></div>
+    `;
+  }
+
+  function verifyFormHtml() {
+    return `
+      <label>Bank</label>
+      <select id="bankName" ${liveBanks.length?'':'disabled'}>${liveBanks.length ? bankOptions() : '<option>Live banks unavailable — reload to try again</option>'}</select>
+      <label>Account number</label>
+      <input type="text" id="accountNumber" inputmode="numeric" maxlength="10" placeholder="10-digit NUBAN">
+      <button class="primary" id="verifyBtn" onclick="resolveAccountForConfirmation()">Verify account details</button>
+      <div id="bankConfirmation" style="display:none"></div>
+    `;
+  }
+
+  function changeRequestFormHtml() {
+    return `
+      <label style="margin-top:16px">New bank</label>
+      <select id="crBankName" ${liveBanks.length?'':'disabled'}>${liveBanks.length ? bankOptions() : '<option>Live banks unavailable — reload to try again</option>'}</select>
+      <label>New account number</label>
+      <input type="text" id="crAccountNumber" inputmode="numeric" maxlength="10" placeholder="10-digit NUBAN">
+      <label>Reason for change</label>
+      <input type="text" id="crReason" placeholder="e.g. old account closed">
+      <button class="primary" onclick="submitChangeRequest()">Submit for admin review</button>
+    `;
+  }
+
+  function showChangeRequestForm() {
+    document.getElementById('changeRequestForm').style.display = 'block';
+  }
+
+  async function resolveAccountForConfirmation() {
+    const bankSelect = document.getElementById('bankName');
+    const bankCode = bankSelect.value;
+    const bankLabel = bankSelect.options[bankSelect.selectedIndex]?.text;
+    const accountNumber = document.getElementById('accountNumber').value.trim();
+
+    if (!bankCode || accountNumber.length !== 10) {
+      showMsg('bankMsg', 'err', 'Select a bank and enter a valid 10-digit account number.');
+      return;
+    }
+
+    const btn = document.getElementById('verifyBtn');
+    btn.disabled = true; btn.textContent = 'Checking bank details…';
+
+    if (DEMO_MODE) {
+      setTimeout(() => {
+        bankState = { bank_locked: true, bank_account_name: 'ADEYEMI VICTOR O.', bank_name: bankLabel, bank_account_number: accountNumber, pendingRequest: null };
+        renderBankSection();
+      }, 900);
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/bank/resolve`, {
+        method: 'POST', headers: authHeaders(),
+        body: JSON.stringify({ accountNumber, bankCode, bankName: bankLabel })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Verification failed.');
+      document.getElementById('bankConfirmation').innerHTML=`<div style="margin-top:14px;padding:14px;border:1px solid var(--success);border-radius:12px;background:rgba(5,150,105,.08)"><div style="font-size:11px;font-weight:800;color:var(--success);text-transform:uppercase;letter-spacing:.06em">Bank details verified</div><div style="font-size:15px;font-weight:800;margin-top:6px">${data.accountName}</div><div style="font-size:12px;color:var(--text-dim);margin-top:3px">${data.bankName} · ••••${data.accountNumber.slice(-4)}</div><p style="font-size:12px;line-height:1.45;color:var(--text-dim);margin:10px 0 0">Confirm that this is your account. Once saved, payout details are locked for your protection.</p><button class="primary" style="margin-top:12px" onclick="confirmVerifiedAccount('${data.accountNumber}','${data.bankCode}','${data.bankName.replace(/'/g,"&#39;")}')">Confirm &amp; save payout account</button></div>`;
+      btn.style.display='none';
+    } catch (err) {
+      showMsg('bankMsg', 'err', err.message);
+      btn.disabled = false; btn.textContent = 'Verify account details';
+    }
+  }
+
+  async function confirmVerifiedAccount(accountNumber, bankCode, bankName) { const box=document.getElementById('bankConfirmation');const button=box.querySelector('button');button.disabled=true;button.textContent='Saving securely…';try { const res=await fetch(`${API_BASE}/bank/verify`,{method:'POST',headers:authHeaders(),body:JSON.stringify({accountNumber,bankCode,bankName,confirmed:true})});const data=await res.json();if(!res.ok)throw new Error(data.message||'Could not save the account.');await loadBankState(); } catch(err) { showMsg('bankMsg','err',err.message);button.disabled=false;button.textContent='Confirm & save payout account'; } }
+
+  async function submitChangeRequest() {
+    const bankSelect = document.getElementById('crBankName');
+    const bankCode = bankSelect.value;
+    const bankLabel = bankSelect.options[bankSelect.selectedIndex]?.text;
+    const accountNumber = document.getElementById('crAccountNumber').value.trim();
+    const reason = document.getElementById('crReason').value.trim();
+
+    if (!bankCode || accountNumber.length !== 10) {
+      showMsg('bankMsg', 'err', 'Select a bank and enter a valid 10-digit account number.');
+      return;
+    }
+
+    if (DEMO_MODE) {
+      bankState.pendingRequest = { requested_bank_name: bankLabel, requested_account_number: accountNumber, created_at: new Date().toISOString(), status: 'pending' };
+      renderBankSection();
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/bank/change-request`, {
+        method: 'POST', headers: authHeaders(),
+        body: JSON.stringify({ accountNumber, bankCode, bankName: bankLabel, reason })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Could not submit the request.');
+      await loadBankState();
+    } catch (err) {
+      showMsg('bankMsg', 'err', err.message);
+    }
+  }
+
+  function showMsg(id, kind, text) {
+    const box = document.getElementById(id);
+    if (!box) return;
+    box.textContent = text;
+    box.className = `msg-box show ${kind}`;
+  }
+
+  function goBack() {
+    const role = localStorage.getItem('zira_role');
+    if (role === 'driver') {
+      window.location.href = 'zira_go_driver_panel.html';
+    } else if (role === 'admin') {
+      window.location.href = 'zira_go_admin.html';
+    } else {
+      window.location.href = 'zira_go_student_wallet.html';
+    }
+  }
+
+  loadTelegramStatus();
+  (async () => { await loadLiveBanks(); await loadBankState(); })();
+</script>
+</body>
+</html>

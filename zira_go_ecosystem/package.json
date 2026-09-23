@@ -1,0 +1,23 @@
+{
+  "name": "zira-go-backend",
+  "version": "1.0.0",
+  "description": "Zira Go — trip charges, auth, bank verification, and Telegram bot routes for ZiraPay campus transport",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "migrate": "node migrate.js",
+    "seed:admin": "node seed_admin.js"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "dotenv": "^17.4.2",
+    "express": "^4.19.2",
+    "express-rate-limit": "^8.7.0",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.4.0",
+    "node-telegram-bot-api": "^0.66.0",
+    "nodemailer": "^10.0.10",
+    "pg": "^8.11.5"
+  }
+}
