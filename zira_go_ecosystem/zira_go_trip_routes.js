@@ -420,6 +420,37 @@ router.post('/:id/charge/code', requireAuth, requireRole('driver'), async (req, 
                 notifyDriverFlagged(driverId).catch(err => console.error('notifyDriverFlagged failed:', err));
                 return res.status(403).json({ error: 'driver_flagged', message: 'Too many wrong codes in a row. Contact support.' });
             }
+
+            // The active-code lookup above only matches status='active'. A code
+            // that was already redeemed (student already boarded with it) or
+            // that expired both fall through to that same miss, which used to
+            // report "invalid_or_expired_code" for all three cases — showing
+            // "Code not recognized" even when the real reason was that this
+            // passenger already used this code for this ride. Look the code up
+            // again with no status/expiry filter so we can report what actually
+            // happened instead of guessing.
+            const anyCode = await pool.query(
+                `SELECT oc.id, oc.status, oc.expires_at, oc.student_id, s.reg_no
+                 FROM one_time_codes oc JOIN students s ON s.id = oc.student_id
+                 WHERE oc.code_hash = $1 ORDER BY oc.created_at DESC LIMIT 1`,
+                [codeHash]
+            );
+            if (anyCode.rows.length) {
+                const found = anyCode.rows[0];
+                if (found.status === 'redeemed') {
+                    const alreadyOnThisTrip = await pool.query(
+                        `SELECT id FROM trip_charges WHERE trip_session_id = $1 AND student_id = $2 AND status = 'success'`,
+                        [tripSessionId, found.student_id]
+                    );
+                    if (alreadyOnThisTrip.rows.length) {
+                        return res.status(409).json({ error: 'student_already_charged', message: `${found.reg_no} already used for this ride.` });
+                    }
+                    return res.status(409).json({ error: 'code_already_used', message: 'This code has already been used. Ask the student for a new one.' });
+                }
+                if (found.status === 'expired' || new Date(found.expires_at) <= new Date()) {
+                    return res.status(404).json({ error: 'code_expired', message: 'This code has expired. Ask the student to generate a new one.' });
+                }
+            }
             return res.status(404).json({ error: 'invalid_or_expired_code' });
         }
 

@@ -21,6 +21,16 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const TOKEN_TTL = '7d';
 const BCRYPT_ROUNDS = 12;
 
+// Same self-heal as the other two route files — drivers.trip_close_pin_hash
+// is now written at registration time here too, so make sure it exists
+// regardless of which module happens to load first. IF NOT EXISTS is safe
+// to run from all three.
+(async () => {
+    try { await pool.query('ALTER TABLE drivers ADD COLUMN IF NOT EXISTS trip_close_pin_hash TEXT'); }
+    catch (err) { console.warn('[Driver close PIN schema]', err.message); }
+})();
+
+
 function signToken(payload) {
     return jwt.sign(payload, JWT_SECRET, { expiresIn: TOKEN_TTL });
 }
@@ -207,13 +217,16 @@ router.post('/register/student', async (req, res) => {
 
 // ------------------------------------------------------------------
 // POST /api/auth/register/driver
-// body: { email, password, fullName }
+// body: { email, password, fullName, tripClosePin }
 // ------------------------------------------------------------------
 router.post('/register/driver', async (req, res) => {
   try {
-    const { email, password, fullName } = req.body;
+    const { email, password, fullName, tripClosePin } = req.body;
     if (!email || !password || !fullName) {
         return res.status(400).json({ error: 'missing_fields', message: 'email, password, and fullName are all required.' });
+    }
+    if (!/^\d{4}$/.test(String(tripClosePin || ''))) {
+        return res.status(400).json({ error: 'invalid_trip_close_pin', message: 'Choose a 4-digit trip-close PIN.' });
     }
 
     const cleanEmail = email.trim().toLowerCase();
@@ -231,10 +244,11 @@ router.post('/register/driver', async (req, res) => {
     }
 
     const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+    const closePinHash = await bcrypt.hash(String(tripClosePin), BCRYPT_ROUNDS);
     const result = await pool.query(
-        `INSERT INTO drivers (email, password_hash, full_name, wallet_balance)
-         VALUES ($1, $2, $3, 0) RETURNING id`,
-        [email, passwordHash, fullName]
+        `INSERT INTO drivers (email, password_hash, full_name, wallet_balance, trip_close_pin_hash)
+         VALUES ($1, $2, $3, 0, $4) RETURNING id`,
+        [email, passwordHash, fullName, closePinHash]
     );
 
     const token = signToken({ id: result.rows[0].id, role: 'driver' });

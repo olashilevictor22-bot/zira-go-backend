@@ -246,6 +246,12 @@
         <div class="hint">Used only to authorize ride charges — different from your login password.</div>
       </div>
 
+      <div id="fieldDriverPinOnly" style="display:none">
+        <label>4-digit trip-close PIN</label>
+        <input type="text" id="driverTripPin" inputmode="numeric" maxlength="4" placeholder="••••">
+        <div class="hint">You'll enter this to close out a trip session. Keep it separate from your login password.</div>
+      </div>
+
       <div id="consentBox" class="consent-box">
         <label class="consent-item"><input type="checkbox" id="agreeLandmark"><span>I confirm this is a <b>Landmark University</b> campus account and that the details I provide are mine.</span></label>
         <label class="consent-item"><input type="checkbox" id="agreeTerms"><span>I agree to the <a href="#" class="inline-link" onclick="openTerms(event)">Terms &amp; Conditions</a> and privacy requirements.</span></label>
@@ -306,6 +312,7 @@
     document.getElementById('fieldsRegisterOnly').style.display = isRegister ? 'block' : 'none';
     document.getElementById('fieldRegNo').style.display = (isRegister && role === 'student') ? 'block' : 'none';
     document.getElementById('fieldPinOnly').style.display = (isRegister && role === 'student') ? 'block' : 'none';
+    document.getElementById('fieldDriverPinOnly').style.display = (isRegister && role === 'driver') ? 'block' : 'none';
     document.getElementById('pwHint').style.display = isRegister ? 'block' : 'none';
     document.getElementById('btnSendOtp').style.display = isRegister ? 'block' : 'none';
     document.getElementById('boxOtpVerify').style.display = isRegister ? 'block' : 'none';
@@ -416,6 +423,10 @@
       showError('Please confirm your Landmark University account and agree to the Terms & Conditions.');
       return;
     }
+    if (mode === 'register' && role === 'driver' && !/^\d{4}$/.test(document.getElementById('driverTripPin').value.trim())) {
+      showError('Enter a 4-digit trip-close PIN.');
+      return;
+    }
 
     const btn = document.getElementById('submitBtn');
     btn.disabled = true;
@@ -443,7 +454,8 @@
           : {
               email: document.getElementById('email').value.trim(),
               password: document.getElementById('password').value,
-              fullName: document.getElementById('fullName').value.trim()
+              fullName: document.getElementById('fullName').value.trim(),
+              tripClosePin: document.getElementById('driverTripPin').value.trim()
             };
         res = await fetch(`${API_BASE}${path}`, {
           method: 'POST',

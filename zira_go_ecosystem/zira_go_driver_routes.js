@@ -13,6 +13,15 @@ function generateReceiptNumber() {
     return `ZG-WTH-${dateStr}-${rand}`;
 }
 
+// Defensive duplicate of the self-heal in zira_go_trip_routes.js — this
+// route's profile query now reads trip_close_pin_hash too, and module
+// load order isn't guaranteed, so don't depend on the other file's IIFE
+// having finished first. IF NOT EXISTS makes running it twice harmless.
+(async () => {
+    try { await pool.query('ALTER TABLE drivers ADD COLUMN IF NOT EXISTS trip_close_pin_hash TEXT'); }
+    catch (err) { console.warn('[Driver close PIN schema]', err.message); }
+})();
+
 // ------------------------------------------------------------------
 // GET /api/driver/profile — Get driver info, balance, and bank status
 // ------------------------------------------------------------------
@@ -21,7 +30,8 @@ router.get('/profile', requireAuth, requireRole('driver'), async (req, res) => {
         const driverId = req.auth.id;
         const result = await pool.query(
             `SELECT id, full_name, email, wallet_balance, bank_code, bank_name,
-                    bank_account_number, bank_account_name, bank_locked, is_flagged
+                    bank_account_number, bank_account_name, bank_locked, is_flagged,
+                    trip_close_pin_hash
              FROM drivers
              WHERE id = $1`,
             [driverId]
@@ -39,7 +49,8 @@ router.get('/profile', requireAuth, requireRole('driver'), async (req, res) => {
             accountNumber: d.bank_account_number,
             accountName: d.bank_account_name,
             bankLocked: Boolean(d.bank_locked),
-            isFlagged: Boolean(d.is_flagged)
+            isFlagged: Boolean(d.is_flagged),
+            hasTripClosePin: Boolean(d.trip_close_pin_hash)
         });
     } catch (err) {
         console.error('[Driver Profile Error]', err);

@@ -788,8 +788,8 @@
         <button class="settings-option" onclick="openRefundModal()"><span class="icon">↩</span><span><b>Refund passenger</b><small style="display:block;color:var(--text-dim);font-weight:400;margin-top:2px">Return a completed ride fare by registration number</small></span></button>
       </div>
     </div>
-    <div class="modal-overlay" id="modalCloseTrip"><div class="modal-card"><div class="modal-header"><h3 style="margin:0">Close active trip</h3><button class="modal-close" onclick="closeModal('modalCloseTrip')">✕</button></div><p style="font-size:13px;color:var(--text-dim)">Enter your 4-digit trip-close PIN to end this session.</p><input id="closeTripPin" type="password" inputmode="numeric" maxlength="4" placeholder="••••"><button class="danger-outline" style="margin-top:12px;width:100%" onclick="closeTripWithPin()">Confirm and close trip</button></div></div>
-    <div class="modal-overlay" id="modalDriverPin"><div class="modal-card"><div class="modal-header"><h3 style="margin:0">Set trip-close PIN</h3><button class="modal-close" onclick="closeModal('modalDriverPin')">✕</button></div><p style="font-size:13px;color:var(--text-dim)">This separate 4-digit PIN protects trip closure. Do not share it.</p><input id="driverClosePin" type="password" inputmode="numeric" maxlength="4" placeholder="4-digit PIN"><button class="primary" style="margin-top:12px;width:100%" onclick="saveDriverClosePin()">Save trip-close PIN</button></div></div>
+    <div class="modal-overlay" id="modalCloseTrip"><div class="modal-card"><div class="modal-header"><h3 style="margin:0">Close active trip</h3><button class="modal-close" onclick="closeModal('modalCloseTrip')">✕</button></div><div class="pin-shell" style="padding-top:4px"><p style="font-size:13px;color:var(--text-dim);margin:0 0 18px">Enter your 4-digit trip-close PIN to end this session.</p><div class="pin-dots" id="closeTripPinDots"><span></span><span></span><span></span><span></span></div><div class="keypad" id="closeTripKeypad"></div><div id="closeTripError" style="min-height:18px;color:#e11d48;font-size:12px;font-weight:700;margin-top:10px"></div></div></div></div>
+    <div class="modal-overlay" id="modalDriverPin"><div class="modal-card"><div class="modal-header"><h3 style="margin:0">Set trip-close PIN</h3><button class="modal-close" onclick="closeModal('modalDriverPin')">✕</button></div><div class="pin-shell" style="padding-top:4px"><p style="font-size:13px;color:var(--text-dim);margin:0 0 18px" id="setClosePinHint">Choose a 4-digit PIN. It's separate from your login password — do not share it.</p><div class="pin-dots" id="setClosePinDots"><span></span><span></span><span></span><span></span></div><div class="keypad" id="setClosePinKeypad"></div></div></div></div>
     <div class="modal-overlay" id="modalRefund"><div class="modal-card"><div class="modal-header"><h3 style="margin:0">Refund passenger</h3><button class="modal-close" onclick="closeModal('modalRefund')">✕</button></div><p style="font-size:13px;color:var(--text-dim)">Refunds are deducted from your driver wallet and sent immediately to the student.</p><label>Student registration number</label><input id="refundRegNo" placeholder="LMU/23/01030"><label>Refund amount (₦)</label><input id="refundAmount" type="number" min="1" placeholder="0"><label>Reason</label><textarea id="refundReason" rows="3" placeholder="Why is this ride being refunded?"></textarea><button class="primary" style="margin-top:12px;width:100%" onclick="submitRideRefund()">Refund to student wallet</button></div></div>
     <div class="modal-overlay" id="modalDriverNotifications"><div class="modal-card"><div class="modal-header"><h3 style="margin:0">Notifications</h3><button class="modal-close" onclick="closeModal('modalDriverNotifications')">✕</button></div><div id="driverNotificationList">Loading…</div></div></div>
     <div class="modal-overlay" id="modalDriverNotificationPopup"><div class="modal-card" style="max-width:430px;overflow:hidden"><button class="modal-close" onclick="dismissDriverNotificationPopup()" style="position:absolute;right:14px;top:14px;z-index:2;background:rgba(255,255,255,.9)">✕</button><img id="driverNotificationPopupImage" alt="Notification banner" style="display:none;width:100%;max-height:220px;object-fit:cover"><div style="padding:20px"><div style="font-size:11px;font-weight:800;color:var(--accent);text-transform:uppercase;margin-bottom:7px">Campus update</div><h3 id="driverNotificationPopupTitle" style="margin:0 0 8px"></h3><p id="driverNotificationPopupBody" style="margin:0;color:var(--text-dim);line-height:1.5;white-space:pre-line"></p><div style="display:flex;gap:8px;margin-top:18px"><button class="secondary" style="flex:1" onclick="dismissDriverNotificationPopup()">Later</button><button class="primary" style="flex:1" onclick="readCurrentDriverNotification()">Mark as read</button></div></div></div></div>
@@ -872,9 +872,61 @@ async function startTrip(mode) {
   showScreen('dashboard');
 }
 
-function openCloseTripModal() { if(!trip)return; document.getElementById('closeTripPin').value='';openModal('modalCloseTrip'); }
+// Shared numeric keypad builder for any modal PIN pad (distinct from the
+// reg-no charge flow's #keypad/#pinDots, which are a separate full-screen pad).
+function buildGenericKeypad(keypadId, onKey) {
+  const keys = ['1','2','3','4','5','6','7','8','9','','0','⌫'];
+  const kp = document.getElementById(keypadId);
+  kp.innerHTML = '';
+  keys.forEach(k => {
+    const btn = document.createElement('button');
+    if (k === '') { btn.className = 'ghost'; btn.disabled = true; }
+    else { btn.textContent = k; btn.onclick = () => onKey(k); }
+    kp.appendChild(btn);
+  });
+}
+function renderDotsFor(dotsId, length) {
+  document.querySelectorAll(`#${dotsId} span`).forEach((dot, i) => dot.classList.toggle('filled', i < length));
+}
+
+let closeTripPinBuffer = '';
+function openCloseTripModal() {
+  if (!trip) return;
+  // Don't show a pad that's guaranteed to fail — if this driver has never set
+  // a trip-close PIN, send them straight to setting one instead.
+  if (!DEMO_MODE && currentDriver && !currentDriver.hasTripClosePin) {
+    panelNotice("You haven't set a trip-close PIN yet — set one now to close trips.");
+    openDriverPinModal();
+    return;
+  }
+  closeTripPinBuffer = '';
+  document.getElementById('closeTripError').textContent = '';
+  renderDotsFor('closeTripPinDots', 0);
+  buildGenericKeypad('closeTripKeypad', handleCloseTripKey);
+  openModal('modalCloseTrip');
+}
+function handleCloseTripKey(k) {
+  if (k === '⌫') { closeTripPinBuffer = closeTripPinBuffer.slice(0, -1); renderDotsFor('closeTripPinDots', closeTripPinBuffer.length); return; }
+  if (closeTripPinBuffer.length >= 4) return;
+  closeTripPinBuffer += k;
+  renderDotsFor('closeTripPinDots', closeTripPinBuffer.length);
+  if (closeTripPinBuffer.length === 4) setTimeout(closeTripWithPin, 150);
+}
 async function closeTripWithPin() {
-  if (!DEMO_MODE) { const res=await fetch(`${API_BASE}/${trip.id}/close`, { method: 'POST', headers: {'Content-Type':'application/json','Authorization': `Bearer ${AUTH_TOKEN}`},body:JSON.stringify({pin:document.getElementById('closeTripPin').value}) });const data=await res.json();if(!res.ok)return panelNotice(data.message||'Could not close trip.'); }
+  if (!DEMO_MODE) {
+    const res = await fetch(`${API_BASE}/${trip.id}/close`, { method: 'POST', headers: {'Content-Type':'application/json','Authorization': `Bearer ${AUTH_TOKEN}`}, body: JSON.stringify({ pin: closeTripPinBuffer }) });
+    const data = await res.json();
+    if (!res.ok) {
+      closeTripPinBuffer = '';
+      renderDotsFor('closeTripPinDots', 0);
+      document.getElementById('closeTripError').textContent = data.message || 'Could not close trip.';
+      const shell = document.querySelector('#modalCloseTrip .pin-shell');
+      shell?.classList.add('shake');
+      setTimeout(() => shell?.classList.remove('shake'), 400);
+      if (data.error === 'close_pin_not_set') { closeModal('modalCloseTrip'); openDriverPinModal(); }
+      return;
+    }
+  }
   closeModal('modalCloseTrip');
   openTrips=openTrips.filter(item=>String(item.id)!==String(trip.id));
   trip = null;
@@ -882,8 +934,38 @@ async function closeTripWithPin() {
   showScreen('start');
 }
 
-function openDriverPinModal(){openModal('modalDriverPin');}
-async function saveDriverClosePin(){const pin=document.getElementById('driverClosePin').value;try{const res=await fetch(`${API_BASE}/close-pin`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${AUTH_TOKEN}`},body:JSON.stringify({pin})});const data=await res.json();if(!res.ok)throw new Error(data.message);closeModal('modalDriverPin');panelNotice('Trip-close PIN saved.');}catch(e){panelNotice(e.message||'Could not save PIN.');}}
+let setClosePinBuffer = '';
+function openDriverPinModal() {
+  setClosePinBuffer = '';
+  document.getElementById('setClosePinHint').textContent = (currentDriver && !currentDriver.hasTripClosePin)
+    ? "You don't have a trip-close PIN yet — set one now so you can close trips."
+    : "Choose a 4-digit PIN. It's separate from your login password — do not share it.";
+  renderDotsFor('setClosePinDots', 0);
+  buildGenericKeypad('setClosePinKeypad', handleSetClosePinKey);
+  openModal('modalDriverPin');
+}
+function handleSetClosePinKey(k) {
+  if (k === '⌫') { setClosePinBuffer = setClosePinBuffer.slice(0, -1); renderDotsFor('setClosePinDots', setClosePinBuffer.length); return; }
+  if (setClosePinBuffer.length >= 4) return;
+  setClosePinBuffer += k;
+  renderDotsFor('setClosePinDots', setClosePinBuffer.length);
+  if (setClosePinBuffer.length === 4) setTimeout(saveDriverClosePin, 150);
+}
+async function saveDriverClosePin() {
+  const pin = setClosePinBuffer;
+  try {
+    const res = await fetch(`${API_BASE}/close-pin`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${AUTH_TOKEN}`},body:JSON.stringify({pin})});
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message);
+    if (currentDriver) currentDriver.hasTripClosePin = true;
+    closeModal('modalDriverPin');
+    panelNotice('Trip-close PIN saved.');
+  } catch(e) {
+    setClosePinBuffer = '';
+    renderDotsFor('setClosePinDots', 0);
+    panelNotice(e.message || 'Could not save PIN.');
+  }
+}
 function openRefundModal(){closeModal('modalDriverSettings');openModal('modalRefund');}
 async function submitRideRefund(){const regNo=document.getElementById('refundRegNo').value.trim(),amount=Number(document.getElementById('refundAmount').value),reason=document.getElementById('refundReason').value.trim();try{const res=await fetch(`${API_BASE}/refund`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${AUTH_TOKEN}`},body:JSON.stringify({regNo,amount,reason})});const data=await res.json();if(!res.ok)throw new Error(data.message);closeModal('modalRefund');panelNotice('Refund sent to the student wallet.');loadDriverProfile();loadDriverTransactions();}catch(e){panelNotice(e.message||'Could not refund passenger.');}}
 
@@ -1161,8 +1243,25 @@ async function submitCodeCharge() {
   } else if (data.error === 'insufficient_funds') {
     recordChargeResult({ status: 'failed_insufficient_funds', fareAmount: 0, label: 'Code' });
     showResult('insufficient');
-  } else {
+  } else if (data.error === 'student_already_charged') {
+    recordChargeResult({ status: 'failed_auth', fareAmount: 0, label: 'Code' });
+    showResult('error', 'Already used', data.message);
+  } else if (data.error === 'code_already_used') {
+    recordChargeResult({ status: 'failed_auth', fareAmount: 0, label: 'Code' });
+    showResult('error', 'Code already used', data.message);
+  } else if (data.error === 'code_expired') {
+    recordChargeResult({ status: 'failed_auth', fareAmount: 0, label: 'Code' });
+    showResult('error', 'Code expired', data.message);
+  } else if (data.error === 'student_in_active_trip') {
+    recordChargeResult({ status: 'failed_auth', fareAmount: 0, label: 'Code' });
+    showResult('error', 'Passenger in another trip', data.message);
+  } else if (data.error === 'trip_session_full') {
+    recordChargeResult({ status: 'failed_auth', fareAmount: 0, label: 'Code' });
+    showResult('error', 'Trip is full', 'This trip has reached its seat capacity.');
+  } else if (data.error === 'invalid_or_expired_code') {
     showResult('invalid_code');
+  } else {
+    showResult('error', 'Could not complete charge', data.message);
   }
 }
 
@@ -1175,7 +1274,7 @@ function recordChargeResult(charge) {
   }
 }
 
-function showResult(kind, amount) {
+function showResult(kind, amount, detail) {
   const shell = document.getElementById('resultShell');
   if (kind === 'success') {
     shell.innerHTML = `
@@ -1203,6 +1302,16 @@ function showResult(kind, amount) {
       <div class="result-icon fail">✕</div>
       <div class="num">Code not recognized</div>
       <div class="msg">Double-check the code with the student and try again.</div>
+      <button class="primary" onclick="backToDashboard()">Back to trip</button>
+    `;
+  } else if (kind === 'error') {
+    // Generic branch for backend errors that aren't one of the specific
+    // cases above (already-charged, already-in-a-trip, session full, etc.)
+    // — shows the real reason instead of a misleading "code not recognized".
+    shell.innerHTML = `
+      <div class="result-icon fail">✕</div>
+      <div class="num">${amount || 'Could not complete charge'}</div>
+      <div class="msg">${detail || 'Please try again.'}</div>
       <button class="primary" onclick="backToDashboard()">Back to trip</button>
     `;
   }
