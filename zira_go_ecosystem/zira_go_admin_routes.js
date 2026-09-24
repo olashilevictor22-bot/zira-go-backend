@@ -41,6 +41,14 @@ router.get('/analytics', async (req, res) => {
              WHERE status = 'success'`
         );
 
+        // 1b. Funding-fee revenue (the ₦100 fee charged on top of each successful
+        // wallet top-up) — this was previously missing from platform revenue entirely.
+        const fundingFeeRes = await pool.query(
+            `SELECT COALESCE(SUM(fee_amount), 0) AS total_funding_fees
+             FROM wallet_transactions
+             WHERE type = 'funding' AND status = 'success'`
+        );
+
         // 2. Total Funding Volume (student deposits)
         const fundRes = await pool.query(
             `SELECT COALESCE(SUM(amount), 0) AS total_funded,
@@ -94,7 +102,9 @@ router.get('/analytics', async (req, res) => {
 
         res.json({
             kpi: {
-                platformRevenue: Number(feeRes.rows[0].total_platform_fees),
+                platformRevenue: Number(feeRes.rows[0].total_platform_fees) + Number(fundingFeeRes.rows[0].total_funding_fees),
+                tripFeeRevenue: Number(feeRes.rows[0].total_platform_fees),
+                fundingFeeRevenue: Number(fundingFeeRes.rows[0].total_funding_fees),
                 totalFunded: Number(fundRes.rows[0].total_funded),
                 fundingTransactions: Number(fundRes.rows[0].total_fund_count),
                 totalWithdrawn: Number(wthRes.rows[0].total_withdrawn),

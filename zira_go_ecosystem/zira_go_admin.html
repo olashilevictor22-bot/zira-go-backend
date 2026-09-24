@@ -535,7 +535,7 @@
           </div>
         </div>
         <div class="kpi-value num" id="kpiRevenue">₦0</div>
-        <div class="kpi-subtext">Collected from ₦10 campus ride commissions</div>
+        <div class="kpi-subtext" id="kpiRevenueSub">Collected from ₦10 campus ride commissions</div>
       </div>
 
       <div class="kpi-card">
@@ -881,6 +881,7 @@
       const kpi = data.kpi || {};
 
       document.getElementById('kpiRevenue').textContent = `₦${kpi.platformRevenue.toLocaleString()}`;
+      document.getElementById('kpiRevenueSub').textContent = `₦${kpi.tripFeeRevenue.toLocaleString()} ride commissions + ₦${kpi.fundingFeeRevenue.toLocaleString()} funding fees`;
       document.getElementById('kpiDeposits').textContent = `₦${kpi.totalFunded.toLocaleString()}`;
       document.getElementById('kpiDepositCount').textContent = `${kpi.fundingTransactions} Korapay & Flutterwave top-ups`;
       document.getElementById('kpiWithdrawals').textContent = `₦${kpi.totalWithdrawn.toLocaleString()}`;

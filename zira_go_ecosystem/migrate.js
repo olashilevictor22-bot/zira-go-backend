@@ -50,6 +50,18 @@ async function runSecurityUpgrade() {
     }
 }
 
+async function runPinLockoutUpgrade() {
+    const client = await pool.connect();
+    try {
+        const sql = fs.readFileSync(path.join(__dirname, '03_pin_lockout_upgrade.sql'), 'utf8');
+        await client.query(sql);
+        console.log('✅ Tiered PIN-lockout upgrade applied.');
+    } finally {
+        client.release();
+        await pool.end();
+    }
+}
+
 async function runMigrations() {
     const client = await pool.connect();
     console.log('🔗 Connected to database.');
@@ -80,4 +92,5 @@ async function runMigrations() {
 
 if (process.argv.includes('--security-upgrade')) runSecurityUpgrade();
 else if (process.argv.includes('--vehicle-capacity-upgrade')) runVehicleCapacityUpgrade();
+else if (process.argv.includes('--pin-lockout-upgrade')) runPinLockoutUpgrade();
 else runMigrations();

@@ -1042,7 +1042,7 @@ async function submitPinCharge() {
   const res = await fetch(`${API_BASE}/${trip.id}/charge/reg-no`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` },
-    body: JSON.stringify({ studentId: pendingCharge.regNo, pin: pinBuffer, fareAmount: pendingCharge.fareAmount })
+    body: JSON.stringify({ regNo: pendingCharge.regNo, pin: pinBuffer, fareAmount: pendingCharge.fareAmount })
   });
   const data = await res.json();
   if (res.ok) {
@@ -1053,8 +1053,29 @@ async function submitPinCharge() {
   } else if (data.error === 'insufficient_funds') {
     recordChargeResult({ status: 'failed_insufficient_funds', fareAmount: 0, label: pendingCharge.regNo });
     showResult('insufficient');
-  } else {
+  } else if (data.error === 'invalid_pin') {
     document.getElementById('pinSub').textContent = `Wrong PIN — ${data.attemptsRemaining} attempt(s) left`;
+    pinBuffer = '';
+    renderPinDots();
+  } else if (data.error === 'pin_temporarily_locked') {
+    const until = data.lockedUntil ? new Date(data.lockedUntil).toLocaleTimeString() : 'shortly';
+    document.getElementById('pinSub').textContent = `Locked. Try again after ${until}.`;
+    pinBuffer = '';
+    renderPinDots();
+  } else if (data.error === 'pin_permanently_locked') {
+    document.getElementById('pinSub').textContent = 'This wallet is locked. The student must contact support.';
+    pinBuffer = '';
+    renderPinDots();
+  } else if (data.error === 'pin_not_set') {
+    document.getElementById('pinSub').textContent = 'This student has not set a wallet PIN yet.';
+    pinBuffer = '';
+    renderPinDots();
+  } else if (data.error === 'student_not_found') {
+    document.getElementById('pinSub').textContent = 'No student found with that registration number.';
+    pinBuffer = '';
+    renderPinDots();
+  } else {
+    document.getElementById('pinSub').textContent = data.message || 'Something went wrong. Try again.';
     pinBuffer = '';
     renderPinDots();
   }
