@@ -25,7 +25,7 @@ CREATE INDEX IF NOT EXISTS idx_drivers_telegram_chat_id ON drivers(telegram_chat
 --    Exactly one of student_id / driver_id is set per row, never both —
 --    same table serves both linking flows so the bot has one lookup path.
 -- ============================================================
-CREATE TABLE telegram_link_codes (
+CREATE TABLE IF NOT EXISTS telegram_link_codes (
     id          BIGSERIAL PRIMARY KEY,
     student_id  BIGINT REFERENCES students(id),
     driver_id   BIGINT REFERENCES drivers(id),
@@ -40,10 +40,10 @@ CREATE TABLE telegram_link_codes (
     )
 );
 
-CREATE INDEX idx_telegram_link_codes_student_status ON telegram_link_codes(student_id, status);
-CREATE INDEX idx_telegram_link_codes_driver_status ON telegram_link_codes(driver_id, status);
+CREATE INDEX IF NOT EXISTS idx_telegram_link_codes_student_status ON telegram_link_codes(student_id, status);
+CREATE INDEX IF NOT EXISTS idx_telegram_link_codes_driver_status ON telegram_link_codes(driver_id, status);
 
 -- A student/driver can only have one active link code at a time — app logic should
 -- expire/replace the previous one when generating a new one, this index just makes
 -- the bot's lookup cheap regardless of which side the code belongs to.
-CREATE INDEX idx_telegram_link_codes_active_lookup ON telegram_link_codes(code_hash, status);
+CREATE INDEX IF NOT EXISTS idx_telegram_link_codes_active_lookup ON telegram_link_codes(code_hash, status);

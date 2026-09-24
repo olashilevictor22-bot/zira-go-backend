@@ -6,7 +6,7 @@
 -- ============================================================
 -- 1. Trip sessions — one row per vehicle run
 -- ============================================================
-CREATE TABLE trip_sessions (
+CREATE TABLE IF NOT EXISTS trip_sessions (
     id              BIGSERIAL PRIMARY KEY,
     driver_id       BIGINT NOT NULL REFERENCES drivers(id),
     mode            TEXT NOT NULL CHECK (mode IN ('complete_ride', 'charter')),
@@ -24,7 +24,7 @@ CREATE TABLE trip_sessions (
     closed_at       TIMESTAMPTZ
 );
 
-CREATE INDEX idx_trip_sessions_driver_status ON trip_sessions(driver_id, status);
+CREATE INDEX IF NOT EXISTS idx_trip_sessions_driver_status ON trip_sessions(driver_id, status);
 
 -- Safe for existing Zira Go databases created before configurable capacity.
 ALTER TABLE trip_sessions ADD COLUMN IF NOT EXISTS seat_capacity INT NOT NULL DEFAULT 4;
@@ -34,7 +34,7 @@ ALTER TABLE trip_sessions ADD CONSTRAINT trip_sessions_seat_capacity_check CHECK
 -- ============================================================
 -- 2. One-time codes
 -- ============================================================
-CREATE TABLE one_time_codes (
+CREATE TABLE IF NOT EXISTS one_time_codes (
     id          BIGSERIAL PRIMARY KEY,
     student_id  BIGINT NOT NULL REFERENCES students(id),
     code_hash   TEXT NOT NULL,                -- hash the code, never store it plain
@@ -43,12 +43,12 @@ CREATE TABLE one_time_codes (
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_one_time_codes_student_status ON one_time_codes(student_id, status);
+CREATE INDEX IF NOT EXISTS idx_one_time_codes_student_status ON one_time_codes(student_id, status);
 
 -- ============================================================
 -- 3. Trip charges — one row per passenger payment within a trip session
 -- ============================================================
-CREATE TABLE trip_charges (
+CREATE TABLE IF NOT EXISTS trip_charges (
     id                  BIGSERIAL PRIMARY KEY,
     trip_session_id     BIGINT NOT NULL REFERENCES trip_sessions(id),
     student_id          BIGINT NOT NULL REFERENCES students(id),
@@ -63,8 +63,8 @@ CREATE TABLE trip_charges (
     created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_trip_charges_session ON trip_charges(trip_session_id);
-CREATE INDEX idx_trip_charges_student ON trip_charges(student_id);
+CREATE INDEX IF NOT EXISTS idx_trip_charges_session ON trip_charges(trip_session_id);
+CREATE INDEX IF NOT EXISTS idx_trip_charges_student ON trip_charges(student_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_one_successful_charge_per_student_trip
   ON trip_charges(trip_session_id, student_id) WHERE status = 'success';
 
@@ -103,6 +103,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trg_enforce_complete_ride_caps ON trip_charges;
 CREATE TRIGGER trg_enforce_complete_ride_caps
     BEFORE INSERT ON trip_charges
     FOR EACH ROW EXECUTE FUNCTION enforce_complete_ride_caps();
@@ -110,7 +111,7 @@ CREATE TRIGGER trg_enforce_complete_ride_caps
 -- ============================================================
 -- 4. Wallet ledger — every naira movement, tagged by fee type
 -- ============================================================
-CREATE TABLE wallet_transactions (
+CREATE TABLE IF NOT EXISTS wallet_transactions (
     id            BIGSERIAL PRIMARY KEY,
     student_id    BIGINT REFERENCES students(id),   -- null for driver-side withdrawal rows
     driver_id     BIGINT REFERENCES drivers(id),     -- null for student-side rows
@@ -124,8 +125,8 @@ CREATE TABLE wallet_transactions (
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_wallet_tx_student ON wallet_transactions(student_id);
-CREATE INDEX idx_wallet_tx_driver ON wallet_transactions(driver_id);
+CREATE INDEX IF NOT EXISTS idx_wallet_tx_student ON wallet_transactions(student_id);
+CREATE INDEX IF NOT EXISTS idx_wallet_tx_driver ON wallet_transactions(driver_id);
 
 -- ============================================================
 -- 5. Fraud controls: PIN attempts + one-time code guess flagging
@@ -134,7 +135,7 @@ CREATE INDEX idx_wallet_tx_driver ON wallet_transactions(driver_id);
 -- One row per PIN attempt on a reg_no_pin charge. Capped at 3 attempts per charge attempt
 -- (not a global wallet lock) — enforced in app logic by counting rows for the same
 -- trip_session_id + student_id within a short window (e.g. 2 minutes) before allowing another try.
-CREATE TABLE pin_attempts (
+CREATE TABLE IF NOT EXISTS pin_attempts (
     id                BIGSERIAL PRIMARY KEY,
     student_id        BIGINT NOT NULL REFERENCES students(id),
     trip_session_id   BIGINT NOT NULL REFERENCES trip_sessions(id),
@@ -142,19 +143,19 @@ CREATE TABLE pin_attempts (
     created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_pin_attempts_lookup ON pin_attempts(student_id, trip_session_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_pin_attempts_lookup ON pin_attempts(student_id, trip_session_id, created_at);
 
 -- One row per one-time-code guess by a driver. A driver is flagged after 5 wrong guesses
 -- in a row (a success resets the streak) — computed in app logic from the most recent rows
 -- for that driver_id, then written to drivers.is_flagged.
-CREATE TABLE code_guess_attempts (
+CREATE TABLE IF NOT EXISTS code_guess_attempts (
     id          BIGSERIAL PRIMARY KEY,
     driver_id   BIGINT NOT NULL REFERENCES drivers(id),
     success     BOOLEAN NOT NULL,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_code_guess_driver ON code_guess_attempts(driver_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_code_guess_driver ON code_guess_attempts(driver_id, created_at);
 
 -- Add flag columns to the existing drivers table
 ALTER TABLE drivers ADD COLUMN IF NOT EXISTS is_flagged BOOLEAN NOT NULL DEFAULT false;

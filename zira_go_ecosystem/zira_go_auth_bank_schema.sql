@@ -39,7 +39,7 @@ ALTER TABLE drivers ADD COLUMN IF NOT EXISTS bank_locked BOOLEAN NOT NULL DEFAUL
 -- ============================================================
 -- 3. Admin accounts — separate from students/drivers, reviews change requests
 -- ============================================================
-CREATE TABLE admins (
+CREATE TABLE IF NOT EXISTS admins (
     id             BIGSERIAL PRIMARY KEY,
     email          TEXT NOT NULL UNIQUE,
     password_hash  TEXT NOT NULL,
@@ -52,7 +52,7 @@ CREATE TABLE admins (
 --    account/name once bank_locked = true. A student or driver can submit
 --    one any time; nothing is applied until an admin approves it.
 -- ============================================================
-CREATE TABLE bank_account_change_requests (
+CREATE TABLE IF NOT EXISTS bank_account_change_requests (
     id                      BIGSERIAL PRIMARY KEY,
     student_id              BIGINT REFERENCES students(id),
     driver_id               BIGINT REFERENCES drivers(id),
@@ -78,13 +78,13 @@ CREATE TABLE bank_account_change_requests (
     )
 );
 
-CREATE INDEX idx_bank_change_requests_student ON bank_account_change_requests(student_id, status);
-CREATE INDEX idx_bank_change_requests_driver ON bank_account_change_requests(driver_id, status);
-CREATE INDEX idx_bank_change_requests_pending ON bank_account_change_requests(status) WHERE status = 'pending';
+CREATE INDEX IF NOT EXISTS idx_bank_change_requests_student ON bank_account_change_requests(student_id, status);
+CREATE INDEX IF NOT EXISTS idx_bank_change_requests_driver ON bank_account_change_requests(driver_id, status);
+CREATE INDEX IF NOT EXISTS idx_bank_change_requests_pending ON bank_account_change_requests(status) WHERE status = 'pending';
 
 -- Only one pending request per account at a time — stops someone from spamming
 -- five different "corrections" while the first is still under review.
-CREATE UNIQUE INDEX idx_one_pending_request_per_student
+CREATE UNIQUE INDEX IF NOT EXISTS idx_one_pending_request_per_student
     ON bank_account_change_requests(student_id) WHERE status = 'pending' AND student_id IS NOT NULL;
-CREATE UNIQUE INDEX idx_one_pending_request_per_driver
+CREATE UNIQUE INDEX IF NOT EXISTS idx_one_pending_request_per_driver
     ON bank_account_change_requests(driver_id) WHERE status = 'pending' AND driver_id IS NOT NULL;
