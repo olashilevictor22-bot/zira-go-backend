@@ -361,6 +361,28 @@ router.post('/drivers/:id/toggle-flag', async (req, res) => {
             details: 'Standardized Operations text contrast and hierarchy, and replaced raw schedule-hour fields with native clock time pickers for easier hero-media scheduling.'
         });
 
+        await recordPlatformChange({
+            key: '2026-09-24-realtime-support-chat',
+            actor: 'Claude',
+            area: 'Support desk, Student wallet & Admin portal',
+            title: 'Real-time support chat replaces ticket replies',
+            details: 'Students now chat live with the support desk in one continuous thread (typing indicator, seen ticks, instant delivery). Admin has a new Live support tab with an unread badge. Old tickets were imported into the threads.'
+        });
+        await recordPlatformChange({
+            key: '2026-09-24-driver-ledger-colours-and-refund-ui',
+            actor: 'Claude',
+            area: 'Driver panel',
+            title: 'Driver ledger status colours and refund form redesigned',
+            details: 'Ledger rows now show true status (Completed, Withdrawn, Processing, Failed) with matching colours instead of always showing Completed. The Refund passenger form was restyled with proper inputs, quick amounts and validation.'
+        });
+        await recordPlatformChange({
+            key: '2026-09-24-payout-error-diagnostics',
+            actor: 'Claude',
+            area: 'Driver withdrawals',
+            title: 'Clearer payout failure messages and logging',
+            details: 'Gateway payout rejections are now logged in full server-side and shown to drivers as a plain-language message; the wallet is still refunded automatically when a payout is refused.'
+        });
+
         // Seed default platform config if empty
         const cfg = await pool.query("SELECT key FROM platform_config WHERE key = 'app_settings'");
         if (!cfg.rows.length) {

@@ -210,7 +210,7 @@ router.post('/withdraw', requireAuth, requireRole('driver'), async (req, res) =>
             try {
                 await recovery.query('BEGIN');
                 await recovery.query('UPDATE drivers SET wallet_balance = wallet_balance + $1 WHERE id = $2', [withdrawAmt, driverId]);
-                await recovery.query("UPDATE driver_withdrawals SET status = 'rejected', rejection_reason = $1, processed_at = now() WHERE reference = $2", [payoutError.message, reference]);
+                await recovery.query("UPDATE driver_withdrawals SET status = 'rejected', rejection_reason = $1, processed_at = now() WHERE reference = $2", [payoutError.providerMessage || payoutError.message, reference]);
                 await recovery.query("UPDATE wallet_transactions SET status = 'failed', description = description || ' (payout initiation failed)' WHERE gateway_reference = $1", [reference]);
                 await recovery.query('COMMIT');
             } catch (recoveryError) {
@@ -373,7 +373,7 @@ router.get('/transactions', requireAuth, requireRole('driver'), async (req, res)
 
         res.json({
             transactions: txs.rows.map(t => {
-                const isCredit = t.type === 'ride_credit';
+                const isCredit = t.type === 'ride_credit' || t.type === 'admin_credit';
                 let desc = t.description;
                 if (!desc) {
                     desc = isCredit ? 'Passenger Transit Fare' : 'Bank Payout';

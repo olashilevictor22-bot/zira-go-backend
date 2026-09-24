@@ -35,7 +35,9 @@ app.use((req, res, next) => {
     return next();
 });
 app.use(express.json({ limit: '100kb' }));
-app.use('/api', rateLimit({ windowMs: 15 * 60 * 1000, limit: 300, standardHeaders: true, legacyHeaders: false }));
+// Live support chat (stream, typing, catch-up) is exempt from the shared per-IP limiter —
+// campus Wi-Fi puts many students behind one IP. The chat routes have their own per-user limits.
+app.use('/api', rateLimit({ windowMs: 15 * 60 * 1000, limit: 300, standardHeaders: true, legacyHeaders: false, skip: req => /^\/(support\/chat|admin\/support-chat)(\/|$)/.test(req.path) }));
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: true, legacyHeaders: false, message: { error: 'too_many_attempts', message: 'Please wait before trying again.' } });
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
@@ -60,10 +62,13 @@ const driverRouter = require('./zira_go_driver_routes');
 const adminPortalRouter = require('./zira_go_admin_routes');
 const { router: pinRouter, adminRouter: adminPinRouter } = require('./zira_go_pin_routes');
 const notificationRouter = require('./zira_go_notification_routes');
+const { userRouter: supportChatRouter, adminRouter: supportChatAdminRouter } = require('./zira_go_support_chat_routes');
 
 app.use('/api/auth', authRouter);
 app.use('/api/bank', bankRouter);
 app.use('/api/admin/bank', bankAdminRouter);
+app.use('/api/admin/support-chat', supportChatAdminRouter);
+app.use('/api/support/chat', supportChatRouter);
 app.use('/api/admin', adminPortalRouter);
 app.use('/api/pin', pinRouter);
 app.use('/api/admin/pin-requests', adminPinRouter);

@@ -2369,15 +2369,56 @@
 <div class="modal-overlay" id="modalNotificationPopup"><div class="modal-card" style="max-width:430px;overflow:hidden"><button class="modal-close" onclick="dismissNotificationPopup()" style="position:absolute;right:14px;top:14px;z-index:2;background:rgba(255,255,255,.9)">✕</button><img id="notificationPopupImage" alt="Notification banner" style="display:none;width:100%;max-height:220px;object-fit:cover"><div style="padding:20px"><div id="notificationPopupType" style="font-size:11px;font-weight:800;color:var(--accent);text-transform:uppercase;margin-bottom:7px">New notification</div><h3 id="notificationPopupTitle" style="margin:0 0 8px"></h3><p id="notificationPopupBody" style="margin:0;color:var(--text-dim);line-height:1.5;white-space:pre-line"></p><div style="display:flex;gap:8px;margin-top:18px"><button class="secondary" style="flex:1" onclick="dismissNotificationPopup()">Later</button><button class="primary" style="flex:1" onclick="readCurrentNotification()">Mark as read</button></div></div></div></div>
 
 <!-- Floating live-agent entry point, kept outside the profile so it is available everywhere. -->
-<button type="button" id="liveAgentButton" onclick="openLiveAgent()" aria-label="Speak to a live agent" style="position:fixed;right:16px;bottom:18px;z-index:90;border:0;border-radius:999px;padding:12px 16px;background:linear-gradient(100deg,var(--accent),var(--accent-hover));color:#fff;font-weight:800;box-shadow:0 8px 24px rgba(109,40,217,.34);cursor:pointer">💬 Live agent</button>
+<button type="button" id="liveAgentButton" onclick="openLiveAgent()" aria-label="Chat with a live agent" style="position:fixed;right:16px;bottom:18px;z-index:90;border:0;border-radius:999px;padding:12px 16px;background:linear-gradient(100deg,var(--accent),var(--accent-hover));color:#fff;font-weight:800;box-shadow:0 8px 24px rgba(109,40,217,.34);cursor:pointer">💬 Live agent<span id="liveAgentBadge" hidden style="position:absolute;top:-6px;right:-4px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:#E11D48;color:#fff;font-size:11px;font-weight:800;display:grid;place-items:center;border:2px solid var(--bg)"></span></button>
+<style>
+  .chat-card { max-width: 440px; padding: 0 !important; display: flex; flex-direction: column; height: min(84dvh, 640px); overflow: hidden !important; }
+  .chat-head { display:flex; align-items:center; gap:11px; padding:14px 16px; border-bottom:1px solid var(--line); background: linear-gradient(135deg, var(--accent-light), transparent); flex-shrink:0; }
+  .chat-avatar { width:40px; height:40px; border-radius:50%; display:grid; place-items:center; background: linear-gradient(135deg,var(--accent),var(--accent-hover)); color:#fff; font-size:19px; flex-shrink:0; }
+  .chat-head h3 { margin:0; font-size:16px; }
+  .chat-status { font-size:11.5px; color:var(--text-dim); display:flex; align-items:center; gap:5px; margin-top:2px; }
+  .chat-dot { width:8px; height:8px; border-radius:50%; background: var(--warning); }
+  .chat-dot.on { background: var(--success); }
+  .chat-body { flex:1; overflow-y:auto; padding:14px 14px 6px; display:flex; flex-direction:column; gap:6px; background: var(--bg); overscroll-behavior: contain; }
+  .cb-day { align-self:center; font-size:10.5px; font-weight:700; color:var(--text-dim); background:var(--panel-alt); padding:3px 10px; border-radius:999px; margin:8px 0 4px; }
+  .cb-sys { align-self:center; text-align:center; font-size:11.5px; color:var(--text-dim); background:var(--panel-alt); padding:6px 12px; border-radius:12px; max-width:88%; margin:4px 0; }
+  .cb-row { display:flex; flex-direction:column; max-width:82%; }
+  .cb-row.me { align-self:flex-end; align-items:flex-end; }
+  .cb-row.them { align-self:flex-start; align-items:flex-start; }
+  .cb-bubble { padding:9px 13px 7px; border-radius:18px; font-size:14px; line-height:1.42; word-break:break-word; white-space:pre-wrap; }
+  .cb-row.me .cb-bubble { background: linear-gradient(135deg,var(--accent),var(--accent-hover)); color:#fff; border-bottom-right-radius:5px; }
+  .cb-row.them .cb-bubble { background: var(--panel); color: var(--text); border:1px solid var(--line); border-bottom-left-radius:5px; }
+  .cb-row.pending .cb-bubble { opacity:.65; }
+  .cb-row.failed .cb-bubble { background: var(--danger); }
+  .cb-meta { font-size:10px; margin-top:3px; color:var(--text-muted); display:flex; gap:5px; align-items:center; padding:0 4px; }
+  .cb-tick.read { color: var(--accent); font-weight:800; }
+  .cb-retry { color: var(--danger); font-weight:800; cursor:pointer; border:0; background:none; font-size:10px; padding:0; }
+  .chat-typing { height:20px; padding:0 18px; font-size:11.5px; color:var(--text-dim); font-style:italic; background:var(--bg); flex-shrink:0; }
+  .chat-empty { margin:auto; text-align:center; color:var(--text-dim); font-size:13px; padding:20px; }
+  .chat-empty b { display:block; color:var(--text); font-size:16px; margin-bottom:6px; }
+  .chat-chips { display:flex; flex-wrap:wrap; gap:7px; justify-content:center; margin-top:14px; }
+  .chat-chip { border:1px solid var(--line); background:var(--panel); color:var(--text-dim); font-size:12px; font-weight:700; padding:7px 13px; border-radius:999px; cursor:pointer; }
+  .chat-chip.on { border-color:var(--accent); color:var(--accent); background:var(--accent-light); }
+  .chat-resolved { font-size:11.5px; text-align:center; color:var(--text-dim); padding:7px; background:var(--panel-alt); border-top:1px solid var(--line); flex-shrink:0; }
+  .chat-compose { display:flex; align-items:flex-end; gap:8px; padding:10px 12px calc(10px + env(safe-area-inset-bottom)); border-top:1px solid var(--line); background:var(--panel); flex-shrink:0; }
+  .chat-compose textarea { flex:1; resize:none; max-height:110px; min-height:42px; margin:0; padding:11px 14px; border-radius:20px; border:1.5px solid var(--line); background:var(--panel-alt); color:var(--text); font:inherit; font-size:14px; line-height:1.35; }
+  .chat-compose textarea:focus { outline:none; border-color:var(--accent); }
+  .chat-send { width:42px; height:42px; border-radius:50%; border:0; background:linear-gradient(135deg,var(--accent),var(--accent-hover)); color:#fff; font-size:18px; cursor:pointer; flex-shrink:0; display:grid; place-items:center; }
+  .chat-send:disabled { opacity:.45; cursor:default; }
+</style>
 <div class="modal-overlay" id="modalLiveAgent" style="z-index:180">
-  <div class="modal-card" style="max-width:420px">
-    <div class="modal-header"><div><h3 style="margin:0">Speak to a live agent</h3><div style="font-size:12px;color:var(--text-dim);margin-top:3px">The campus transport desk will see your message.</div></div><button class="modal-close" onclick="closeModal('modalLiveAgent')">✕</button></div>
-    <div id="supportThread" style="display:grid;gap:8px;margin-bottom:12px"></div>
-    <label>Your contact</label><input id="supportContact" type="text" placeholder="Phone number or email">
-    <label>What can we help with?</label><select id="supportCategory"><option value="ride">Ride / driver</option><option value="wallet">Wallet / payment</option><option value="account">Account</option><option value="other">Other</option></select>
-    <label>Message</label><textarea id="supportMessage" rows="5" placeholder="Describe the issue so an agent can help."></textarea>
-    <button type="button" class="primary" onclick="sendSupportMessage()">Start support conversation</button>
+  <div class="modal-card chat-card">
+    <div class="chat-head">
+      <div class="chat-avatar">🎧</div>
+      <div style="min-width:0;flex:1"><h3>Zira Go Support</h3><div class="chat-status"><span class="chat-dot" id="chatDot"></span><span id="chatStatusText">Connecting…</span></div></div>
+      <button class="modal-close" aria-label="Close chat" onclick="closeLiveAgent()">✕</button>
+    </div>
+    <div class="chat-body" id="chatBody"></div>
+    <div class="chat-typing" id="chatTyping"></div>
+    <div class="chat-resolved" id="chatResolved" hidden>This conversation was resolved — send a message to reopen it.</div>
+    <div class="chat-compose">
+      <textarea id="chatInput" rows="1" placeholder="Type a message…" maxlength="2000" oninput="Chat.onInput(this)" onkeydown="Chat.onKey(event)"></textarea>
+      <button type="button" class="chat-send" id="chatSend" onclick="Chat.send()" aria-label="Send message">➤</button>
+    </div>
   </div>
 </div>
 
@@ -3422,19 +3463,161 @@ async function resumeHostedPayment() {
   } catch (err) { closeModal('modalLoading'); showToast(err.message); }
 }
 
-async function sendSupportMessage() {
-  const contact = document.getElementById('supportContact').value.trim();
-  const message = document.getElementById('supportMessage').value.trim();
-  if (!contact || !message) return showToast('Please add your contact and message.');
-  try {
-    const res = await fetch('/api/support/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contact, message, category: document.getElementById('supportCategory').value, role: 'student', studentId: Number(localStorage.getItem('zira_id')) || null, name: localStorage.getItem('zira_name') || 'Student' }) });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Could not send your message.');
-    document.getElementById('supportMessage').value=''; showToast(`Message sent. Reference: ${data.ticketId}`); loadSupportThread();
-  } catch (err) { showToast(err.message); }
-}
-async function openLiveAgent() { openModal('modalLiveAgent'); await loadSupportThread(); }
-async function loadSupportThread() { const box=document.getElementById('supportThread');if(!box)return;try { const res=await fetch('/api/support/my',{headers:studentHeaders});const data=await res.json();if(!res.ok)throw new Error();const tickets=data.tickets||[];box.innerHTML=tickets.length?tickets.map(t=>`<div style="padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--panel-alt);font-size:12px"><div style="display:flex;justify-content:space-between;gap:8px"><b>${t.category}</b><span style="color:${t.status==='resolved'?'var(--success)':'var(--accent)'};font-weight:700">${t.status==='resolved'?'Resolved':'Open'}</span></div><div style="margin-top:5px">You: ${t.message}</div>${t.admin_reply?`<div style="margin-top:7px;padding-top:7px;border-top:1px solid var(--line);color:var(--accent)"><b>Support:</b> ${t.admin_reply}</div>`:''}</div>`).join(''):'<span style="font-size:12px;color:var(--text-dim)">No support conversations yet.</span>';}catch(_){box.innerHTML='';} }
+// ------------------------------------------------------------------
+// Live support chat (real-time via server-sent events, with catch-up)
+// ------------------------------------------------------------------
+const Chat = (() => {
+  const API = '/api/support/chat';
+  const jsonHeaders = () => ({ 'Content-Type': 'application/json', ...studentHeaders });
+  let msgs = [], lastId = 0, conv = null, unread = 0, online = false, stopped = false;
+  let category = 'other', typingHideTimer = null, lastTypingSent = 0, retryDelay = 2000, readTimer = null, ctl = null;
+
+  const esc = v => { const d = document.createElement('div'); d.textContent = v == null ? '' : String(v); return d.innerHTML; };
+  const isOpen = () => document.getElementById('modalLiveAgent').classList.contains('active');
+  const $ = id => document.getElementById(id);
+  const time = iso => new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  const dayLabel = iso => { const d = new Date(iso), t = new Date(), y = new Date(Date.now() - 864e5); return d.toDateString() === t.toDateString() ? 'Today' : d.toDateString() === y.toDateString() ? 'Yesterday' : d.toLocaleDateString([], { month: 'short', day: 'numeric' }); };
+
+  function setOnline(v) { online = v; $('chatDot').classList.toggle('on', v); $('chatStatusText').textContent = v ? 'Connected — we reply here in real time' : 'Reconnecting…'; }
+  function setBadge() { const b = $('liveAgentBadge'); if (!b) return; b.hidden = !unread; b.textContent = unread > 9 ? '9+' : unread; }
+
+  function render(stick = true) {
+    const box = $('chatBody');
+    const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 90;
+    if (!msgs.length) {
+      const chips = [['ride', 'Ride / driver'], ['wallet', 'Wallet / payment'], ['account', 'Account'], ['other', 'Something else']]
+        .map(([k, l]) => `<button type="button" class="chat-chip ${category === k ? 'on' : ''}" onclick="Chat.setCategory('${k}')">${l}</button>`).join('');
+      box.innerHTML = `<div class="chat-empty"><b>Hi ${esc((STUDENT_NAME || 'there').split(' ')[0])} 👋</b>Tell us what you need help with and a support agent will reply right here.<div class="chat-chips">${chips}</div></div>`;
+    } else {
+      let html = '', lastDay = '';
+      for (const m of msgs) {
+        const day = dayLabel(m.createdAt);
+        if (day !== lastDay) { html += `<div class="cb-day">${day}</div>`; lastDay = day; }
+        if (m.sender === 'system') { html += `<div class="cb-sys">${esc(m.body)}</div>`; continue; }
+        const mine = m.sender === 'user';
+        const state = m.failed ? 'failed' : m.pending ? 'pending' : '';
+        let tick = '';
+        if (mine) tick = m.failed ? `<button class="cb-retry" onclick="Chat.retry('${m.clientId}')">Not sent · Tap to retry</button>` : m.pending ? '<span class="cb-tick">🕓</span>' : m.readAt ? '<span class="cb-tick read">✓✓</span>' : '<span class="cb-tick">✓</span>';
+        html += `<div class="cb-row ${mine ? 'me' : 'them'} ${state}"><div class="cb-bubble">${esc(m.body)}</div><div class="cb-meta">${m.pending ? '' : time(m.createdAt)}${tick}</div></div>`;
+      }
+      box.innerHTML = html;
+    }
+    $('chatResolved').hidden = !(conv && conv.status === 'resolved');
+    if (stick || nearBottom) box.scrollTop = box.scrollHeight;
+  }
+
+  function upsert(m) {
+    if (m.clientId) { const i = msgs.findIndex(x => x.clientId === m.clientId && x.pending !== undefined); if (i >= 0) { msgs[i] = m; finish(); return; } }
+    if (msgs.some(x => x.id === m.id)) return;
+    msgs.push(m); msgs.sort((a, b) => (a.id ?? Infinity) - (b.id ?? Infinity)); finish();
+  }
+  function finish() { lastId = Math.max(lastId, ...msgs.filter(m => m.id).map(m => m.id), 0); render(false); }
+
+  async function load() {
+    try {
+      const r = await fetch(API, { headers: studentHeaders });
+      if (!r.ok) return;
+      const d = await r.json();
+      conv = d.conversation; msgs = d.messages || []; unread = conv ? conv.userUnread : 0;
+      lastId = Math.max(0, ...msgs.map(m => m.id)); setBadge(); render(true);
+    } catch (_) {}
+  }
+  async function catchUp() {
+    try {
+      const r = await fetch(`${API}/messages?after=${lastId}`, { headers: studentHeaders });
+      if (!r.ok) return;
+      const d = await r.json();
+      if (d.conversation) conv = d.conversation;
+      (d.messages || []).forEach(m => { if (m.sender === 'admin' && !isOpen() && !msgs.some(x => x.id === m.id)) { unread++; } upsert(m); });
+      setBadge(); if (isOpen()) markRead();
+    } catch (_) {}
+  }
+
+  function handle(block) {
+    let ev = 'message', data = '';
+    block.split('\n').forEach(line => { if (line.startsWith('event:')) ev = line.slice(6).trim(); else if (line.startsWith('data:')) data += line.slice(5).trim(); });
+    if (!data) return;
+    let p; try { p = JSON.parse(data); } catch (_) { return; }
+    if (ev === 'message') {
+      if (p.conversation) conv = p.conversation;
+      upsert(p.message);
+      if (p.message.sender === 'admin') {
+        if (isOpen()) markRead(); else { unread++; setBadge(); showToast('💬 New reply from Zira Go support'); }
+        $('chatTyping').textContent = '';
+      }
+    } else if (ev === 'typing') {
+      $('chatTyping').textContent = 'Support is typing…';
+      clearTimeout(typingHideTimer); typingHideTimer = setTimeout(() => $('chatTyping').textContent = '', 4000);
+    } else if (ev === 'read') {
+      msgs.forEach(m => { if (m.sender === 'user' && m.id && m.id <= p.upTo && !m.readAt) m.readAt = new Date().toISOString(); }); render(false);
+    }
+  }
+
+  async function connect() {
+    if (stopped) return;
+    ctl = new AbortController();
+    try {
+      const res = await fetch(`${API}/stream`, { headers: studentHeaders, signal: ctl.signal });
+      if (res.status === 401 || res.status === 403) { stopped = true; return; }
+      if (!res.ok || !res.body) throw new Error('stream ' + res.status);
+      setOnline(true); retryDelay = 2000;
+      await catchUp();
+      const reader = res.body.getReader(), dec = new TextDecoder(); let buf = '';
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        let i; while ((i = buf.indexOf('\n\n')) >= 0) { const block = buf.slice(0, i); buf = buf.slice(i + 2); handle(block); }
+      }
+    } catch (e) { if (e.name === 'AbortError') return; }
+    setOnline(false);
+    setTimeout(connect, retryDelay); retryDelay = Math.min(retryDelay * 1.7, 15000);
+  }
+
+  function markRead() {
+    unread = 0; setBadge();
+    clearTimeout(readTimer);
+    readTimer = setTimeout(() => fetch(`${API}/read`, { method: 'POST', headers: studentHeaders }).catch(() => {}), 250);
+  }
+
+  async function post(m) {
+    try {
+      const r = await fetch(`${API}/messages`, { method: 'POST', headers: jsonHeaders(), body: JSON.stringify({ body: m.body, category, clientId: m.clientId }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.message || 'Could not send');
+      if (d.conversation) conv = d.conversation;
+      upsert(d.message);
+    } catch (e) {
+      const i = msgs.findIndex(x => x.clientId === m.clientId); if (i >= 0) { msgs[i].pending = false; msgs[i].failed = true; }
+      render(false); showToast(e.message || 'Message not sent.');
+    }
+  }
+  function send() {
+    const input = $('chatInput'), body = input.value.trim();
+    if (!body) return;
+    const m = { id: null, clientId: 'c' + Date.now() + Math.random().toString(36).slice(2, 7), sender: 'user', body, createdAt: new Date().toISOString(), pending: true };
+    msgs.push(m); input.value = ''; input.style.height = 'auto'; render(true); post(m); input.focus();
+  }
+  function retry(clientId) { const m = msgs.find(x => x.clientId === clientId); if (!m) return; m.failed = false; m.pending = true; render(false); post(m); }
+  function onKey(e) { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); } }
+  function onInput(el) {
+    el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 110) + 'px';
+    if (el.value.trim() && conv && Date.now() - lastTypingSent > 3000) { lastTypingSent = Date.now(); fetch(`${API}/typing`, { method: 'POST', headers: studentHeaders }).catch(() => {}); }
+  }
+  function open() { openModal('modalLiveAgent'); render(true); if (conv && (unread || msgs.some(m => m.sender === 'admin' && !m.readAt))) markRead(); setTimeout(() => $('chatInput').focus(), 150); if (!online) catchUp(); }
+  function setCategory(k) { category = k; render(false); }
+  function init() {
+    if (ADMIN_PREVIEW) return;
+    load().then(connect);
+    // Safety net: pick up anything a dropped connection missed.
+    setInterval(() => { if (!document.hidden) catchUp(); }, 20000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) catchUp(); });
+  }
+  return { init, open, send, retry, onKey, onInput, setCategory };
+})();
+function openLiveAgent() { Chat.open(); }
+function closeLiveAgent() { closeModal('modalLiveAgent'); }
+Chat.init();
 
 // Dismiss splash screen smoothly after load
 window.addEventListener('load', () => {

@@ -324,6 +324,17 @@ async function getNigerianBanks() {
     return data.data.filter(bank => bank.code && bank.name).map(bank => ({ code: String(bank.code), name: String(bank.name) })).sort((a,b) => a.name.localeCompare(b.name));
 }
 
+// Turns raw gateway wording into something a driver can act on. The wallet is
+// always refunded automatically when a payout is refused, so say so.
+function friendlyPayoutMessage(raw) {
+    const text = String(raw || '');
+    const safe = ' Your money is safe and has been returned to your wallet.';
+    if (/insufficient|balance/i.test(text)) return 'Payouts are temporarily unavailable while the campus payout balance is topped up.' + safe + ' Please try again later.';
+    if (/cannot be processed|administrator|whitelist|not authori[sz]ed|permission|not enabled|disabled/i.test(text)) return 'Bank payouts are not available right now — the payout service is still being activated by the platform admin.' + safe + ' Please try again later or contact support.';
+    if (/invalid.*account|account.*invalid|bank.*code/i.test(text)) return 'The bank rejected your saved account details. Please re-check your linked bank account.' + safe;
+    return 'The bank transfer could not be started.' + safe + ' Please try again, or contact support if it keeps happening.';
+}
+
 // A transfer acceptance is distinct from a completed bank settlement. The
 // caller records this as processing and only marks it completed from a trusted
 // provider status update.
@@ -332,18 +343,32 @@ async function initiateDriverPayout({ accountNumber, bankCode, amount, reference
     if (!hasLiveKey) {
         throw new Error('Flutterwave payouts are not configured. Set FLW_SECRET_KEY before enabling withdrawals.');
     }
-    const res = await fetch('https://api.flutterwave.com/v3/transfers', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${FLW_SECRET_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            account_bank: bankCode, account_number: accountNumber, amount: Number(amount),
-            narration: narration || 'Zira Go driver earnings payout', currency: 'NGN',
-            reference, debit_currency: 'NGN'
-        })
-    });
+    let res;
+    try {
+        res = await fetchWithTimeout('https://api.flutterwave.com/v3/transfers', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${FLW_SECRET_KEY}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                account_bank: bankCode, account_number: accountNumber, amount: Number(amount),
+                narration: narration || 'Zira Go driver earnings payout', currency: 'NGN',
+                reference, debit_currency: 'NGN'
+            })
+        }, 20000);
+    } catch (netErr) {
+        console.error('[Flutterwave transfer network error]', netErr.name, netErr.message);
+        const err = new Error('The payment provider could not be reached. Your money is safe and has been returned to your wallet. Please try again shortly.');
+        err.providerMessage = `network: ${netErr.message}`;
+        throw err;
+    }
     const data = await res.json().catch(() => ({}));
     if (!res.ok || data.status !== 'success') {
-        throw new Error(data.message || `Flutterwave transfer request failed (${res.status}).`);
+        // Full provider response goes to the server log (never to the driver) so the
+        // real cause (IP whitelist, transfers not enabled, low balance...) can be read in `pm2 logs`.
+        console.error('[Flutterwave transfer refused]', res.status, JSON.stringify(data));
+        const raw = data.message || `HTTP ${res.status}`;
+        const err = new Error(friendlyPayoutMessage(raw));
+        err.providerMessage = `${res.status}: ${raw}`;
+        throw err;
     }
     return {
         provider: 'flutterwave',

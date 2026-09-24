@@ -327,6 +327,68 @@
   .btn-sm.danger { background: rgba(225, 29, 72, 0.1); color: var(--danger); }
   .btn-sm.danger:hover { background: var(--danger); color: #fff; }
 
+
+  /* ---- Live support chat ---- */
+  .tab-badge { min-width:18px; height:18px; padding:0 5px; border-radius:999px; background:var(--danger); color:#fff; font-size:10.5px; font-weight:800; display:inline-grid; place-items:center; }
+  .sup-shell { display:grid; grid-template-columns: 340px 1fr; height: calc(100vh - 210px); min-height: 480px; background:var(--panel); border:1px solid var(--line); border-radius:20px; overflow:hidden; box-shadow:var(--card-shadow); }
+  .sup-list { border-right:1px solid var(--line); display:flex; flex-direction:column; min-height:0; }
+  .sup-list-head { padding:14px; border-bottom:1px solid var(--line); display:grid; gap:10px; }
+  .sup-list-head .search-input { width:100%; }
+  .sup-pills { display:flex; gap:6px; }
+  .sup-pill { flex:1; border:1px solid var(--line); background:var(--panel-alt); color:var(--text-dim); font:700 12px 'Plus Jakarta Sans',sans-serif; padding:6px 0; border-radius:999px; cursor:pointer; }
+  .sup-pill.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .sup-items { overflow-y:auto; flex:1; }
+  .sup-item { display:flex; gap:11px; padding:12px 14px; border-bottom:1px solid var(--line); cursor:pointer; align-items:center; }
+  .sup-item:hover { background:var(--panel-alt); }
+  .sup-item.active { background:var(--accent-glow); box-shadow: inset 3px 0 0 var(--accent); }
+  .sup-av { width:40px; height:40px; border-radius:50%; display:grid; place-items:center; background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#fff; font:800 15px 'Sora',sans-serif; flex-shrink:0; }
+  .sup-mid { flex:1; min-width:0; }
+  .sup-row1 { display:flex; justify-content:space-between; gap:8px; align-items:baseline; }
+  .sup-name { font-weight:700; font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .sup-time { font-size:10.5px; color:var(--text-dim); flex-shrink:0; }
+  .sup-row2 { display:flex; justify-content:space-between; gap:8px; align-items:center; margin-top:2px; }
+  .sup-prev { font-size:12px; color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .sup-item.unread .sup-prev { color:var(--text); font-weight:700; }
+  .sup-unread { min-width:20px; height:20px; padding:0 6px; border-radius:999px; background:var(--accent); color:#fff; font-size:11px; font-weight:800; display:grid; place-items:center; flex-shrink:0; }
+  .sup-empty { padding:40px 20px; text-align:center; color:var(--text-dim); font-size:13px; }
+  .sup-thread { display:flex; flex-direction:column; min-width:0; min-height:0; }
+  .sup-thead { display:flex; align-items:center; gap:12px; padding:13px 18px; border-bottom:1px solid var(--line); }
+  .sup-thead .sup-back { display:none; border:0; background:var(--panel-alt); border-radius:10px; padding:7px 10px; cursor:pointer; color:var(--text); font-weight:700; }
+  .sup-thead h4 { font-size:15px; }
+  .sup-sub { font-size:11.5px; color:var(--text-dim); margin-top:2px; }
+  .sup-body { flex:1; overflow-y:auto; padding:16px 18px 8px; display:flex; flex-direction:column; gap:6px; background:var(--bg); }
+  .sup-placeholder { margin:auto; color:var(--text-dim); text-align:center; font-size:14px; }
+  .sm-day { align-self:center; font-size:10.5px; font-weight:700; color:var(--text-dim); background:var(--panel-alt); padding:3px 10px; border-radius:999px; margin:8px 0 4px; }
+  .sm-sys { align-self:center; font-size:11.5px; color:var(--text-dim); background:var(--panel-alt); padding:5px 12px; border-radius:12px; }
+  .sm-row { display:flex; flex-direction:column; max-width:72%; }
+  .sm-row.me { align-self:flex-end; align-items:flex-end; }
+  .sm-row.them { align-self:flex-start; align-items:flex-start; }
+  .sm-bubble { padding:9px 14px; border-radius:18px; font-size:13.5px; line-height:1.45; white-space:pre-wrap; word-break:break-word; }
+  .sm-row.me .sm-bubble { background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#fff; border-bottom-right-radius:5px; }
+  .sm-row.them .sm-bubble { background:var(--panel); color:var(--text); border:1px solid var(--line); border-bottom-left-radius:5px; }
+  .sm-row.pending .sm-bubble { opacity:.65; }
+  .sm-row.failed .sm-bubble { background:var(--danger); }
+  .sm-meta { font-size:10px; color:var(--text-dim); margin-top:3px; padding:0 4px; display:flex; gap:5px; }
+  .sm-meta .read { color:var(--accent); font-weight:800; }
+  .sm-retry { border:0; background:none; color:var(--danger); font-weight:800; font-size:10px; cursor:pointer; padding:0; }
+  .sup-typing { height:20px; padding:0 20px; font-size:11.5px; font-style:italic; color:var(--text-dim); background:var(--bg); }
+  .sup-compose { display:flex; gap:10px; align-items:flex-end; padding:12px 16px; border-top:1px solid var(--line); }
+  .sup-compose textarea { flex:1; resize:none; min-height:44px; max-height:140px; padding:12px 16px; border-radius:22px; border:1.5px solid var(--line); background:var(--panel-alt); color:var(--text); font:inherit; font-size:13.5px; outline:none; }
+  .sup-compose textarea:focus { border-color:var(--accent); }
+  .sup-send { border:0; border-radius:999px; padding:0 22px; height:44px; background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#fff; font:700 13px 'Plus Jakarta Sans',sans-serif; cursor:pointer; }
+  .sup-send:disabled { opacity:.5; }
+  .sup-quick { display:flex; gap:6px; flex-wrap:wrap; padding:0 16px 10px; }
+  .sup-quick button { border:1px solid var(--line); background:var(--panel); color:var(--text-dim); font:600 11.5px 'Plus Jakarta Sans',sans-serif; padding:5px 11px; border-radius:999px; cursor:pointer; }
+  .sup-quick button:hover { border-color:var(--accent); color:var(--accent); }
+  @media (max-width: 820px) {
+    .sup-shell { grid-template-columns: 1fr; height: calc(100vh - 190px); }
+    .sup-thread { display:none; }
+    .sup-shell.thread-open .sup-list { display:none; }
+    .sup-shell.thread-open .sup-thread { display:flex; }
+    .sup-thead .sup-back { display:inline-block; }
+    .sm-row { max-width:88%; }
+  }
+
   /* Compact, aligned Operations controls. */
   #experienceSettings { padding: 24px; }
   #experienceSettings .panel-header { margin-bottom: 16px; }
@@ -522,6 +584,7 @@
       Bank Reviews
     </button>
     <button class="tab-btn" onclick="switchTab('operations')">Operations desk</button>
+    <button class="tab-btn" onclick="switchTab('support')">💬 Live support <span class="tab-badge" id="supTabBadge" hidden></span></button>
   </div>
 
   <!-- TAB 1: EXECUTIVE ANALYTICS -->
@@ -732,7 +795,6 @@
   </div>
 
   <div class="modal-overlay" id="modalWalletCredit"><div class="modal-card wallet-credit-card"><div class="wallet-credit-head"><div class="modal-header" style="margin:0"><div><h3 class="wallet-credit-title">Credit wallet</h3><div id="walletCreditUser" class="wallet-credit-user"></div></div><button class="modal-close" aria-label="Close credit wallet" onclick="closeModal('modalWalletCredit')">×</button></div></div><div class="wallet-credit-body"><div class="wallet-credit-note"><b>✦</b><span><strong style="color:var(--text)">Audited balance adjustment</strong><br>Every credit is recorded with your admin identity, receipt number and reason.</span></div><label class="wallet-credit-label" for="walletCreditAmount">Credit amount</label><div class="wallet-credit-amount"><span>₦</span><input class="wallet-credit-input" id="walletCreditAmount" type="number" min="1" max="1000000" inputmode="decimal" placeholder="0.00"></div><label class="wallet-credit-label" for="walletCreditReason">Reason for this credit</label><textarea class="wallet-credit-reason" id="walletCreditReason" rows="3" placeholder="Example: Test credit for driver payout flow"></textarea><button id="walletCreditSubmit" class="btn-sm primary wallet-credit-submit" onclick="submitWalletCredit()">Credit wallet</button></div></div></div>
-  <div class="modal-overlay" id="modalSupportReply"><div class="modal-card" style="max-width:480px"><div class="modal-header"><div><h3 style="margin:0;font-size:19px">Reply to customer</h3><div id="supportReplyMeta" style="font-size:12px;color:var(--text-dim);margin-top:4px"></div></div><button class="modal-close" aria-label="Close reply composer" onclick="closeModal('modalSupportReply')">×</button></div><div style="padding:13px;border-radius:12px;background:var(--panel-alt);border:1px solid var(--line);font-size:12px;color:var(--text-dim);margin-bottom:12px">Send keeps the conversation open. Resolve ends this request; the student can start a new conversation later.</div><label style="display:block;font-size:12px;font-weight:700;margin-bottom:6px">Your reply</label><textarea id="supportReplyText" rows="5" placeholder="Write a helpful response…" style="width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--panel-alt);color:var(--text);font:inherit;resize:vertical"></textarea><div style="display:flex;justify-content:flex-end;gap:9px;flex-wrap:wrap;margin-top:14px"><button class="btn-sm" onclick="closeModal('modalSupportReply')">Cancel</button><button class="btn-sm" id="supportReplySend" onclick="submitSupportReply('open')">Send reply</button><button class="btn-sm primary" id="supportReplyResolve" onclick="submitSupportReply('resolved')">Send & resolve</button></div></div></div>
   <div class="modal-overlay" id="modalWalletLedger"><div class="modal-card" style="max-width:760px;max-height:82vh;overflow:auto"><div class="modal-header"><div><h3 id="walletLedgerTitle" style="margin:0;font-size:19px">Wallet ledger</h3><div id="walletLedgerMeta" style="font-size:12px;color:var(--text-dim);margin-top:4px">Complete transaction history</div></div><button class="modal-close" onclick="closeModal('modalWalletLedger')">×</button></div><div id="walletLedgerRows" style="display:grid;gap:8px"></div></div></div>
 
   <!-- TAB 3: DRIVER LEDGER & PAYOUTS -->
@@ -820,9 +882,45 @@
       <div id="broadcastList" style="margin-top:16px;display:grid;gap:8px"></div>
     </div>
     <div class="panel-card" style="border-top:3px solid #2563eb"><div class="panel-header"><div><h3 class="panel-title">Experience settings</h3><div style="font-size:12px;color:var(--text-dim)">Set the fixed ride price, payment provider, and the student home hero in one place.</div></div></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px"><label style="font-size:12px;font-weight:700">Ride fare (₦)<input class="search-input" id="configFare" type="number" min="0" style="max-width:none;margin-top:6px" placeholder="250"></label><label style="font-size:12px;font-weight:700">Platform fee (₦)<input class="search-input" id="configFee" type="number" min="0" style="max-width:none;margin-top:6px" placeholder="10"></label><label style="font-size:12px;font-weight:700">Payment provider<select id="configGateway" class="search-input" style="max-width:none;margin-top:6px"><option value="korapay">Korapay</option><option value="flutterwave">Flutterwave</option></select></label></div><div style="margin-top:18px;padding:15px;border-radius:14px;background:var(--panel-alt);border:1px solid var(--line)"><b style="font-size:13px">Student home hero</b><div style="font-size:12px;color:var(--text-dim);margin:4px 0 10px">Upload an image or video, or use a direct URL. A scheduled asset replaces the default only during its chosen hours.</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px"><label style="font-size:12px">Headline<input class="search-input" id="configHeroTitle" style="max-width:none;margin-top:5px" placeholder="Campus Life, Made Easier."></label><label style="font-size:12px">Default media type<select id="configHeroMediaType" class="search-input" style="max-width:none;margin-top:5px"><option value="image">Image</option><option value="video">Video</option></select></label></div><div style="display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap"><input class="search-input" id="configHeroImage" placeholder="Default image or video URL" style="flex:1;min-width:220px;max-width:none"><label class="btn-sm" style="cursor:pointer">Upload image/video<input id="configHeroUpload" type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime" hidden onchange="uploadHeroMedia(this)"></label></div><div style="display:grid;grid-template-columns:1fr 130px 130px;gap:10px;margin-top:10px"><input class="search-input" id="configScheduledHeroUrl" placeholder="Optional scheduled image/video URL" style="max-width:none"><input class="search-input" id="configHeroStartHour" type="number" min="0" max="23" placeholder="Start hour"><input class="search-input" id="configHeroEndHour" type="number" min="0" max="23" placeholder="End hour"></div></div><button class="btn-sm primary" style="margin-top:14px" onclick="saveConfig()">Save experience settings</button><span id="operationsNotice" style="margin-left:10px;font-size:12px;color:var(--text-dim)"></span></div>
-    <div class="panel-card"><div class="panel-header"><div><h3 class="panel-title">Live-agent inbox</h3><div style="font-size:12px;color:var(--text-dim)">Reply to open customer questions and close resolved requests.</div></div></div><div id="supportList" style="display:grid;gap:9px">Loading messages…</div></div>
     <div class="panel-card" style="border-top:3px solid #f59e0b"><div class="panel-header"><div><h3 class="panel-title">PIN identity reviews</h3><div style="font-size:12px;color:var(--text-dim)">Review the ID and selfie video before granting a secure approval code.</div></div></div><div id="pinReviewList" style="display:grid;gap:9px">Loading requests…</div></div>
     <div class="panel-card" style="border-top:3px solid #7c3aed"><div class="panel-header"><div><h3 class="panel-title">Platform change timeline</h3><div style="font-size:12px;color:var(--text-dim)">A permanent record of Codex and ChatGPT platform updates.</div></div></div><div id="changeTimeline" style="display:grid;gap:9px">Loading platform updates…</div></div>
+  </div>
+
+  <!-- TAB 6: LIVE SUPPORT CHAT -->
+  <div class="tab-pane" id="paneSupport">
+    <div class="sup-shell" id="supShell">
+      <aside class="sup-list">
+        <div class="sup-list-head">
+          <input class="search-input" id="supSearch" placeholder="Search name, reg no, message…" oninput="Sup.search()">
+          <div class="sup-pills">
+            <button class="sup-pill active" data-f="open" onclick="Sup.filter('open')">Open</button>
+            <button class="sup-pill" data-f="resolved" onclick="Sup.filter('resolved')">Resolved</button>
+            <button class="sup-pill" data-f="all" onclick="Sup.filter('all')">All</button>
+          </div>
+        </div>
+        <div class="sup-items" id="supItems"><div class="sup-empty">Loading conversations…</div></div>
+      </aside>
+      <section class="sup-thread">
+        <div class="sup-thead" id="supHead" hidden>
+          <button class="sup-back" onclick="Sup.back()">← Back</button>
+          <div class="sup-av" id="supHeadAv">?</div>
+          <div style="flex:1;min-width:0"><h4 id="supHeadName"></h4><div class="sup-sub" id="supHeadSub"></div></div>
+          <button class="btn-sm" id="supStatusBtn" onclick="Sup.toggleStatus()">Mark resolved</button>
+        </div>
+        <div class="sup-body" id="supBody"><div class="sup-placeholder">💬<br>Select a conversation to start chatting.</div></div>
+        <div class="sup-typing" id="supTyping"></div>
+        <div class="sup-quick" id="supQuick" hidden>
+          <button onclick="Sup.quick('Hi! Thanks for reaching out to Zira Go support. How can I help?')">Greeting</button>
+          <button onclick="Sup.quick('Please give me a moment while I check this for you.')">Checking</button>
+          <button onclick="Sup.quick('Could you share your registration number and the time of the transaction?')">Ask details</button>
+          <button onclick="Sup.quick('This has been sorted out. Is there anything else I can help you with?')">Sorted</button>
+        </div>
+        <div class="sup-compose" id="supCompose" hidden>
+          <textarea id="supInput" rows="1" placeholder="Write a reply… (Enter to send, Shift+Enter for a new line)" maxlength="2000" oninput="Sup.onInput(this)" onkeydown="Sup.onKey(event)"></textarea>
+          <button class="sup-send" id="supSend" onclick="Sup.send()">Send</button>
+        </div>
+      </section>
+    </div>
   </div>
 </main>
 
@@ -851,7 +949,7 @@
       const isTarget = (tab === 'analytics' && i === 0) ||
                        (tab === 'students' && i === 1) ||
                        (tab === 'drivers' && i === 2) ||
-                       (tab === 'bankReviews' && i === 3) || (tab === 'operations' && i === 4);
+                       (tab === 'bankReviews' && i === 3) || (tab === 'operations' && i === 4) || (tab === 'support' && i === 5);
       b.classList.toggle('active', isTarget);
     });
 
@@ -871,6 +969,9 @@
     } else if (tab === 'operations') {
       document.getElementById('paneOperations').classList.add('active');
       loadOperations();
+    } else if (tab === 'support') {
+      document.getElementById('paneSupport').classList.add('active');
+      Sup.opened();
     }
   }
 
@@ -1046,12 +1147,11 @@
 
   async function loadOperations() {
     try {
-      const requests = await Promise.allSettled([fetch(`${API_BASE}/admin/broadcasts`), fetch(`${API_BASE}/admin/config`), fetch(`${API_BASE}/admin/support/messages`), fetch(`${API_BASE}/admin/pin-requests`), fetch(`${API_BASE}/admin/change-log`)]);
+      const requests = await Promise.allSettled([fetch(`${API_BASE}/admin/broadcasts`), fetch(`${API_BASE}/admin/config`), fetch(`${API_BASE}/admin/pin-requests`), fetch(`${API_BASE}/admin/change-log`)]);
       const read = async (index, fallback) => requests[index].status === 'fulfilled' && requests[index].value.ok ? requests[index].value.json() : fallback;
-      const [list, cfg, support, pins, changes] = await Promise.all([read(0,[]),read(1,{}),read(2,[]),read(3,[]),read(4,[])]);
+      const [list, cfg, pins, changes] = await Promise.all([read(0,[]),read(1,{}),read(2,[]),read(3,[])]);
       document.getElementById('broadcastList').innerHTML = (list || []).map(b => `<div style="padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--panel-alt)"><div style="display:flex;justify-content:space-between;gap:8px"><b>${b.title}</b><span class="badge">${b.target}</span></div><span style="font-size:12px;color:var(--text-dim)">${b.message}</span><div style="font-size:11px;color:var(--text-dim);margin-top:7px">${b.send_email?'✉ Email enabled':'In-app only'} · ${new Date(b.created_at).toLocaleString()}</div></div>`).join('') || '<span style="color:var(--text-dim)">No broadcasts yet.</span>';
       const hourTime=value=>Number.isInteger(Number(value))?`${String(Number(value)).padStart(2,'0')}:00`:''; document.getElementById('configFare').value = cfg.driverFare ?? 250; document.getElementById('configFee').value = cfg.platformFee ?? 10; document.getElementById('configGateway').value = cfg.activeGateway || 'korapay'; document.getElementById('configHeroImage').value = cfg.heroBannerImage || ''; document.getElementById('configHeroTitle').value = cfg.heroTitle || ''; document.getElementById('configHeroMediaType').value = cfg.heroMediaType || 'image'; document.getElementById('configScheduledHeroUrl').value = cfg.heroSchedule?.url || ''; document.getElementById('configHeroStartHour').value = hourTime(cfg.heroSchedule?.startHour); document.getElementById('configHeroEndHour').value = hourTime(cfg.heroSchedule?.endHour);
-      document.getElementById('supportList').innerHTML = (support || []).map(s => `<div style="padding:13px;border:1px solid var(--line);border-radius:12px;background:var(--panel-alt)"><div style="display:flex;justify-content:space-between;gap:8px"><b>${s.user_name || 'Anonymous'}</b><span class="badge">${s.category||'general'}</span></div><div style="font-size:11px;color:var(--text-dim);margin:3px 0 8px">${s.contact_info}</div><span style="font-size:12px">${s.message}</span><br><button class="btn-sm primary" style="margin-top:10px" onclick="replySupport(${s.id})">Reply & resolve</button></div>`).join('') || '<span style="color:var(--text-dim)">No messages yet.</span>';
       document.getElementById('pinReviewList').innerHTML = (pins || []).map(p => `<div style="padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--panel-alt)"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><div><b>${p.reg_no}</b><div style="font-size:11px;color:var(--text-dim);margin-top:3px">${p.email}</div></div><span class="badge ${p.status === 'pending' ? 'pending' : 'success'}">${p.status}</span></div><div style="font-size:11px;color:var(--text-dim);margin:9px 0">Requested ${new Date(p.created_at).toLocaleString()}</div><div style="display:flex;gap:7px;flex-wrap:wrap"><button class="btn-sm" onclick="openPrivateReview(${p.id},'document')">View ID</button><button class="btn-sm" onclick="openPrivateReview(${p.id},'selfie')">View selfie video</button>${p.status === 'pending' ? `<button class="btn-sm primary" onclick="approvePinReview(${p.id})">Approve & send code</button><button class="btn-sm danger" onclick="rejectPinReview(${p.id})">Reject</button>` : ''}</div></div>`).join('') || '<span style="color:var(--text-dim)">No PIN reviews yet.</span>';
       document.getElementById('changeTimeline').innerHTML = (Array.isArray(changes) ? changes : []).map(c => `<div style="position:relative;padding:12px 12px 12px 18px;border-left:3px solid var(--accent);border-radius:0 12px 12px 0;background:var(--panel-alt)"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><b>${c.title}</b><span class="badge">${c.actor}</span></div><div style="font-size:12px;color:var(--text-dim);margin-top:5px">${c.details}</div><div style="font-size:11px;color:var(--text-dim);margin-top:8px">${c.area} · ${new Date(c.created_at).toLocaleString()}</div></div>`).join('') || '<span style="color:var(--text-dim)">No platform updates have been logged yet.</span>';
     } catch (e) { console.error(e); showAdminNotice('Could not load some Operations data. Refresh and sign in again if this continues.', true); }
@@ -1059,9 +1159,6 @@
   async function sendBroadcast() { const title = broadcastTitle.value.trim(), message = broadcastMessage.value.trim(), imageUrl=broadcastImageUrl.value.trim(); if (!title || !message) return alert('Add a title and message.'); const res = await fetch(`${API_BASE}/admin/broadcasts`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ title, message, target:broadcastTarget.value, urgency:broadcastUrgency.value, imageUrl, sendEmail:broadcastSendEmail.checked }) }); if (!res.ok) return alert('Broadcast could not be published.'); broadcastTitle.value=''; broadcastMessage.value=''; broadcastImageUrl.value=''; loadOperations(); }
   async function saveConfig() { const scheduleUrl=configScheduledHeroUrl.value.trim(), startTime=configHeroStartHour.value,endTime=configHeroEndHour.value,start=startTime?Number(startTime.split(':')[0]):NaN,end=endTime?Number(endTime.split(':')[0]):NaN; if(scheduleUrl && (!startTime||!endTime||!Number.isInteger(start)||!Number.isInteger(end))) return showAdminNotice('Choose both start and end times for scheduled media.', true); const config = { driverFare:Number(configFare.value), platformFee:Number(configFee.value), activeGateway:configGateway.value, heroBannerImage:configHeroImage.value.trim(), heroTitle:configHeroTitle.value.trim(), heroMediaType:configHeroMediaType.value, heroSchedule:scheduleUrl?{url:scheduleUrl,type:configHeroMediaType.value,startHour:start,endHour:end}:null }; try { const res = await fetch(`${API_BASE}/admin/config`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(config) }); const data=await res.json(); showAdminNotice(res.ok ? 'Settings saved and now live.' : (data.error||'Could not save settings.'), !res.ok); } catch (_) { showAdminNotice('Connection failed. Please try again.', true); } }
   async function uploadHeroMedia(input) { const file=input.files?.[0];if(!file)return;const form=new FormData();form.append('media',file);showAdminNotice('Uploading hero media…');try { const res=await fetch(`${API_BASE}/admin/hero-media`,{method:'POST',body:form});const data=await res.json();if(!res.ok)throw new Error(data.error||'Upload failed.');configHeroImage.value=data.url;configHeroMediaType.value=data.mediaType;showAdminNotice('Uploaded. Save experience settings to publish it.'); } catch(e) { showAdminNotice(e.message||'Upload failed.',true); } finally { input.value=''; } }
-  let activeSupportReplyId = null;
-  function replySupport(id) { activeSupportReplyId=id; document.getElementById('supportReplyText').value=''; document.getElementById('supportReplyMeta').textContent=`Support request #${id}`; document.getElementById('modalSupportReply').classList.add('active'); setTimeout(()=>document.getElementById('supportReplyText').focus(),100); }
-  async function submitSupportReply(status) { const reply=document.getElementById('supportReplyText').value.trim(), buttons=[document.getElementById('supportReplySend'),document.getElementById('supportReplyResolve')]; if(!reply)return showAdminNotice('Write a reply before sending.',true); buttons.forEach(b=>b.disabled=true);try { const res=await fetch(`${API_BASE}/admin/support/reply`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ id:activeSupportReplyId, reply, status }) }); const data=await res.json(); if(!res.ok)throw new Error(data.error||'Could not send your reply.'); closeModal('modalSupportReply');showAdminNotice(status==='resolved'?'Reply sent and request resolved.':'Reply sent. Conversation remains open.');loadOperations(); } catch(e) { showAdminNotice(e.message||'Could not send your reply.',true); } finally { buttons.forEach(b=>b.disabled=false); } }
   async function approvePinReview(id) { const res = await fetch(`${API_BASE}/admin/pin-requests/${id}/approve`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({}) }); const data = await res.json(); alert(data.message || (res.ok ? 'Approved.' : 'Could not approve.')); if(res.ok) loadOperations(); }
   async function rejectPinReview(id) { const note = prompt('Reason for rejecting this identity review:'); if(!note)return; const res = await fetch(`${API_BASE}/admin/pin-requests/${id}/reject`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({note}) }); if(res.ok)loadOperations(); }
   async function openPrivateReview(id, kind) { const res = await fetch(`${API_BASE}/admin/pin-requests/${id}/file/${kind}`); if (!res.ok) return alert('Private file unavailable.'); const url = URL.createObjectURL(await res.blob()); window.open(url, '_blank', 'noopener'); }
@@ -1192,6 +1289,185 @@
 
   renderAllModuleStatuses();
   init();
+
+  // ------------------------------------------------------------------
+  // Live support desk (real-time chat over server-sent events)
+  // ------------------------------------------------------------------
+  const Sup = (() => {
+    const API = `${API_BASE}/admin/support-chat`;
+    const H = { 'Content-Type': 'application/json' };
+    let convs = [], activeId = null, msgs = [], lastId = 0, status = 'open', totalUnread = 0, retry = 2000, listTimer = null, typingTimer = null, lastTypingSent = 0, searchTimer = null;
+    const $ = id => document.getElementById(id);
+    const esc = v => { const d = document.createElement('div'); d.textContent = v == null ? '' : String(v); return d.innerHTML; };
+    const isVisible = () => $('paneSupport').classList.contains('active') && !document.hidden;
+    const time = iso => new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    const day = iso => { const d = new Date(iso), t = new Date(), y = new Date(Date.now() - 864e5); return d.toDateString() === t.toDateString() ? 'Today' : d.toDateString() === y.toDateString() ? 'Yesterday' : d.toLocaleDateString([], { month: 'short', day: 'numeric' }); };
+    const short = iso => { const d = new Date(iso); return d.toDateString() === new Date().toDateString() ? time(iso) : d.toLocaleDateString([], { month: 'short', day: 'numeric' }); };
+    const initial = n => (String(n || '?').trim()[0] || '?').toUpperCase();
+    const active = () => convs.find(c => c.id === activeId);
+
+    function setBadge(n) {
+      totalUnread = n;
+      const b = $('supTabBadge'); b.hidden = !n; b.textContent = n > 99 ? '99+' : n;
+      document.title = (n ? `(${n}) ` : '') + 'Zira Go — Admin Portal & Analytics';
+    }
+    function beep() { try { const a = new (window.AudioContext || window.webkitAudioContext)(), o = a.createOscillator(), g = a.createGain(); o.frequency.value = 880; g.gain.value = 0.05; o.connect(g); g.connect(a.destination); o.start(); o.stop(a.currentTime + 0.12); } catch (_) {} }
+
+    function renderList() {
+      const box = $('supItems');
+      if (!convs.length) { box.innerHTML = `<div class="sup-empty">${status === 'open' ? 'No open conversations 🎉' : 'No conversations found.'}</div>`; return; }
+      box.innerHTML = convs.map(c => `
+        <div class="sup-item ${c.id === activeId ? 'active' : ''} ${c.adminUnread ? 'unread' : ''}" onclick="Sup.select(${c.id})">
+          <div class="sup-av">${esc(initial(c.name))}</div>
+          <div class="sup-mid">
+            <div class="sup-row1"><span class="sup-name">${esc(c.name)}</span><span class="sup-time">${short(c.lastMessageAt)}</span></div>
+            <div class="sup-row2"><span class="sup-prev">${esc(c.preview || '—')}</span>${c.adminUnread ? `<span class="sup-unread">${c.adminUnread}</span>` : (c.status === 'resolved' ? '<span class="badge success">Resolved</span>' : '')}</div>
+          </div>
+        </div>`).join('');
+    }
+
+    async function loadList() {
+      try {
+        const q = encodeURIComponent($('supSearch').value.trim());
+        const r = await fetch(`${API}/conversations?status=${status}&q=${q}`);
+        if (!r.ok) return;
+        const d = await r.json();
+        convs = d.conversations || []; setBadge(d.totalUnread || 0); renderList();
+      } catch (_) {}
+    }
+    const refreshSoon = () => { clearTimeout(listTimer); listTimer = setTimeout(loadList, 350); };
+
+    function renderThread(stick = true) {
+      const c = active(), box = $('supBody');
+      $('supHead').hidden = !c; $('supCompose').hidden = !c; $('supQuick').hidden = !c;
+      if (!c) { box.innerHTML = '<div class="sup-placeholder">💬<br>Select a conversation to start chatting.</div>'; return; }
+      $('supHeadAv').textContent = initial(c.name);
+      $('supHeadName').textContent = c.name;
+      $('supHeadSub').textContent = `${c.userRole === 'driver' ? 'Driver' : 'Student'}${c.ref ? ' · ' + c.ref : ''} · ${c.category}${c.status === 'resolved' ? ' · Resolved' : ''}`;
+      $('supStatusBtn').textContent = c.status === 'resolved' ? 'Reopen' : 'Mark resolved';
+      $('supStatusBtn').className = 'btn-sm ' + (c.status === 'resolved' ? '' : 'primary');
+      const near = box.scrollHeight - box.scrollTop - box.clientHeight < 100;
+      let html = '', last = '';
+      for (const m of msgs) {
+        const d = day(m.createdAt);
+        if (d !== last) { html += `<div class="sm-day">${d}</div>`; last = d; }
+        if (m.sender === 'system') { html += `<div class="sm-sys">${esc(m.body)}</div>`; continue; }
+        const mine = m.sender === 'admin';
+        const st = m.failed ? 'failed' : m.pending ? 'pending' : '';
+        const tick = !mine ? '' : m.failed ? `<button class="sm-retry" onclick="Sup.retry('${m.clientId}')">Not sent · Retry</button>` : m.pending ? '🕓' : m.readAt ? '<span class="read">✓✓ Seen</span>' : '✓';
+        html += `<div class="sm-row ${mine ? 'me' : 'them'} ${st}"><div class="sm-bubble">${esc(m.body)}</div><div class="sm-meta">${m.pending ? '' : time(m.createdAt)}${tick}</div></div>`;
+      }
+      box.innerHTML = html;
+      if (stick || near) box.scrollTop = box.scrollHeight;
+    }
+
+    function upsert(m) {
+      if (m.clientId) { const i = msgs.findIndex(x => x.clientId === m.clientId && x.pending !== undefined); if (i >= 0) { msgs[i] = m; lastId = Math.max(lastId, m.id); renderThread(false); return; } }
+      if (msgs.some(x => x.id === m.id)) return;
+      msgs.push(m); msgs.sort((a, b) => (a.id ?? Infinity) - (b.id ?? Infinity)); lastId = Math.max(lastId, m.id || 0); renderThread(false);
+    }
+
+    async function select(id) {
+      activeId = id; msgs = []; lastId = 0; $('supTyping').textContent = '';
+      $('supShell').classList.add('thread-open'); renderList();
+      try {
+        const r = await fetch(`${API}/conversations/${id}/messages`);
+        const d = await r.json();
+        if (!r.ok) throw new Error();
+        msgs = d.messages || []; lastId = Math.max(0, ...msgs.map(m => m.id));
+        const i = convs.findIndex(c => c.id === id); if (i >= 0) convs[i] = d.conversation; else convs.unshift(d.conversation);
+        renderThread(true); markRead();
+        setTimeout(() => $('supInput').focus(), 100);
+      } catch (_) { adminToast('Could not open that conversation.'); }
+    }
+    function markRead() {
+      if (!activeId) return;
+      const c = active(); if (c) { c.adminUnread = 0; renderList(); }
+      fetch(`${API}/conversations/${activeId}/read`, { method: 'POST' }).then(refreshSoon).catch(() => {});
+    }
+
+    async function post(m) {
+      try {
+        const r = await fetch(`${API}/conversations/${activeId}/messages`, { method: 'POST', headers: H, body: JSON.stringify({ body: m.body, clientId: m.clientId }) });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(d.message || 'Could not send');
+        upsert(d.message); refreshSoon();
+      } catch (e) {
+        const i = msgs.findIndex(x => x.clientId === m.clientId); if (i >= 0) { msgs[i].pending = false; msgs[i].failed = true; }
+        renderThread(false); adminToast(e.message || 'Reply not sent.');
+      }
+    }
+    function send(text) {
+      if (!activeId) return;
+      const input = $('supInput'), body = (text || input.value).trim();
+      if (!body) return;
+      const m = { id: null, clientId: 'a' + Date.now() + Math.random().toString(36).slice(2, 7), sender: 'admin', body, createdAt: new Date().toISOString(), pending: true };
+      msgs.push(m); input.value = ''; input.style.height = 'auto'; renderThread(true); post(m); input.focus();
+    }
+    function retryMsg(cid) { const m = msgs.find(x => x.clientId === cid); if (!m) return; m.failed = false; m.pending = true; renderThread(false); post(m); }
+    function quick(t) { const i = $('supInput'); i.value = t; i.focus(); onInput(i); }
+    function onKey(e) { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); } }
+    function onInput(el) {
+      el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+      if (activeId && el.value.trim() && Date.now() - lastTypingSent > 3000) { lastTypingSent = Date.now(); fetch(`${API}/conversations/${activeId}/typing`, { method: 'POST' }).catch(() => {}); }
+    }
+    async function toggleStatus() {
+      const c = active(); if (!c) return;
+      const next = c.status === 'resolved' ? 'open' : 'resolved';
+      try {
+        const r = await fetch(`${API}/conversations/${c.id}/status`, { method: 'POST', headers: H, body: JSON.stringify({ status: next }) });
+        if (!r.ok) throw new Error();
+        c.status = next; renderThread(false); refreshSoon();
+        adminToast(next === 'resolved' ? 'Conversation marked as resolved.' : 'Conversation reopened.');
+      } catch (_) { adminToast('Could not change the status.'); }
+    }
+
+    function handle(block) {
+      let ev = 'message', data = '';
+      block.split('\n').forEach(l => { if (l.startsWith('event:')) ev = l.slice(6).trim(); else if (l.startsWith('data:')) data += l.slice(5).trim(); });
+      if (!data) return;
+      let p; try { p = JSON.parse(data); } catch (_) { return; }
+      if (ev === 'hello') { setBadge(p.totalUnread || 0); }
+      else if (ev === 'message') {
+        const m = p.message, viewing = m.conversationId === activeId;
+        if (viewing) { upsert(m); if (m.sender === 'user' && isVisible()) markRead(); }
+        if (m.sender === 'user' && (!viewing || !isVisible())) { beep(); if (!$('paneSupport').classList.contains('active')) adminToast(`💬 ${p.conversation.name}: ${m.body.slice(0, 60)}`); }
+        refreshSoon();
+      } else if (ev === 'typing') {
+        if (p.conversationId === activeId) { $('supTyping').textContent = `${active()?.name || 'User'} is typing…`; clearTimeout(typingTimer); typingTimer = setTimeout(() => $('supTyping').textContent = '', 4000); }
+      } else if (ev === 'read') {
+        if (p.conversationId === activeId) { msgs.forEach(m => { if (m.sender === 'admin' && m.id && m.id <= p.upTo && !m.readAt) m.readAt = new Date().toISOString(); }); renderThread(false); }
+      } else if (ev === 'conversation') { setBadge(p.totalUnread ?? totalUnread); refreshSoon(); }
+    }
+
+    async function connect() {
+      try {
+        const res = await fetch(`${API}/stream`);
+        if (res.status === 401 || res.status === 403) return;
+        if (!res.ok || !res.body) throw new Error('stream');
+        retry = 2000;
+        if (activeId) { const r = await fetch(`${API}/conversations/${activeId}/messages?after=${lastId}`).then(x => x.json()).catch(() => null); (r?.messages || []).forEach(upsert); }
+        loadList();
+        const reader = res.body.getReader(), dec = new TextDecoder(); let buf = '';
+        for (;;) {
+          const { value, done } = await reader.read(); if (done) break;
+          buf += dec.decode(value, { stream: true });
+          let i; while ((i = buf.indexOf('\n\n')) >= 0) { const b = buf.slice(0, i); buf = buf.slice(i + 2); handle(b); }
+        }
+      } catch (_) {}
+      setTimeout(connect, retry); retry = Math.min(retry * 1.7, 15000);
+    }
+
+    return {
+      init() { connect(); setInterval(() => { if (!document.hidden) loadList(); }, 30000); },
+      opened() { loadList(); if (activeId && isVisible()) markRead(); },
+      filter(f) { status = f; document.querySelectorAll('.sup-pill').forEach(b => b.classList.toggle('active', b.dataset.f === f)); loadList(); },
+      search() { clearTimeout(searchTimer); searchTimer = setTimeout(loadList, 300); },
+      back() { $('supShell').classList.remove('thread-open'); activeId = null; renderList(); renderThread(); },
+      select, send, retry: retryMsg, quick, onKey, onInput, toggleStatus
+    };
+  })();
+  Sup.init();
 
   // Splash screen dismiss
   window.addEventListener('load', function() {

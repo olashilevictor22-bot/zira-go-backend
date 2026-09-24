@@ -416,6 +416,60 @@
     cursor: pointer;
   }
 
+
+  /* ---- Ledger status colours ---- */
+  :root, [data-theme="light"] { --warning: #D97706; --warning-bg: rgba(217,119,6,.12); --danger-bg: rgba(225,29,72,.08); --success-bg: rgba(5,150,105,.12); }
+  [data-theme="dark"] { --warning: #FBBF24; --warning-bg: rgba(251,191,36,.14); --danger-bg: rgba(251,113,133,.10); --success-bg: rgba(52,211,153,.14); }
+  .tx-row { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:11px 13px; background:var(--panel-alt); border:1px solid var(--line); border-left-width:4px; border-radius:14px; }
+  .tx-row .tx-desc { font-weight:700; font-size:13px; color:var(--text); line-height:1.3; word-break:break-word; }
+  .tx-row .tx-meta { font-size:11px; color:var(--text-dim); margin-top:3px; line-height:1.35; }
+  .tx-row .tx-amt { font-family:'Sora',sans-serif; font-weight:800; font-size:15px; white-space:nowrap; }
+  .tx-row .tx-right { text-align:right; flex-shrink:0; display:flex; flex-direction:column; align-items:flex-end; gap:5px; }
+  .tx-pill { display:inline-block; font-size:10.5px; font-weight:800; padding:3px 8px; border-radius:999px; white-space:nowrap; }
+  .tx-row.done   { border-left-color: var(--success); }
+  .tx-row.done   .tx-pill { background: var(--success-bg); color: var(--success); }
+  .tx-row.credit .tx-amt { color: var(--success); }
+  .tx-row.debit.done .tx-amt { color: var(--text); }
+  .tx-row.processing { border-left-color: var(--warning); background: var(--warning-bg); }
+  .tx-row.processing .tx-pill { background: var(--warning-bg); color: var(--warning); border:1px solid var(--warning); }
+  .tx-row.processing .tx-amt { color: var(--warning); }
+  .tx-row.failed { border-left-color: var(--danger); background: var(--danger-bg); }
+  .tx-row.failed .tx-pill { background: var(--danger-bg); color: var(--danger); border:1px solid var(--danger); }
+  .tx-row.failed .tx-amt { color: var(--danger); text-decoration: line-through; text-decoration-thickness: 2px; }
+  .tx-row.failed .tx-desc { color: var(--text-dim); }
+  .tx-note { font-size:10.5px; color: var(--danger); font-weight:600; margin-top:3px; }
+
+  /* ---- Refund passenger modal ---- */
+  .rf-card { max-width: 440px; padding: 0; overflow: hidden; }
+  .rf-head { display:flex; align-items:center; gap:12px; padding:20px 22px 16px; background: linear-gradient(135deg, rgba(124,58,237,.14), rgba(124,58,237,.02)); border-bottom:1px solid var(--line); }
+  .rf-head .rf-ico { width:42px; height:42px; border-radius:14px; display:grid; place-items:center; background: linear-gradient(135deg,var(--accent),var(--accent-2)); color:#fff; font-size:20px; flex-shrink:0; box-shadow:0 6px 16px rgba(124,58,237,.3); }
+  .rf-head h3 { margin:0; font-size:18px; }
+  .rf-head p { margin:2px 0 0; font-size:12px; color:var(--text-dim); }
+  .rf-head .modal-close { margin-left:auto; flex-shrink:0; }
+  .rf-body { padding:18px 22px 22px; max-height: min(74vh, 640px); overflow-y:auto; }
+  .rf-balance { display:flex; justify-content:space-between; align-items:center; background:var(--panel-alt); border:1px solid var(--line); border-radius:14px; padding:11px 14px; font-size:12.5px; color:var(--text-dim); }
+  .rf-balance b { font-family:'Sora',sans-serif; color:var(--text); font-size:15px; }
+  .rf-label { display:flex; justify-content:space-between; align-items:baseline; font-size:12.5px; font-weight:700; color:var(--text); margin:16px 0 7px; }
+  .rf-label small { font-weight:500; color:var(--text-dim); font-size:11px; }
+  .rf-field { width:100%; padding:13px 15px; border-radius:14px; border:1.5px solid var(--line); background:var(--panel-alt); color:var(--text); font-size:15px; font-family:'Inter',sans-serif; transition:border-color .2s, box-shadow .2s; }
+  .rf-field:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(124,58,237,.14); background:var(--panel); }
+  .rf-field.bad { border-color: var(--danger); box-shadow:0 0 0 3px var(--danger-bg); }
+  textarea.rf-field { resize:none; min-height:84px; line-height:1.45; }
+  .rf-amount { position:relative; }
+  .rf-amount span { position:absolute; left:15px; top:50%; transform:translateY(-50%); font-family:'Sora',sans-serif; font-weight:800; color:var(--text-dim); font-size:17px; }
+  .rf-amount input { padding-left:36px; font-family:'Sora',sans-serif; font-weight:800; font-size:19px; }
+  .rf-chips { display:flex; flex-wrap:wrap; gap:7px; margin-top:9px; }
+  .rf-chip { border:1px solid var(--line); background:var(--panel); color:var(--text-dim); font-size:12px; font-weight:600; padding:6px 12px; border-radius:999px; cursor:pointer; font-family:'Inter',sans-serif; transition:all .15s; }
+  .rf-chip:hover, .rf-chip.on { border-color:var(--accent); color:var(--accent); background:rgba(124,58,237,.09); }
+  .rf-error { display:none; margin-top:14px; padding:10px 13px; border-radius:12px; background:var(--danger-bg); border:1px solid var(--danger); color:var(--danger); font-size:12.5px; font-weight:600; }
+  .rf-error.show { display:block; }
+  .rf-actions { display:flex; gap:10px; margin-top:18px; }
+  .rf-actions button { padding:14px; font-size:14.5px; }
+  .rf-actions .secondary { flex:0 0 32%; }
+  .rf-actions .primary { flex:1; }
+  .rf-actions button:disabled { opacity:.6; cursor:not-allowed; transform:none; }
+  .rf-hint { font-size:11px; color:var(--text-dim); margin-top:6px; }
+
   /* Splash Screen */
   #splash-screen {
     position: fixed;
@@ -790,7 +844,41 @@
     </div>
     <div class="modal-overlay" id="modalCloseTrip"><div class="modal-card"><div class="modal-header"><h3 style="margin:0">Close active trip</h3><button class="modal-close" onclick="closeModal('modalCloseTrip')">✕</button></div><div class="pin-shell" style="padding-top:4px"><p style="font-size:13px;color:var(--text-dim);margin:0 0 18px">Enter your 4-digit trip-close PIN to end this session.</p><div class="pin-dots" id="closeTripPinDots"><span></span><span></span><span></span><span></span></div><div class="keypad" id="closeTripKeypad"></div><div id="closeTripError" style="min-height:18px;color:#e11d48;font-size:12px;font-weight:700;margin-top:10px"></div></div></div></div>
     <div class="modal-overlay" id="modalDriverPin"><div class="modal-card"><div class="modal-header"><h3 style="margin:0">Set trip-close PIN</h3><button class="modal-close" onclick="closeModal('modalDriverPin')">✕</button></div><div class="pin-shell" style="padding-top:4px"><p style="font-size:13px;color:var(--text-dim);margin:0 0 18px" id="setClosePinHint">Choose a 4-digit PIN. It's separate from your login password — do not share it.</p><div class="pin-dots" id="setClosePinDots"><span></span><span></span><span></span><span></span></div><div class="keypad" id="setClosePinKeypad"></div></div></div></div>
-    <div class="modal-overlay" id="modalRefund"><div class="modal-card"><div class="modal-header"><h3 style="margin:0">Refund passenger</h3><button class="modal-close" onclick="closeModal('modalRefund')">✕</button></div><p style="font-size:13px;color:var(--text-dim)">Refunds are deducted from your driver wallet and sent immediately to the student.</p><label>Student registration number</label><input id="refundRegNo" placeholder="LMU/23/01030"><label>Refund amount (₦)</label><input id="refundAmount" type="number" min="1" placeholder="0"><label>Reason</label><textarea id="refundReason" rows="3" placeholder="Why is this ride being refunded?"></textarea><button class="primary" style="margin-top:12px;width:100%" onclick="submitRideRefund()">Refund to student wallet</button></div></div>
+    <div class="modal-overlay" id="modalRefund"><div class="modal-card rf-card">
+      <div class="rf-head">
+        <div class="rf-ico">↩</div>
+        <div><h3>Refund passenger</h3><p>Money goes back to the student's wallet instantly</p></div>
+        <button class="modal-close" type="button" aria-label="Close" onclick="closeModal('modalRefund')">✕</button>
+      </div>
+      <div class="rf-body">
+        <div class="rf-balance"><span>Deducted from your wallet<br><small>Balance available</small></span><b id="rfBalance">₦0</b></div>
+
+        <div class="rf-label"><span>Student registration number</span><small>7 digits or full LMU number</small></div>
+        <input class="rf-field" id="refundRegNo" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" placeholder="LMU/23/01030" maxlength="14" oninput="rfFormatReg(this)">
+
+        <div class="rf-label"><span>Refund amount</span><small>Cannot exceed the fare charged</small></div>
+        <div class="rf-amount"><span>₦</span><input class="rf-field" id="refundAmount" type="number" inputmode="numeric" min="1" placeholder="0" oninput="rfClearError()"></div>
+        <div class="rf-chips" id="rfAmountChips">
+          <button type="button" class="rf-chip" onclick="rfSetAmount(100,this)">₦100</button>
+          <button type="button" class="rf-chip" onclick="rfSetAmount(250,this)">₦250</button>
+          <button type="button" class="rf-chip" onclick="rfSetAmount(500,this)">₦500</button>
+        </div>
+
+        <div class="rf-label"><span>Reason</span><small><span id="rfCount">0</span>/200</small></div>
+        <textarea class="rf-field" id="refundReason" maxlength="200" placeholder="Why is this ride being refunded?" oninput="rfReasonInput()"></textarea>
+        <div class="rf-chips">
+          <button type="button" class="rf-chip" onclick="rfSetReason('Destination not reached',this)">Destination not reached</button>
+          <button type="button" class="rf-chip" onclick="rfSetReason('Wrong fare charged',this)">Wrong fare</button>
+          <button type="button" class="rf-chip" onclick="rfSetReason('Charged twice',this)">Charged twice</button>
+        </div>
+
+        <div class="rf-error" id="rfError" role="alert"></div>
+        <div class="rf-actions">
+          <button type="button" class="secondary" onclick="closeModal('modalRefund')">Cancel</button>
+          <button type="button" class="primary" id="rfSubmit" onclick="submitRideRefund()">Refund to student</button>
+        </div>
+      </div>
+    </div></div>
     <div class="modal-overlay" id="modalDriverNotifications"><div class="modal-card"><div class="modal-header"><h3 style="margin:0">Notifications</h3><button class="modal-close" onclick="closeModal('modalDriverNotifications')">✕</button></div><div id="driverNotificationList">Loading…</div></div></div>
     <div class="modal-overlay" id="modalDriverNotificationPopup"><div class="modal-card" style="max-width:430px;overflow:hidden"><button class="modal-close" onclick="dismissDriverNotificationPopup()" style="position:absolute;right:14px;top:14px;z-index:2;background:rgba(255,255,255,.9)">✕</button><img id="driverNotificationPopupImage" alt="Notification banner" style="display:none;width:100%;max-height:220px;object-fit:cover"><div style="padding:20px"><div style="font-size:11px;font-weight:800;color:var(--accent);text-transform:uppercase;margin-bottom:7px">Campus update</div><h3 id="driverNotificationPopupTitle" style="margin:0 0 8px"></h3><p id="driverNotificationPopupBody" style="margin:0;color:var(--text-dim);line-height:1.5;white-space:pre-line"></p><div style="display:flex;gap:8px;margin-top:18px"><button class="secondary" style="flex:1" onclick="dismissDriverNotificationPopup()">Later</button><button class="primary" style="flex:1" onclick="readCurrentDriverNotification()">Mark as read</button></div></div></div></div>
 
@@ -966,8 +1054,39 @@ async function saveDriverClosePin() {
     panelNotice(e.message || 'Could not save PIN.');
   }
 }
-function openRefundModal(){closeModal('modalDriverSettings');openModal('modalRefund');}
-async function submitRideRefund(){const regNo=document.getElementById('refundRegNo').value.trim(),amount=Number(document.getElementById('refundAmount').value),reason=document.getElementById('refundReason').value.trim();try{const res=await fetch(`${API_BASE}/refund`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${AUTH_TOKEN}`},body:JSON.stringify({regNo,amount,reason})});const data=await res.json();if(!res.ok)throw new Error(data.message);closeModal('modalRefund');panelNotice('Refund sent to the student wallet.');loadDriverProfile();loadDriverTransactions();}catch(e){panelNotice(e.message||'Could not refund passenger.');}}
+function openRefundModal(){
+  closeModal('modalDriverSettings');
+  ['refundRegNo','refundAmount','refundReason'].forEach(id=>{const el=document.getElementById(id);el.value='';el.classList.remove('bad');});
+  document.querySelectorAll('#modalRefund .rf-chip').forEach(c=>c.classList.remove('on'));
+  document.getElementById('rfCount').textContent='0';
+  rfClearError();
+  document.getElementById('rfBalance').textContent='₦'+Number((currentDriver&&currentDriver.walletBalance)||0).toLocaleString();
+  const btn=document.getElementById('rfSubmit'); btn.disabled=false; btn.textContent='Refund to student';
+  openModal('modalRefund');
+  setTimeout(()=>document.getElementById('refundRegNo').focus(),120);
+}
+function rfShowError(msg,fieldId){const e=document.getElementById('rfError');e.textContent=msg;e.classList.add('show');if(fieldId)document.getElementById(fieldId).classList.add('bad');}
+function rfClearError(){document.getElementById('rfError').classList.remove('show');['refundRegNo','refundAmount','refundReason'].forEach(id=>document.getElementById(id).classList.remove('bad'));}
+// Turns 2301030 (or lmu2301030) into LMU/23/01030 while typing.
+function rfFormatReg(el){rfClearError();const d=el.value.replace(/\D/g,'').slice(0,7);if(!d){el.value=el.value.replace(/[^A-Za-z/]/g,'').toUpperCase();return;}el.value=d.length<=2?'LMU/'+d:'LMU/'+d.slice(0,2)+'/'+d.slice(2);}
+function rfSetAmount(v,btn){document.getElementById('refundAmount').value=v;document.querySelectorAll('#rfAmountChips .rf-chip').forEach(c=>c.classList.toggle('on',c===btn));rfClearError();}
+function rfSetReason(text,btn){const t=document.getElementById('refundReason');t.value=text;rfReasonInput();btn.parentElement.querySelectorAll('.rf-chip').forEach(c=>c.classList.toggle('on',c===btn));}
+function rfReasonInput(){rfClearError();document.getElementById('rfCount').textContent=document.getElementById('refundReason').value.length;}
+async function submitRideRefund(){
+  rfClearError();
+  const regNo=document.getElementById('refundRegNo').value.trim(),amount=Number(document.getElementById('refundAmount').value),reason=document.getElementById('refundReason').value.trim();
+  if(regNo.replace(/\D/g,'').length!==7)return rfShowError('Enter the student\'s 7-digit registration number, e.g. LMU/23/01030.','refundRegNo');
+  if(!Number.isFinite(amount)||amount<=0)return rfShowError('Enter the amount to refund.','refundAmount');
+  if(currentDriver&&amount>Number(currentDriver.walletBalance||0))return rfShowError('Your wallet balance is lower than this refund amount.','refundAmount');
+  if(reason.length<3)return rfShowError('Add a short reason so the student knows why.','refundReason');
+  const btn=document.getElementById('rfSubmit');btn.disabled=true;btn.textContent='Sending refund…';
+  try{
+    const res=await fetch(`${API_BASE}/refund`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${AUTH_TOKEN}`},body:JSON.stringify({regNo,amount,reason})});
+    const data=await res.json().catch(()=>({}));
+    if(!res.ok)throw new Error(data.message||'Could not refund passenger.');
+    closeModal('modalRefund');panelNotice(`₦${amount.toLocaleString()} refunded to ${regNo}.`);loadDriverProfile();loadDriverTransactions();
+  }catch(e){rfShowError(e.message||'Could not refund passenger.');btn.disabled=false;btn.textContent='Refund to student';}
+}
 
 function minimizeTrip() {
   if (!trip) return;
@@ -1481,6 +1600,34 @@ async function loadDriverTransactions() {
   }
 }
 
+// ---- Ledger row rendering: real status + matching colours ----
+function ledgerEsc(v) { const d = document.createElement('div'); d.textContent = v == null ? '' : String(v); return d.innerHTML; }
+function ledgerMeta(t) {
+  const credit = t.type === 'ride_credit' || t.type === 'admin_credit';
+  const raw = String(t.status || 'success').toLowerCase();
+  const state = /fail|reject|revers|cancel/.test(raw) ? 'failed' : /pend|process/.test(raw) ? 'processing' : 'done';
+  const isWithdrawal = t.type === 'withdrawal';
+  const label = state === 'failed' ? '✕ Failed' : state === 'processing' ? '● Processing' : (isWithdrawal ? '✓ Withdrawn' : '✓ Completed');
+  const note = state === 'failed' && isWithdrawal ? 'Amount returned to your wallet' : '';
+  return { credit, state, label, note, sign: credit ? '+' : '−' };
+}
+function ledgerRowHTML(t) {
+  const m = ledgerMeta(t);
+  const fee = t.fee ? ` • Fee: ₦${Number(t.fee).toLocaleString()}` : '';
+  return `
+    <div class="tx-row ${m.state} ${m.credit ? 'credit' : 'debit'}">
+      <div style="min-width:0">
+        <div class="tx-desc">${ledgerEsc(t.description)}</div>
+        <div class="tx-meta">${ledgerEsc(t.date)}${t.receiptNumber ? ' • ' + ledgerEsc(t.receiptNumber) : ''}${fee}</div>
+        ${m.note ? `<div class="tx-note">${m.note}</div>` : ''}
+      </div>
+      <div class="tx-right">
+        <div class="tx-amt">${m.sign}₦${Number(t.amount).toLocaleString()}</div>
+        <span class="tx-pill">${m.label}</span>
+      </div>
+    </div>`;
+}
+
 function renderDriverLedgerPreview() {
   const stream = document.getElementById('driverRecentTxStream');
   if (!stream) return;
@@ -1488,20 +1635,7 @@ function renderDriverLedgerPreview() {
     stream.innerHTML = `<div style="text-align:center;padding:12px;color:var(--text-dim);font-size:12px">No recent trips or payouts recorded.</div>`;
     return;
   }
-  stream.innerHTML = driverTransactions.slice(0, 3).map(t => {
-    const isCredit = t.type === 'ride_credit';
-    const amountStr = (isCredit ? '+' : '-') + '₦' + Number(t.amount).toLocaleString();
-    const color = isCredit ? 'var(--success)' : 'var(--accent)';
-    return `
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--panel-alt);border-radius:12px;border:1px solid var(--line);font-size:13px">
-        <div>
-          <div style="font-weight:700;color:var(--text);font-size:13px">${t.description}</div>
-          <div style="font-size:11px;color:var(--text-dim);margin-top:1px">${t.date} ${t.fee ? '• Fee: ₦' + t.fee : ''}</div>
-        </div>
-        <div style="font-family:'Sora';font-weight:800;color:${color}">${amountStr}</div>
-      </div>
-    `;
-  }).join('');
+  stream.innerHTML = driverTransactions.slice(0, 3).map(ledgerRowHTML).join('');
 }
 
 function openDriverLedgerModal() {
@@ -1540,26 +1674,7 @@ function renderFilteredDriverLedger(filterType) {
     container.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-dim);font-size:13px">No transactions found.</div>`;
     return;
   }
-  container.innerHTML = list.map(t => {
-    const isCredit = t.type === 'ride_credit';
-    const amountStr = (isCredit ? '+' : '-') + '₦' + Number(t.amount).toLocaleString();
-    const color = isCredit ? 'var(--success)' : 'var(--text)';
-    return `
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--panel-alt);border-radius:14px;border:1px solid var(--line)">
-        <div>
-          <div style="font-weight:700;font-size:13.5px;color:var(--text)">${t.description}</div>
-          <div style="font-size:11.5px;color:var(--text-dim);margin-top:2px">
-            ${t.date} ${t.receiptNumber ? '• ' + t.receiptNumber : ''}
-            ${t.fee ? '<span style="color:var(--text-dim)"> (Platform Fee: ₦' + t.fee + ')</span>' : ''}
-          </div>
-        </div>
-        <div style="text-align:right">
-          <div style="font-family:'Sora';font-weight:800;font-size:15px;color:${color}">${amountStr}</div>
-          <span style="font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:999px;background:rgba(5,150,105,0.1);color:var(--success)">✓ Completed</span>
-        </div>
-      </div>
-    `;
-  }).join('');
+  container.innerHTML = list.map(ledgerRowHTML).join('');
 }
 
 function toggleTheme() {
