@@ -11,7 +11,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const router = express.Router();
-const { requireAuth, requireRole } = require('./zira_go_auth_routes');
+const { requireAuth, requireRole, normalizeLmuRegistrationNumber } = require('./zira_go_auth_routes');
 const { notifyStudent, notifyDriver, notifyDriverFlagged } = require('./zira_go_telegram_bot');
 const { notify } = require('./zira_go_notification_routes');
 
@@ -275,10 +275,15 @@ router.post('/:id/charge/reg-no', requireAuth, requireRole('driver'), async (req
         }
         if (session.rows[0].mode === 'complete_ride') fareAmount = 250;
 
+        const formattedRegNo = normalizeLmuRegistrationNumber(regNo);
+        if (!formattedRegNo) {
+            return res.status(400).json({ error: 'invalid_reg_no', message: 'Enter the student\'s 7-digit registration number, e.g. 2012345.' });
+        }
+
         const studentLookup = await pool.query(
             `SELECT id, pin_hash, pin_fail_count, pin_lock_stage, pin_locked_until, pin_permanently_locked
              FROM students WHERE reg_no = $1`,
-            [String(regNo || '').trim()]
+            [formattedRegNo]
         );
         if (!studentLookup.rows.length) return res.status(404).json({ error: 'student_not_found' });
         const student = studentLookup.rows[0];
@@ -546,8 +551,10 @@ router.post('/close-pin', requireAuth, requireRole('driver'), async (req, res) =
 router.post('/refund', requireAuth, requireRole('driver'), async (req, res) => {
     const client = await pool.connect();
     try {
-        const regNo=String(req.body?.regNo||'').trim(), amount=Number(req.body?.amount), reason=String(req.body?.reason||'').trim();
-        if (!regNo || !Number.isFinite(amount) || amount<=0 || !reason) return res.status(400).json({ message: 'Registration number, amount and reason are required.' });
+        const rawRegNo=String(req.body?.regNo||'').trim(), amount=Number(req.body?.amount), reason=String(req.body?.reason||'').trim();
+        if (!rawRegNo || !Number.isFinite(amount) || amount<=0 || !reason) return res.status(400).json({ message: 'Registration number, amount and reason are required.' });
+        const regNo = normalizeLmuRegistrationNumber(rawRegNo);
+        if (!regNo) return res.status(400).json({ message: 'Enter the student\'s 7-digit registration number, e.g. 2012345.' });
         await client.query('BEGIN');
         const charge=await client.query(`SELECT tc.*,s.id AS student_id FROM trip_charges tc JOIN students s ON s.id=tc.student_id JOIN trip_sessions ts ON ts.id=tc.trip_session_id WHERE ts.driver_id=$1 AND s.reg_no=$2 AND tc.status='success' ORDER BY tc.created_at DESC LIMIT 1 FOR UPDATE`,[req.auth.id,regNo]);
         if(!charge.rows.length) { await client.query('ROLLBACK');return res.status(404).json({message:'No completed ride charge was found for this student.'}); }
