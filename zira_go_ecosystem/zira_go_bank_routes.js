@@ -72,8 +72,9 @@ router.post('/resolve', requireAuth, async (req, res) => {
     try {
         const { accountName } = await resolveAccountName(normalizedAccountNumber, bankCode);
         res.json({ status: 'resolved', accountName, accountNumber: normalizedAccountNumber, bankCode, bankName });
-    } catch (_) {
-        res.status(422).json({ error: 'resolve_failed', message: "Couldn't verify that account number with the bank. Double-check it and try again." });
+    } catch (err) {
+        console.error('[bank/resolve] failed:', err.reasons || err.message);
+        res.status(422).json({ error: 'resolve_failed', message: "Couldn't verify that account number with the bank. Double-check the bank and account number and try again." });
     }
 });
 
@@ -100,6 +101,7 @@ router.post('/verify', requireAuth, async (req, res) => {
     try {
         ({ accountName } = await resolveAccountName(normalizedAccountNumber, bankCode));
     } catch (err) {
+        console.error('[bank/verify] resolve failed:', err.reasons || err.message);
         return res.status(422).json({ error: 'resolve_failed', message: "Couldn't verify that account number with the bank. Double-check it and try again." });
     }
 

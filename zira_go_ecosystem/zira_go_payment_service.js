@@ -254,48 +254,65 @@ async function verifyFlutterwaveFunding(reference) {
 // =========================================================================
 // 4. Bank Account Name Resolution (NIBSS / Gateway lookup)
 // =========================================================================
-async function resolveAccountName(accountNumber, bankCode) {
-    // 1. Try Korapay resolve
-    if (KORAPAY_SECRET_KEY && KORAPAY_SECRET_KEY !== 'mock') {
-        try {
-            const res = await fetch('https://api.korapay.com/merchant/api/v1/misc/banks/resolve', {
-                method: 'POST',
-                headers: {
-                    Authorization: `Bearer ${KORAPAY_SECRET_KEY}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ account: accountNumber, bank: bankCode })
-            });
-            const data = await res.json();
-            if (data.status && data.data?.account_name) {
-                return { accountName: data.data.account_name, provider: 'korapay' };
-            }
-        } catch (e) {
-            // fallback
-        }
-    }
+// fetch with a hard timeout so a stalled provider can never leave the UI hanging
+async function fetchWithTimeout(url, options = {}, ms = 12000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), ms);
+    try { return await fetch(url, { ...options, signal: controller.signal }); }
+    finally { clearTimeout(timer); }
+}
 
-    // 2. Try Flutterwave resolve
+async function resolveAccountName(accountNumber, bankCode) {
+    const reasons = [];
+
+    // 1. Flutterwave first — the bank list (and its codes) comes from Flutterwave,
+    //    so these codes are guaranteed to be valid here.
     if (FLW_SECRET_KEY && FLW_SECRET_KEY !== 'mock') {
         try {
-            const res = await fetch('https://api.flutterwave.com/v3/accounts/resolve', {
+            const res = await fetchWithTimeout('https://api.flutterwave.com/v3/accounts/resolve', {
                 method: 'POST',
-                headers: {
-                    Authorization: `Bearer ${FLW_SECRET_KEY}`,
-                    'Content-Type': 'application/json'
-                },
+                headers: { Authorization: `Bearer ${FLW_SECRET_KEY}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({ account_number: accountNumber, account_bank: bankCode })
             });
-            const data = await res.json();
+            const data = await res.json().catch(() => ({}));
             if (data.status === 'success' && data.data?.account_name) {
                 return { accountName: data.data.account_name, provider: 'flutterwave' };
             }
+            const why = `Flutterwave ${res.status}: ${data.message || 'no account name returned'}`;
+            console.warn('[Resolve] ' + why);
+            reasons.push(why);
         } catch (e) {
-            // fallback
+            const why = `Flutterwave ${e.name === 'AbortError' ? 'timed out' : 'error: ' + e.message}`;
+            console.warn('[Resolve] ' + why);
+            reasons.push(why);
         }
     }
 
-    throw new Error('Live account verification is unavailable. Check the Flutterwave/Korapay live credentials and bank code.');
+    // 2. Korapay fallback
+    if (KORAPAY_SECRET_KEY && KORAPAY_SECRET_KEY !== 'mock') {
+        try {
+            const res = await fetchWithTimeout('https://api.korapay.com/merchant/api/v1/misc/banks/resolve', {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${KORAPAY_SECRET_KEY}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ account: accountNumber, bank: bankCode, currency: 'NGN' })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (data.status && data.data?.account_name) {
+                return { accountName: data.data.account_name, provider: 'korapay' };
+            }
+            const why = `Korapay ${res.status}: ${data.message || 'no account name returned'}`;
+            console.warn('[Resolve] ' + why);
+            reasons.push(why);
+        } catch (e) {
+            const why = `Korapay ${e.name === 'AbortError' ? 'timed out' : 'error: ' + e.message}`;
+            console.warn('[Resolve] ' + why);
+            reasons.push(why);
+        }
+    }
+
+    const err = new Error('Live account verification is unavailable. Check the Flutterwave/Korapay live credentials and bank code.');
+    err.reasons = reasons;
+    throw err;
 }
 
 async function getNigerianBanks() {
