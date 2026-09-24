@@ -5,7 +5,7 @@ const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-const nodemailer = require('nodemailer');
+const { sendEmail, isConfigured: emailConfigured } = require('./zira_go_email_service');
 const { notify } = require('./zira_go_notification_routes');
 const { requireAuth, requireRole } = require('./zira_go_auth_routes');
 
@@ -91,13 +91,9 @@ adminRouter.post('/:id/approve', async (req, res) => {
 router.post('/generate-code', requireAuth, requireRole('student'), async (req, res) => {
   const row = await pool.query(`SELECT p.*,s.email FROM pin_change_requests p JOIN students s ON s.id=p.student_id WHERE p.student_id=$1 AND p.status='approved' AND p.used_at IS NULL ORDER BY p.reviewed_at DESC LIMIT 1`, [req.auth.id]);
   if (!row.rows.length) return res.status(404).json({ message: 'There is no approved PIN-change request ready for a code.' });
-  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) return res.status(503).json({ message: 'Email delivery is not configured yet. Please contact support.' });
+  if (!emailConfigured) return res.status(503).json({ message: 'Email delivery is not configured yet. Please contact support.' });
   const request = row.rows[0], code = crypto.randomInt(100000, 1000000).toString(), expires = new Date(Date.now() + 15 * 60 * 1000);
-  const smtpOptions = process.env.SMTP_HOST
-    ? { host: process.env.SMTP_HOST, port: Number(process.env.SMTP_PORT || 465), secure: Number(process.env.SMTP_PORT || 465) === 465 }
-    : { service: 'gmail' };
-  const mailer = nodemailer.createTransport({ ...smtpOptions, auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_APP_PASSWORD }, connectionTimeout:10000, greetingTimeout:10000, socketTimeout:15000 });
-  await mailer.sendMail({ from: `Zira Go <${process.env.GMAIL_USER}>`, to: request.email, subject: `${code} is your Zira Go wallet PIN approval code`, text: `Your identity review is approved. Your code is ${code}. It expires in 15 minutes. Do not share this code.`, html: `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;padding:28px;background:#f8f7ff;color:#172033"><div style="background:linear-gradient(135deg,#6d28d9,#8b5cf6);border-radius:18px;padding:22px;color:#fff"><div style="font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;opacity:.85">Zira Go security</div><h1 style="font-size:24px;margin:8px 0 0">Wallet PIN change approved</h1></div><div style="background:#fff;border-radius:0 0 18px 18px;padding:26px;box-shadow:0 10px 28px rgba(43,27,90,.08)"><p style="margin-top:0;line-height:1.55">Your identity check has been approved. Use this one-time code in the Zira Go app to set your new wallet PIN.</p><div style="margin:24px 0;padding:18px;border-radius:14px;background:#f2ecff;text-align:center;font-family:monospace;font-size:30px;font-weight:800;letter-spacing:7px;color:#6d28d9">${code}</div><p style="font-size:13px;line-height:1.5;color:#5b6475">This code expires in <b>15 minutes</b>. Never share it with anyone — Zira Go support will never ask for this code.</p></div></div>` });
+  await sendEmail({ to: request.email, subject: `${code} is your Zira Go wallet PIN approval code`, text: `Your identity review is approved. Your code is ${code}. It expires in 15 minutes. Do not share this code.`, html: `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;padding:28px;background:#f8f7ff;color:#172033"><div style="background:linear-gradient(135deg,#6d28d9,#8b5cf6);border-radius:18px;padding:22px;color:#fff"><div style="font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;opacity:.85">Zira Go security</div><h1 style="font-size:24px;margin:8px 0 0">Wallet PIN change approved</h1></div><div style="background:#fff;border-radius:0 0 18px 18px;padding:26px;box-shadow:0 10px 28px rgba(43,27,90,.08)"><p style="margin-top:0;line-height:1.55">Your identity check has been approved. Use this one-time code in the Zira Go app to set your new wallet PIN.</p><div style="margin:24px 0;padding:18px;border-radius:14px;background:#f2ecff;text-align:center;font-family:monospace;font-size:30px;font-weight:800;letter-spacing:7px;color:#6d28d9">${code}</div><p style="font-size:13px;line-height:1.5;color:#5b6475">This code expires in <b>15 minutes</b>. Never share it with anyone — Zira Go support will never ask for this code.</p></div></div>` });
   await pool.query(`UPDATE pin_change_requests SET approval_code_hash=$1,approval_code_expires_at=$2 WHERE id=$3`, [codeHash(code), expires, request.id]);
   res.json({ success: true, message: 'A six-digit approval code was sent to your email.', expiresAt: expires });
 });

@@ -58,30 +58,11 @@ function requireRole(role) {
     };
 }
 
-const nodemailer = require('nodemailer');
+const { sendEmail, isConfigured: emailConfigured } = require('./zira_go_email_service');
 
 // In-memory OTP cache: email -> { otp, expiresAt, verified }
 const otpStore = new Map();
 const adminTelegramOtpStore = new Map();
-
-// Optional Gmail SMTP transporter
-let mailTransporter = null;
-if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
-    const smtpOptions = process.env.SMTP_HOST
-        ? { host: process.env.SMTP_HOST, port: Number(process.env.SMTP_PORT || 465), secure: Number(process.env.SMTP_PORT || 465) === 465 }
-        : { service: 'gmail' };
-    // Do not allow a slow/unreachable SMTP provider to keep a registration
-    // request open indefinitely. The browser receives a useful error instead
-    // of leaving its Send code button stuck on "Sending...".
-    mailTransporter = nodemailer.createTransport({
-        ...smtpOptions,
-        auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_APP_PASSWORD },
-        connectionTimeout: 10000,
-        greetingTimeout: 10000,
-        socketTimeout: 15000
-    });
-    console.log('[Auth] SMTP transporter configured for:', process.env.GMAIL_USER);
-}
 
 // ------------------------------------------------------------------
 // POST /api/auth/send-otp
@@ -100,10 +81,10 @@ router.post('/send-otp', async (req, res) => {
     otpStore.set(cleanEmail, { otp, expiresAt, verified: false });
     console.log(`[OTP Verification] OTP generated for ${cleanEmail}`);
 
-    if (mailTransporter) {
+    if (emailConfigured) {
         try {
-            await mailTransporter.sendMail({
-                from: `"Zira Go Campus Transit" <${process.env.GMAIL_USER}>`,
+            await sendEmail({
+                fromName: 'Zira Go Campus Transit',
                 to: cleanEmail,
                 subject: `${otp} is your Zira Go verification code`,
                 html: `
@@ -123,7 +104,7 @@ router.post('/send-otp', async (req, res) => {
             });
             return res.json({ success: true, message: 'Verification code sent to your email.' });
         } catch (mailErr) {
-            console.warn('[SMTP Warning] Failed to send via Gmail:', mailErr.message);
+            console.warn('[Email Warning] Failed to send via Resend:', mailErr.message);
         }
     }
 
