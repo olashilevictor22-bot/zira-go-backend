@@ -268,87 +268,92 @@ router.post('/:id/charge/reg-no', requireAuth, requireRole('driver'), async (req
     const { regNo, pin } = req.body;
     let { fareAmount } = req.body;
 
-    const session = await pool.query('SELECT mode, status FROM trip_sessions WHERE id = $1 AND driver_id = $2', [tripSessionId, req.auth.id]);
-    if (!session.rows.length || session.rows[0].status !== 'open') {
-        return res.status(400).json({ error: 'trip_session_not_open' });
-    }
-    if (session.rows[0].mode === 'complete_ride') fareAmount = 250;
+    try {
+        const session = await pool.query('SELECT mode, status FROM trip_sessions WHERE id = $1 AND driver_id = $2', [tripSessionId, req.auth.id]);
+        if (!session.rows.length || session.rows[0].status !== 'open') {
+            return res.status(400).json({ error: 'trip_session_not_open' });
+        }
+        if (session.rows[0].mode === 'complete_ride') fareAmount = 250;
 
-    const studentLookup = await pool.query(
-        `SELECT id, pin_hash, pin_fail_count, pin_lock_stage, pin_locked_until, pin_permanently_locked
-         FROM students WHERE reg_no = $1`,
-        [String(regNo || '').trim()]
-    );
-    if (!studentLookup.rows.length) return res.status(404).json({ error: 'student_not_found' });
-    const student = studentLookup.rows[0];
-    const studentId = student.id;
-
-    if (student.pin_permanently_locked) {
-        return res.status(423).json({
-            error: 'pin_permanently_locked',
-            message: 'This wallet PIN is locked after repeated failed attempts. The student must contact support to reopen the account.'
-        });
-    }
-    if (student.pin_locked_until && new Date(student.pin_locked_until) > new Date()) {
-        return res.status(423).json({
-            error: 'pin_temporarily_locked',
-            lockedUntil: student.pin_locked_until,
-            message: `This wallet PIN is locked. Try again after ${new Date(student.pin_locked_until).toLocaleTimeString()}.`
-        });
-    }
-    if (!student.pin_hash) {
-        return res.status(409).json({ error: 'pin_not_set', message: 'This student has not set a wallet PIN yet.' });
-    }
-
-    const pinValid = await bcrypt.compare(pin || '', student.pin_hash);
-    await pool.query(
-        'INSERT INTO pin_attempts (student_id, trip_session_id, success) VALUES ($1, $2, $3)',
-        [studentId, tripSessionId, pinValid]
-    );
-
-    if (pinValid) {
-        // A correct PIN clears the whole escalation, not just the immediate lock.
-        await pool.query(
-            `UPDATE students SET pin_fail_count = 0, pin_lock_stage = 0, pin_locked_until = NULL WHERE id = $1`,
-            [studentId]
+        const studentLookup = await pool.query(
+            `SELECT id, pin_hash, pin_fail_count, pin_lock_stage, pin_locked_until, pin_permanently_locked
+             FROM students WHERE reg_no = $1`,
+            [String(regNo || '').trim()]
         );
-        return executeCharge({ tripSessionId, studentId, fareAmount, authMethod: 'reg_no_pin' }, res);
-    }
+        if (!studentLookup.rows.length) return res.status(404).json({ error: 'student_not_found' });
+        const student = studentLookup.rows[0];
+        const studentId = student.id;
 
-    // Wrong PIN — advance the fail count for this tier and check whether it's breached.
-    const newFailCount = student.pin_fail_count + 1;
-    const stage = student.pin_lock_stage; // 0, 1, or 2
-    const tier = PIN_LOCKOUT_TIERS[Math.min(stage, PIN_LOCKOUT_TIERS.length - 1)];
-
-    if (newFailCount >= tier.failLimit) {
-        if (tier.lockMinutes === null) {
-            // Final tier breached — permanent lock, support must reopen it.
-            await pool.query(
-                `UPDATE students
-                 SET pin_fail_count = 0, pin_permanently_locked = true, pin_permanently_locked_at = now(), pin_locked_until = NULL
-                 WHERE id = $1`,
-                [studentId]
-            );
+        if (student.pin_permanently_locked) {
             return res.status(423).json({
                 error: 'pin_permanently_locked',
-                message: 'Too many incorrect PIN attempts. This wallet is now locked — the student must contact support to reopen it.'
+                message: 'This wallet PIN is locked after repeated failed attempts. The student must contact support to reopen the account.'
             });
         }
-        const lockedUntil = new Date(Date.now() + tier.lockMinutes * 60 * 1000);
-        await pool.query(
-            `UPDATE students SET pin_fail_count = 0, pin_lock_stage = $1, pin_locked_until = $2 WHERE id = $3`,
-            [stage + 1, lockedUntil, studentId]
-        );
-        return res.status(423).json({
-            error: 'pin_temporarily_locked',
-            lockedUntil,
-            message: `Too many incorrect attempts. This wallet PIN is locked for ${tier.lockMinutes} minutes.`
-        });
-    }
+        if (student.pin_locked_until && new Date(student.pin_locked_until) > new Date()) {
+            return res.status(423).json({
+                error: 'pin_temporarily_locked',
+                lockedUntil: student.pin_locked_until,
+                message: `This wallet PIN is locked. Try again after ${new Date(student.pin_locked_until).toLocaleTimeString()}.`
+            });
+        }
+        if (!student.pin_hash) {
+            return res.status(409).json({ error: 'pin_not_set', message: 'This student has not set a wallet PIN yet.' });
+        }
 
-    await pool.query(`UPDATE students SET pin_fail_count = $1 WHERE id = $2`, [newFailCount, studentId]);
-    const remaining = tier.failLimit - newFailCount;
-    return res.status(401).json({ error: 'invalid_pin', attemptsRemaining: Math.max(remaining, 0) });
+        const pinValid = await bcrypt.compare(pin || '', student.pin_hash);
+        await pool.query(
+            'INSERT INTO pin_attempts (student_id, trip_session_id, success) VALUES ($1, $2, $3)',
+            [studentId, tripSessionId, pinValid]
+        );
+
+        if (pinValid) {
+            // A correct PIN clears the whole escalation, not just the immediate lock.
+            await pool.query(
+                `UPDATE students SET pin_fail_count = 0, pin_lock_stage = 0, pin_locked_until = NULL WHERE id = $1`,
+                [studentId]
+            );
+            return executeCharge({ tripSessionId, studentId, fareAmount, authMethod: 'reg_no_pin' }, res);
+        }
+
+        // Wrong PIN — advance the fail count for this tier and check whether it's breached.
+        const newFailCount = student.pin_fail_count + 1;
+        const stage = student.pin_lock_stage; // 0, 1, or 2
+        const tier = PIN_LOCKOUT_TIERS[Math.min(stage, PIN_LOCKOUT_TIERS.length - 1)];
+
+        if (newFailCount >= tier.failLimit) {
+            if (tier.lockMinutes === null) {
+                // Final tier breached — permanent lock, support must reopen it.
+                await pool.query(
+                    `UPDATE students
+                     SET pin_fail_count = 0, pin_permanently_locked = true, pin_permanently_locked_at = now(), pin_locked_until = NULL
+                     WHERE id = $1`,
+                    [studentId]
+                );
+                return res.status(423).json({
+                    error: 'pin_permanently_locked',
+                    message: 'Too many incorrect PIN attempts. This wallet is now locked — the student must contact support to reopen it.'
+                });
+            }
+            const lockedUntil = new Date(Date.now() + tier.lockMinutes * 60 * 1000);
+            await pool.query(
+                `UPDATE students SET pin_fail_count = 0, pin_lock_stage = $1, pin_locked_until = $2 WHERE id = $3`,
+                [stage + 1, lockedUntil, studentId]
+            );
+            return res.status(423).json({
+                error: 'pin_temporarily_locked',
+                lockedUntil,
+                message: `Too many incorrect attempts. This wallet PIN is locked for ${tier.lockMinutes} minutes.`
+            });
+        }
+
+        await pool.query(`UPDATE students SET pin_fail_count = $1 WHERE id = $2`, [newFailCount, studentId]);
+        const remaining = tier.failLimit - newFailCount;
+        return res.status(401).json({ error: 'invalid_pin', attemptsRemaining: Math.max(remaining, 0) });
+    } catch (err) {
+        console.error('[Charge reg-no Error]', err);
+        return res.status(500).json({ error: 'internal_error', message: 'Could not process this charge. Please try again.' });
+    }
 });
 
 // ------------------------------------------------------------------
