@@ -33,6 +33,15 @@ const PIN_LOCKOUT_TIERS = [
     catch (err) { console.warn('[Driver close PIN schema]', err.message); }
 })();
 
+// `redeemed_at` is read/written by the code-history endpoint and by code
+// redemption below, but was never added by any schema migration — every
+// history fetch and every successful code charge has been failing against
+// the database with "column does not exist" until this runs.
+(async () => {
+    try { await pool.query('ALTER TABLE one_time_codes ADD COLUMN IF NOT EXISTS redeemed_at TIMESTAMPTZ'); }
+    catch (err) { console.warn('[Code redeemed_at schema]', err.message); }
+})();
+
 // `raw_code` is needed only while a pass is active so its owner can see it in
 // the app. This keeps older deployments compatible with Telegram-generated passes.
 (async () => {
@@ -372,53 +381,58 @@ router.post('/:id/charge/code', requireAuth, requireRole('driver'), async (req, 
     const driverId = req.auth.id;
     let { fareAmount } = req.body;
 
-    const session = await pool.query('SELECT mode, status FROM trip_sessions WHERE id = $1 AND driver_id = $2', [tripSessionId, driverId]);
-    if (!session.rows.length || session.rows[0].status !== 'open') {
-        return res.status(400).json({ error: 'trip_session_not_open' });
-    }
-    if (session.rows[0].mode === 'complete_ride') fareAmount = 250;
-
-    const codeHash = hashCode(code);
-    const codeRow = await pool.query(
-        `SELECT id, student_id FROM one_time_codes
-         WHERE code_hash = $1 AND status = 'active' AND expires_at > now()`,
-        [codeHash]
-    );
-
-    const success = codeRow.rows.length > 0;
-    await pool.query(
-        'INSERT INTO code_guess_attempts (driver_id, success) VALUES ($1, $2)',
-        [driverId, success]
-    );
-
-    if (!success) {
-        // Count the current consecutive-failure streak for this driver
-        const recent = await pool.query(
-            `SELECT success FROM code_guess_attempts
-             WHERE driver_id = $1 ORDER BY created_at DESC LIMIT $2`,
-            [driverId, CODE_GUESS_FLAG_THRESHOLD]
-        );
-        const streak = recent.rows.every(r => r.success === false) && recent.rows.length === CODE_GUESS_FLAG_THRESHOLD;
-
-        if (streak) {
-            await pool.query(
-                'UPDATE drivers SET is_flagged = true, flagged_at = now() WHERE id = $1',
-                [driverId]
-            );
-            // Fire-and-forget — the flag is already committed above, so a Telegram
-            // hiccup here should never affect the 403 the driver's app is about to show.
-            notifyDriverFlagged(driverId).catch(err => console.error('notifyDriverFlagged failed:', err));
-            return res.status(403).json({ error: 'driver_flagged', message: 'Too many wrong codes in a row. Contact support.' });
+    try {
+        const session = await pool.query('SELECT mode, status FROM trip_sessions WHERE id = $1 AND driver_id = $2', [tripSessionId, driverId]);
+        if (!session.rows.length || session.rows[0].status !== 'open') {
+            return res.status(400).json({ error: 'trip_session_not_open' });
         }
-        return res.status(404).json({ error: 'invalid_or_expired_code' });
+        if (session.rows[0].mode === 'complete_ride') fareAmount = 250;
+
+        const codeHash = hashCode(code);
+        const codeRow = await pool.query(
+            `SELECT id, student_id FROM one_time_codes
+             WHERE code_hash = $1 AND status = 'active' AND expires_at > now()`,
+            [codeHash]
+        );
+
+        const success = codeRow.rows.length > 0;
+        await pool.query(
+            'INSERT INTO code_guess_attempts (driver_id, success) VALUES ($1, $2)',
+            [driverId, success]
+        );
+
+        if (!success) {
+            // Count the current consecutive-failure streak for this driver
+            const recent = await pool.query(
+                `SELECT success FROM code_guess_attempts
+                 WHERE driver_id = $1 ORDER BY created_at DESC LIMIT $2`,
+                [driverId, CODE_GUESS_FLAG_THRESHOLD]
+            );
+            const streak = recent.rows.every(r => r.success === false) && recent.rows.length === CODE_GUESS_FLAG_THRESHOLD;
+
+            if (streak) {
+                await pool.query(
+                    'UPDATE drivers SET is_flagged = true, flagged_at = now() WHERE id = $1',
+                    [driverId]
+                );
+                // Fire-and-forget — the flag is already committed above, so a Telegram
+                // hiccup here should never affect the 403 the driver's app is about to show.
+                notifyDriverFlagged(driverId).catch(err => console.error('notifyDriverFlagged failed:', err));
+                return res.status(403).json({ error: 'driver_flagged', message: 'Too many wrong codes in a row. Contact support.' });
+            }
+            return res.status(404).json({ error: 'invalid_or_expired_code' });
+        }
+
+        await pool.query(`UPDATE one_time_codes SET status = 'redeemed', redeemed_at = now() WHERE id = $1`, [codeRow.rows[0].id]);
+
+        return executeCharge(
+            { tripSessionId, studentId: codeRow.rows[0].student_id, fareAmount, authMethod: 'one_time_code', codeId: codeRow.rows[0].id },
+            res
+        );
+    } catch (err) {
+        console.error('[Charge by code error]', err);
+        return res.status(500).json({ error: 'internal_error', message: 'Could not process this charge. Please try again.' });
     }
-
-    await pool.query(`UPDATE one_time_codes SET status = 'redeemed', redeemed_at = now() WHERE id = $1`, [codeRow.rows[0].id]);
-
-    return executeCharge(
-        { tripSessionId, studentId: codeRow.rows[0].student_id, fareAmount, authMethod: 'one_time_code', codeId: codeRow.rows[0].id },
-        res
-    );
 });
 
 // ------------------------------------------------------------------
