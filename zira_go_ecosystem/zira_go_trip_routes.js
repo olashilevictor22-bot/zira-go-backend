@@ -484,7 +484,7 @@ async function executeCharge({ tripSessionId, studentId, fareAmount, authMethod,
         );
         if (alreadyCharged.rows.length) {
             await client.query('ROLLBACK');
-            return res.status(409).json({ error: 'student_already_charged', message: 'This student has already paid for this trip.' });
+            return res.status(409).json({ error: 'student_already_charged', message: `${studentRes.rows[0].reg_no} already used for this ride.` });
         }
 
         // Debit student
@@ -529,7 +529,7 @@ async function executeCharge({ tripSessionId, studentId, fareAmount, authMethod,
     } catch (err) {
         await client.query('ROLLBACK');
         if (err.code === '23505') {
-            return res.status(409).json({ error: 'student_already_charged', message: 'This student has already paid for this trip.' });
+            return res.status(409).json({ error: 'student_already_charged', message: `${studentRes.rows[0].reg_no} already used for this ride.` });
         }
         if (err.message && err.message.includes('Complete Ride')) {
             return res.status(409).json({ error: 'trip_session_full' });

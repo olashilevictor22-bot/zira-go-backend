@@ -1277,6 +1277,14 @@ function closeModal(id) {
   if (el) el.classList.remove('active');
 }
 
+// openCloseTripModal, openDriverPinModal and openRefundModal all call this —
+// it was never defined, so every click on Close trip / Trip-close PIN /
+// Refund passenger silently threw "openModal is not defined" and did nothing.
+function openModal(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.add('active');
+}
+
 async function submitWithdrawal() {
   const amountInput = document.getElementById('wdAmountInput');
   const amount = parseFloat(amountInput.value);
