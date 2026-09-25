@@ -810,15 +810,34 @@
   .spotlight-btn {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 7px 14px;
+    gap: 7px;
+    padding: 8px 15px;
     border-radius: 999px;
     font-size: 11.5px;
     font-weight: 700;
+    letter-spacing: .1px;
     cursor: pointer;
     border: none;
     align-self: flex-start;
-    transition: all 0.2s;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+    transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+  }
+  .spotlight-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 7px 18px rgba(0, 0, 0, 0.18);
+    filter: brightness(1.06);
+  }
+  .spotlight-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.14);
+    filter: brightness(0.97);
+  }
+  .spotlight-btn-arrow {
+    flex: none;
+    transition: transform .18s ease;
+  }
+  .spotlight-btn:hover .spotlight-btn-arrow {
+    transform: translateX(3px);
   }
   .spotlight-card.ridehome .spotlight-btn { background: #6D28D9; color: #FFFFFF; }
   .spotlight-card.errandrunner .spotlight-btn { background: #D97706; color: #FFFFFF; }
@@ -3737,17 +3756,19 @@ function ccLoadImageColor(url, applyFn) {
   img.src = url;
 }
 
-let spotlightAutoScroll = null;
+let spotlightAutoScroll = null; // requestAnimationFrame id
+let spotlightScrollPos = 0;
+let spotlightScrollPaused = false;
 function setupSpotlightDragScroll() {
   const box = document.querySelector('.spotlight-marquee');
-  if (!box || box.dataset.dragBound) { startSpotlightAutoScroll(); return; }
+  if (!box) return;
+  if (box.dataset.dragBound) { startSpotlightAutoScroll(); return; }
   box.dataset.dragBound = '1';
   let isDown = false, startX = 0, startScroll = 0, moved = false;
 
-  const stopAuto = () => clearInterval(spotlightAutoScroll);
-  const down = (x) => { isDown = true; moved = false; startX = x; startScroll = box.scrollLeft; box.classList.add('dragging'); stopAuto(); };
+  const down = (x) => { isDown = true; moved = false; startX = x; startScroll = box.scrollLeft; box.classList.add('dragging'); spotlightScrollPaused = true; };
   const move = (x) => { if (!isDown) return; const delta = x - startX; if (Math.abs(delta) > 4) moved = true; box.scrollLeft = startScroll - delta; };
-  const up = () => { isDown = false; box.classList.remove('dragging'); startSpotlightAutoScroll(); };
+  const up = () => { if (!isDown) return; isDown = false; box.classList.remove('dragging'); spotlightScrollPos = box.scrollLeft; spotlightScrollPaused = false; };
 
   box.addEventListener('mousedown', e => down(e.pageX));
   window.addEventListener('mousemove', e => move(e.pageX));
@@ -3760,13 +3781,25 @@ function setupSpotlightDragScroll() {
   startSpotlightAutoScroll();
 }
 function startSpotlightAutoScroll() {
-  clearInterval(spotlightAutoScroll);
+  if (spotlightAutoScroll) cancelAnimationFrame(spotlightAutoScroll);
   const box = document.querySelector('.spotlight-marquee');
   if (!box || box.scrollWidth <= box.clientWidth + 4) return;
-  spotlightAutoScroll = setInterval(() => {
-    const atEnd = box.scrollLeft + box.clientWidth >= box.scrollWidth - 4;
-    box.scrollTo({ left: atEnd ? 0 : box.scrollLeft + 1, behavior: atEnd ? 'smooth' : 'auto' });
-  }, 40);
+  const SPEED = 40; // pixels per second, left to right
+  spotlightScrollPos = box.scrollLeft;
+  let last = performance.now();
+  const tick = (now) => {
+    const dt = now - last; last = now;
+    if (!spotlightScrollPaused) {
+      const max = box.scrollWidth - box.clientWidth;
+      spotlightScrollPos += SPEED * (dt / 1000);
+      if (spotlightScrollPos >= max) spotlightScrollPos = 0;
+      box.scrollLeft = spotlightScrollPos;
+    } else {
+      spotlightScrollPos = box.scrollLeft; // stay in sync while a drag is in progress
+    }
+    spotlightAutoScroll = requestAnimationFrame(tick);
+  };
+  spotlightAutoScroll = requestAnimationFrame(tick);
 }
 
 function renderSpotlightCards(cards) {
@@ -3775,7 +3808,9 @@ function renderSpotlightCards(cards) {
   const section = grid.closest('section');
   if (!cards || !cards.length) { if (section) section.style.display = 'none'; return; }
   if (section) section.style.display = '';
-  const cardHtml = c => `
+  const cardHtml = c => {
+    const label = ccEsc(c.buttonText).replace(/\s*(→|->|>)\s*$/, '');
+    return `
     <div class="spotlight-card" style="--cc-accent:#6D28D9">
       <div class="spotlight-body">
         <div>
@@ -3783,9 +3818,13 @@ function renderSpotlightCards(cards) {
           <h3 class="spotlight-heading">${ccEsc(c.title)}</h3>
           <p class="spotlight-desc">${ccEsc(c.description)}</p>
         </div>
-        <button type="button" class="spotlight-btn" data-cc-btn style="background:#6D28D9;color:#FFFFFF">${ccEsc(c.buttonText)}</button>
+        <button type="button" class="spotlight-btn" data-cc-btn style="background:#6D28D9;color:#FFFFFF">
+          <span>${label}</span>
+          <svg class="spotlight-btn-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
       </div>
     </div>`;
+  };
   grid.innerHTML = cards.map(cardHtml).join('');
   grid.querySelectorAll('.spotlight-card').forEach((el, i) => {
     const c = cards[i];
