@@ -273,12 +273,28 @@
     color: var(--accent);
   }
 
-  /* Currency symbol spacing to eliminate number collision */
+  /* Currency symbol rendered as a small glowing gold coin badge */
   .naira-sym {
     font-family: 'Plus Jakarta Sans', sans-serif;
-    font-weight: 700;
-    margin-right: 3px;
-    display: inline-block;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.54em;
+    width: 1.7em;
+    height: 1.7em;
+    margin-right: 7px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #FFD866 0%, #F5A623 55%, #E8890C 100%);
+    color: #6B3F00;
+    vertical-align: middle;
+    position: relative;
+    box-shadow: 0 2px 6px rgba(232, 137, 12, 0.35);
+    animation: nairaCoinPulse 2.8s ease-in-out infinite;
+  }
+  @keyframes nairaCoinPulse {
+    0%, 100% { box-shadow: 0 2px 6px rgba(232,137,12,.35), 0 0 0 0 rgba(245,166,35,.5); transform: scale(1); }
+    50% { box-shadow: 0 2px 6px rgba(232,137,12,.35), 0 0 0 6px rgba(245,166,35,0); transform: scale(1.08); }
   }
 
   /* =========================================================================
@@ -600,6 +616,9 @@
     gap: 10px;
   }
   .tpb-btn-fund {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
     background: linear-gradient(100deg, var(--accent), #7C3AED);
     color: #FFFFFF;
     border: none;
@@ -608,22 +627,43 @@
     font-weight: 700;
     font-size: 13.5px;
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(109, 40, 217, 0.25);
-    transition: all 0.2s;
+    box-shadow: 0 4px 14px rgba(109, 40, 217, 0.3);
+    transition: transform .2s ease, box-shadow .2s ease;
+    position: relative;
+    overflow: hidden;
   }
-  .tpb-btn-fund:hover { transform: translateY(-1px); }
+  .tpb-btn-fund::after {
+    content: '';
+    position: absolute; top: 0; left: -60%; width: 40%; height: 100%;
+    background: linear-gradient(120deg, transparent, rgba(255,255,255,.4), transparent);
+    transform: skewX(-20deg);
+    animation: fundBtnShine 3.4s ease-in-out infinite;
+  }
+  @keyframes fundBtnShine { 0% { left: -60%; } 55%, 100% { left: 130%; } }
+  .tpb-btn-fund:hover { transform: translateY(-2px); box-shadow: 0 9px 22px rgba(109,40,217,.42); }
+  .tpb-btn-fund:active { transform: translateY(0) scale(.97); }
   .tpb-btn-code {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
     background: var(--panel-alt);
-    border: 1px solid var(--line);
+    border: 1.5px solid var(--line);
     color: var(--text);
     padding: 11px 18px;
     border-radius: 999px;
-    font-weight: 600;
+    font-weight: 700;
     font-size: 13.5px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.2s ease;
   }
-  .tpb-btn-code:hover { border-color: var(--accent); color: var(--accent); }
+  .tpb-btn-code:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(109, 40, 217, 0.07);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(109,40,217,.14);
+  }
+  .tpb-btn-code:active { transform: translateY(0) scale(.97); }
 
   /* =========================================================================
      3. THE 4 MAIN ACTION BUTTONS (STRICTLY IN A HORIZONTAL STRAIGHT LINE)
@@ -644,17 +684,43 @@
     justify-content: space-between;
     min-height: 116px;
     cursor: pointer;
-    transition: all 0.22s ease;
+    transition: transform 0.22s cubic-bezier(.16,1,.3,1), box-shadow 0.22s ease, border-color 0.22s ease;
     box-shadow: var(--card-shadow);
     text-align: left;
     position: relative;
     overflow: hidden;
   }
-  .action-card:hover {
-    transform: translateY(-2px);
-    border-color: var(--accent);
-    box-shadow: 0 8px 24px rgba(109, 40, 217, 0.1);
+  .action-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, currentColor, transparent);
+    opacity: 0;
+    transform: scaleX(.6);
+    transition: opacity .25s ease, transform .25s ease;
   }
+  .action-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 85% -10%, currentColor 0%, transparent 55%);
+    opacity: 0;
+    transition: opacity .25s ease;
+    pointer-events: none;
+  }
+  .action-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--accent);
+    box-shadow: 0 10px 26px rgba(109, 40, 217, 0.14);
+  }
+  .action-card:hover::before { opacity: .7; transform: scaleX(1); }
+  .action-card:hover::after { opacity: .06; }
+  .action-card:active { transform: translateY(-1px) scale(.98); }
+  .action-card.btn-rides { color: #6D28D9; }
+  .action-card.btn-errand { color: #D97706; }
+  .action-card.btn-wallet { color: #0284C7; }
+  .action-card.btn-history { color: #0D9488; }
   .action-card-top {
     display: flex;
     justify-content: space-between;
@@ -668,12 +734,15 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s;
+    transition: transform 0.28s cubic-bezier(.34,1.56,.64,1), background .2s ease;
     flex-shrink: 0;
   }
+  .action-card:hover .action-icon-circle {
+    transform: scale(1.1) rotate(-6deg);
+  }
   .action-arrow {
-    width: 24px;
-    height: 24px;
+    width: 26px;
+    height: 26px;
     border-radius: 50%;
     background: var(--panel-alt);
     border: 1px solid var(--line);
@@ -681,14 +750,16 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 13px;
-    transition: all 0.2s;
+    transition: all 0.25s ease;
   }
+  .action-arrow svg { transition: transform .25s ease; }
   .action-card:hover .action-arrow {
     background: var(--accent);
     color: #FFFFFF;
     border-color: var(--accent);
+    transform: scale(1.08);
   }
+  .action-card:hover .action-arrow svg { transform: translateX(2px); }
   .action-title {
     font-size: 14.5px;
     font-weight: 700;
@@ -894,6 +965,13 @@
     z-index: 2;
     max-width: 480px;
   }
+  .slide-content.slide-content-animate {
+    animation: slideContentIn .5s cubic-bezier(.16,1,.3,1);
+  }
+  @keyframes slideContentIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
   .slide-badge {
     display: inline-flex;
     align-items: center;
@@ -940,21 +1018,25 @@
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
-    background: rgba(15, 23, 42, 0.6);
-    backdrop-filter: blur(6px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.22);
     color: #FFFFFF;
     display: flex;
     align-items: center;
     justify-content: center;
+    font-size: 17px;
     cursor: pointer;
     z-index: 5;
-    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(0,0,0,.2);
+    transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
   }
-  .carousel-arrow-btn:hover { background: rgba(109, 40, 217, 0.85); }
+  .carousel-arrow-btn:hover { background: rgba(109, 40, 217, 0.9); transform: translateY(-50%) scale(1.1); box-shadow: 0 6px 16px rgba(109,40,217,.4); }
+  .carousel-arrow-btn:active { transform: translateY(-50%) scale(.94); }
   .carousel-arrow-prev { left: 12px; }
   .carousel-arrow-next { right: 12px; }
 
@@ -974,11 +1056,13 @@
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.4);
     cursor: pointer;
-    transition: all 0.25s ease;
+    transition: all 0.28s cubic-bezier(.16,1,.3,1);
   }
+  .carousel-dot:hover { background: rgba(255, 255, 255, 0.7); }
   .carousel-dot.active {
     width: 22px;
     background: #FFFFFF;
+    box-shadow: 0 0 8px rgba(255,255,255,.6);
   }
 
   /* =========================================================================
@@ -1551,8 +1635,14 @@
         </div>
 
         <div class="tpb-actions">
-          <button type="button" class="tpb-btn-fund" onclick="openFundModal()">+ Fund Wallet</button>
-          <button type="button" class="tpb-btn-code" onclick="handleRideCodeButtonClick()">Get Ride Code</button>
+          <button type="button" class="tpb-btn-fund" onclick="openFundModal()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <span>Fund Wallet</span>
+          </button>
+          <button type="button" class="tpb-btn-code" onclick="handleRideCodeButtonClick()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="4" width="18" height="14" rx="2"></rect><circle cx="7.5" cy="14.5" r="1.5"></circle><circle cx="16.5" cy="14.5" r="1.5"></circle><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            <span>Get Ride Code</span>
+          </button>
         </div>
       </section>
 
@@ -1564,7 +1654,7 @@
             <div class="action-icon-circle">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="4" width="18" height="14" rx="2"></rect><circle cx="7.5" cy="14.5" r="1.5"></circle><circle cx="16.5" cy="14.5" r="1.5"></circle><line x1="3" y1="10" x2="21" y2="10"></line></svg>
             </div>
-            <div class="action-arrow">→</div>
+            <div class="action-arrow"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
           </div>
           <div>
             <div class="action-title">Ride Codes</div>
@@ -1578,7 +1668,7 @@
             <div class="action-icon-circle">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
             </div>
-            <div class="action-arrow">→</div>
+            <div class="action-arrow"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
           </div>
           <div>
             <div class="action-title">Send on Errand</div>
@@ -1592,7 +1682,7 @@
             <div class="action-icon-circle">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
             </div>
-            <div class="action-arrow">→</div>
+            <div class="action-arrow"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
           </div>
           <div>
             <div class="action-title">Wallet</div>
@@ -1606,7 +1696,7 @@
             <div class="action-icon-circle">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
             </div>
-            <div class="action-arrow">→</div>
+            <div class="action-arrow"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
           </div>
           <div>
             <div class="action-title">Ride History</div>
@@ -2374,7 +2464,47 @@
 <div class="modal-overlay" id="modalNotificationPopup"><div class="modal-card" style="max-width:430px;overflow:hidden"><button class="modal-close" onclick="dismissNotificationPopup()" style="position:absolute;right:14px;top:14px;z-index:2;background:rgba(255,255,255,.9)">✕</button><img id="notificationPopupImage" alt="Notification banner" style="display:none;width:100%;max-height:220px;object-fit:cover"><div style="padding:20px"><div id="notificationPopupType" style="font-size:11px;font-weight:800;color:var(--accent);text-transform:uppercase;margin-bottom:7px">New notification</div><h3 id="notificationPopupTitle" style="margin:0 0 8px"></h3><p id="notificationPopupBody" style="margin:0;color:var(--text-dim);line-height:1.5;white-space:pre-line"></p><div style="display:flex;gap:8px;margin-top:18px"><button class="secondary" style="flex:1" onclick="dismissNotificationPopup()">Later</button><button class="primary" style="flex:1" onclick="readCurrentNotification()">Mark as read</button></div></div></div></div>
 
 <!-- Floating live-agent entry point, kept outside the profile so it is available everywhere. -->
-<button type="button" id="liveAgentButton" onclick="openLiveAgent()" aria-label="Chat with a live agent" style="position:fixed;right:16px;bottom:18px;z-index:90;border:0;border-radius:999px;padding:12px 16px;background:linear-gradient(100deg,var(--accent),var(--accent-hover));color:#fff;font-weight:800;box-shadow:0 8px 24px rgba(109,40,217,.34);cursor:pointer">💬 Live agent<span id="liveAgentBadge" hidden style="position:absolute;top:-6px;right:-4px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:#E11D48;color:#fff;font-size:11px;font-weight:800;display:grid;place-items:center;border:2px solid var(--bg)"></span></button>
+<style>
+  .live-agent-fab {
+    position: fixed; right: 16px; bottom: 18px; z-index: 90;
+    display: inline-flex; align-items: center; gap: 8px;
+    border: 0; border-radius: 999px; padding: 12px 18px;
+    background: linear-gradient(100deg, var(--accent), var(--accent-hover));
+    color: #fff; font-weight: 800; font-size: 13.5px;
+    box-shadow: 0 8px 24px rgba(109,40,217,.34);
+    cursor: pointer;
+    transition: transform .22s ease, box-shadow .22s ease;
+  }
+  .live-agent-fab::before {
+    content: '';
+    position: absolute; inset: -6px;
+    border-radius: 999px;
+    border: 2px solid var(--accent);
+    opacity: .55;
+    animation: liveAgentRing 2.6s ease-out infinite;
+    pointer-events: none;
+  }
+  @keyframes liveAgentRing {
+    0% { transform: scale(1); opacity: .55; }
+    100% { transform: scale(1.32); opacity: 0; }
+  }
+  .live-agent-fab-icon { display: inline-block; animation: liveAgentBounce 2.8s ease-in-out infinite; }
+  @keyframes liveAgentBounce {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-2px) rotate(-8deg); }
+  }
+  .live-agent-fab:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(109,40,217,.46); }
+  .live-agent-fab:active { transform: translateY(0) scale(.96); }
+  @media (max-width: 640px) {
+    .live-agent-fab .live-agent-fab-label { display: none; }
+    .live-agent-fab { padding: 13px; }
+  }
+</style>
+<button type="button" id="liveAgentButton" class="live-agent-fab" onclick="openLiveAgent()" aria-label="Chat with a live agent">
+  <span class="live-agent-fab-icon">💬</span>
+  <span class="live-agent-fab-label">Live agent</span>
+  <span id="liveAgentBadge" hidden style="position:absolute;top:-6px;right:-4px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:#E11D48;color:#fff;font-size:11px;font-weight:800;display:grid;place-items:center;border:2px solid var(--bg)"></span>
+</button>
 <style>
   .chat-card { max-width: 440px; padding: 0 !important; display: flex; flex-direction: column; height: min(84dvh, 640px); overflow: hidden !important; }
   .chat-head { display:flex; align-items:center; gap:11px; padding:14px 16px; border-bottom:1px solid var(--line); background: linear-gradient(135deg, var(--accent-light), transparent); flex-shrink:0; }
@@ -2680,6 +2810,13 @@ function updateCarousel() {
   dots.forEach((d, idx) => {
     d.classList.toggle('active', idx === currentSlideIndex);
   });
+  const activeSlide = document.querySelector(`.carousel-slide[data-cc-i="${currentSlideIndex}"]`);
+  const content = activeSlide ? activeSlide.querySelector('.slide-content') : null;
+  if (content) {
+    content.classList.remove('slide-content-animate');
+    void content.offsetWidth; // force reflow so the animation replays each slide change
+    content.classList.add('slide-content-animate');
+  }
 }
 
 function nextSlide() {
@@ -3758,17 +3895,20 @@ function ccLoadImageColor(url, applyFn) {
 
 let spotlightAutoScroll = null; // requestAnimationFrame id
 let spotlightScrollPos = 0;
-let spotlightScrollPaused = false;
+let spotlightHovering = false;
+let spotlightDragging = false;
+// Paused whenever the mouse is resting over the strip OR the user is actively dragging it.
+function spotlightIsPaused() { return spotlightHovering || spotlightDragging; }
 function setupSpotlightDragScroll() {
   const box = document.querySelector('.spotlight-marquee');
   if (!box) return;
   if (box.dataset.dragBound) { startSpotlightAutoScroll(); return; }
   box.dataset.dragBound = '1';
-  let isDown = false, startX = 0, startScroll = 0, moved = false;
+  let startX = 0, startScroll = 0, moved = false;
 
-  const down = (x) => { isDown = true; moved = false; startX = x; startScroll = box.scrollLeft; box.classList.add('dragging'); spotlightScrollPaused = true; };
-  const move = (x) => { if (!isDown) return; const delta = x - startX; if (Math.abs(delta) > 4) moved = true; box.scrollLeft = startScroll - delta; };
-  const up = () => { if (!isDown) return; isDown = false; box.classList.remove('dragging'); spotlightScrollPos = box.scrollLeft; spotlightScrollPaused = false; };
+  const down = (x) => { spotlightDragging = true; moved = false; startX = x; startScroll = box.scrollLeft; box.classList.add('dragging'); };
+  const move = (x) => { if (!spotlightDragging) return; const delta = x - startX; if (Math.abs(delta) > 4) moved = true; box.scrollLeft = startScroll - delta; };
+  const up = () => { if (!spotlightDragging) return; spotlightDragging = false; box.classList.remove('dragging'); spotlightScrollPos = box.scrollLeft; };
 
   box.addEventListener('mousedown', e => down(e.pageX));
   window.addEventListener('mousemove', e => move(e.pageX));
@@ -3778,24 +3918,32 @@ function setupSpotlightDragScroll() {
   box.addEventListener('touchend', up);
   // Prevent a drag from also firing the card's click-through button.
   box.addEventListener('click', e => { if (moved) { e.preventDefault(); e.stopPropagation(); } }, true);
+  // Stop as soon as the pointer rests over the strip; pick back up the moment it leaves.
+  box.addEventListener('mouseenter', () => { spotlightHovering = true; });
+  box.addEventListener('mouseleave', () => { spotlightHovering = false; if (!spotlightDragging) spotlightScrollPos = box.scrollLeft; });
   startSpotlightAutoScroll();
 }
 function startSpotlightAutoScroll() {
   if (spotlightAutoScroll) cancelAnimationFrame(spotlightAutoScroll);
   const box = document.querySelector('.spotlight-marquee');
-  if (!box || box.scrollWidth <= box.clientWidth + 4) return;
+  const grid = document.getElementById('spotlightGrid');
+  if (!box || !grid) return;
+  // The grid is rendered as two back-to-back copies of the card set so the strip
+  // can loop forever: once we've scrolled past one full copy, we quietly rewind by
+  // exactly that width instead of snapping back to 0, so the loop looks seamless.
+  const loopWidth = grid.scrollWidth / 2;
+  if (loopWidth <= box.clientWidth + 4) return; // not enough cards to need looping
   const SPEED = 40; // pixels per second, left to right
-  spotlightScrollPos = box.scrollLeft;
+  spotlightScrollPos = box.scrollLeft % loopWidth;
   let last = performance.now();
   const tick = (now) => {
     const dt = now - last; last = now;
-    if (!spotlightScrollPaused) {
-      const max = box.scrollWidth - box.clientWidth;
+    if (!spotlightIsPaused()) {
       spotlightScrollPos += SPEED * (dt / 1000);
-      if (spotlightScrollPos >= max) spotlightScrollPos = 0;
+      if (spotlightScrollPos >= loopWidth) spotlightScrollPos -= loopWidth;
       box.scrollLeft = spotlightScrollPos;
     } else {
-      spotlightScrollPos = box.scrollLeft; // stay in sync while a drag is in progress
+      spotlightScrollPos = box.scrollLeft % loopWidth; // stay in sync while paused/dragging
     }
     spotlightAutoScroll = requestAnimationFrame(tick);
   };
@@ -3825,9 +3973,12 @@ function renderSpotlightCards(cards) {
       </div>
     </div>`;
   };
-  grid.innerHTML = cards.map(cardHtml).join('');
+  // Render the card set twice back-to-back so the auto-scroll can loop endlessly
+  // (see startSpotlightAutoScroll) instead of visibly jumping back to the start.
+  const singleSetHtml = cards.map(cardHtml).join('');
+  grid.innerHTML = singleSetHtml + singleSetHtml;
   grid.querySelectorAll('.spotlight-card').forEach((el, i) => {
-    const c = cards[i];
+    const c = cards[i % cards.length];
     el.querySelector('[data-cc-btn]').addEventListener('click', () => ccHandleClick(c.buttonUrl));
     if (c.accentColor && c.accentColor !== 'auto') {
       el.querySelector('[data-cc-btn]').style.background = c.accentColor;
