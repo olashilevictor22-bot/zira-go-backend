@@ -1586,56 +1586,8 @@
           <span style="font-size:12.5px;color:var(--text-dim);font-weight:600">Landmark Hub</span>
         </div>
 
-        <div class="spotlight-grid">
-          <!-- Card 1: Need a Bus Ride Home? (Vacation & Break Charters) -->
-          <div class="spotlight-card ridehome">
-            <div class="spotlight-body">
-              <div>
-                <span class="spotlight-badge">Vacation & Interstate</span>
-                <h3 class="spotlight-heading">Need a Bus Ride Home?</h3>
-                <p class="spotlight-desc">Student-organized vacation coaches leaving Landmark directly to your city.</p>
-              </div>
-              <button type="button" class="spotlight-btn" onclick="openBusRideHomeModal()">Find Buses →</button>
-            </div>
-            <div class="spotlight-img-badge">
-              <div style="width:52px;height:52px;border-radius:14px;background:rgba(109,40,217,0.12);display:flex;align-items:center;justify-content:center;color:var(--accent)">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="14" rx="2"></rect><circle cx="7.5" cy="14.5" r="1.5"></circle><circle cx="16.5" cy="14.5" r="1.5"></circle><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-              </div>
-            </div>
-          </div>
-
-          <!-- Card 2: Send on Errand -->
-          <div class="spotlight-card errandrunner">
-            <div class="spotlight-body">
-              <div>
-                <span class="spotlight-badge">Campus Runner</span>
-                <h3 class="spotlight-heading">Send on Errand</h3>
-                <p class="spotlight-desc">Dispatch verified student runners to collect laundry, handouts, books and packages.</p>
-              </div>
-              <button type="button" class="spotlight-btn" onclick="openErrandModal()">Dispatch Now →</button>
-            </div>
-            <div class="spotlight-img-badge">
-              <div style="width:52px;height:52px;border-radius:14px;background:rgba(217,119,6,0.12);display:flex;align-items:center;justify-content:center;color:var(--warning)">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line></svg>
-              </div>
-            </div>
-          </div>
-
-          <!-- Card 3: Campus Essentials -->
-          <div class="spotlight-card essentials">
-            <div class="spotlight-body">
-              <div>
-                <span class="spotlight-badge">Hostel Gear</span>
-                <h3 class="spotlight-heading">Campus Essentials</h3>
-                <p class="spotlight-desc">Fast charging cables, power banks, stationery & study kits delivered across halls.</p>
-              </div>
-              <button type="button" class="spotlight-btn" onclick="nextSlide()">Explore Hub →</button>
-            </div>
-            <div class="spotlight-img-badge">
-              <img src="ads/ad_pulse_gadgets.jpg" alt="Gear" style="width:52px;height:52px;border-radius:12px;object-fit:cover">
-            </div>
-          </div>
-        </div>
+        <div class="spotlight-grid" id="spotlightGrid"></div>
+      </div>
       </section>
 
       <!-- 5. TRENDING ON CAMPUS: SINGLE MOVING CAROUSEL BANNER (NO FOOD) -->
@@ -1649,39 +1601,7 @@
         </div>
 
         <div class="trending-carousel-wrapper" id="trendingCarousel">
-          <div class="carousel-track" id="carouselTrack">
-            <!-- Slide 1: Pulse Gadgets (Student Tech) -->
-            <div class="carousel-slide" style="background-image: url('ads/ad_pulse_gadgets.jpg')">
-              <div class="carousel-slide-overlay"></div>
-              <div class="slide-content">
-                <span class="slide-badge">⚡ Student Tech • 15% Off</span>
-                <h3 class="slide-title">Pulse Gadgets & Accessories</h3>
-                <p class="slide-desc">High-speed type-C charging cables, power banks & night-study audio gear.</p>
-                <button type="button" class="slide-btn" onclick="showToast('Pulse Gadgets items available at campus pickup station!')">Explore Store →</button>
-              </div>
-            </div>
-
-            <!-- Slide 2: Kulture Threads (Student Fashion & Merch) -->
-            <div class="carousel-slide" style="background-image: url('ads/ad_kulture_threads.jpg')">
-              <div class="carousel-slide-overlay"></div>
-              <div class="slide-content">
-                <span class="slide-badge">🎨 Campus Merch & Streetwear</span>
-                <h3 class="slide-title">Kulture Threads Collection</h3>
-                <p class="slide-desc">Landmark campus hoodies, oversized tees, tote bags & custom student apparel.</p>
-                <button type="button" class="slide-btn" onclick="showToast('Kulture Threads custom hoodies available on order!')">View Drops →</button>
-              </div>
-            </div>
-
-            <!-- Slide 3: Landmark Campus Transit Express -->
-            <div class="carousel-slide" style="background-image: url('landmark_campus_banner.jpg')">
-              <div class="carousel-slide-overlay"></div>
-              <div class="slide-content">
-                <span class="slide-badge">🚌 Campus Express Shuttles</span>
-                <h3 class="slide-title">Fast Morning Lecture Passes</h3>
-                <p class="slide-desc">Skip queues with instant 30-minute shuttle passcodes. Fixed ₦250 fare.</p>
-                <button type="button" class="slide-btn" onclick="handleRideCodeButtonClick()">Get Ride Code →</button>
-              </div>
-            </div>
+          <div class="carousel-track" id="carouselTrack"></div>
           </div>
 
           <!-- Carousel Controls -->
@@ -1689,11 +1609,8 @@
           <button type="button" class="carousel-arrow-btn carousel-arrow-next" onclick="nextSlide()" title="Next slide">›</button>
 
           <!-- Carousel Dots -->
-          <div class="carousel-dots" id="carouselDots">
-            <span class="carousel-dot active" onclick="goToSlide(0)"></span>
-            <span class="carousel-dot" onclick="goToSlide(1)"></span>
-            <span class="carousel-dot" onclick="goToSlide(2)"></span>
-          </div>
+          <div class="carousel-dots" id="carouselDots"></div>
+        </div>
         </div>
       </section>
 
@@ -2525,7 +2442,7 @@ async function readCurrentNotification() { if(currentPopupNotification) await ma
 // 1. Trending Banner Carousel Functionality
 // ------------------------------------------------------------------
 let currentSlideIndex = 0;
-const totalSlides = 3;
+let totalSlides = 0;
 let carouselInterval = null;
 
 function updateCarousel() {
@@ -3022,6 +2939,7 @@ function submitAdvert() {
       </div>
     `;
     track.appendChild(slide);
+    totalSlides = track.children.length;
 
     if (dotsContainer) {
       const dot = document.createElement('span');
@@ -3441,6 +3359,141 @@ async function loadPublicExperience() {
       if (bg && mediaUrl) { if(mediaType==='video'){bg.innerHTML=`<video autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover"><source src="${mediaUrl}"></video>`;bg.style.backgroundImage='none';}else{bg.innerHTML='';bg.style.backgroundImage=`url("${mediaUrl}")`; } }
     }
   } catch (_) { /* App remains usable offline. */ }
+  loadContentCards();
+}
+
+// ------------------------------------------------------------------
+// Campus Spotlight cards & Trending-on-Campus ad banners (admin-managed)
+// ------------------------------------------------------------------
+const ccEsc = v => { const d = document.createElement('div'); d.textContent = v == null ? '' : String(v); return d.innerHTML; };
+
+// Legacy cards seeded from the old hard-coded version keep working exactly as
+// before via an "app:" button URL instead of a real link. A brand-new card an
+// admin creates always uses a real https:// link (or no link at all).
+const CC_APP_ACTIONS = {
+  'app:openBusRideHomeModal': () => openBusRideHomeModal(),
+  'app:openErrandModal': () => openErrandModal(),
+  'app:nextSlide': () => nextSlide(),
+  'app:handleRideCodeButtonClick': () => handleRideCodeButtonClick(),
+  'app:toastPulseGadgets': () => showToast('Pulse Gadgets items available at campus pickup station!'),
+  'app:toastKultureThreads': () => showToast('Kulture Threads custom hoodies available on order!')
+};
+function ccHandleClick(url) {
+  if (!url) return;
+  if (CC_APP_ACTIONS[url]) return CC_APP_ACTIONS[url]();
+  if (/^https?:\/\//i.test(url)) window.open(url, '_blank', 'noopener');
+}
+
+// Samples the average colour of an (same-origin, ideally) image for "auto"
+// button/badge colouring. Cross-origin images without CORS headers will make
+// the canvas read throw — that's expected and we just fall back quietly.
+function ccAverageColor(img) {
+  return new Promise(resolve => {
+    try {
+      const c = document.createElement('canvas'), size = 24;
+      c.width = size; c.height = size;
+      const ctx = c.getContext('2d');
+      ctx.drawImage(img, 0, 0, size, size);
+      const data = ctx.getImageData(0, 0, size, size).data;
+      let r = 0, g = 0, b = 0, n = 0;
+      for (let i = 0; i < data.length; i += 4) { if (data[i + 3] < 32) continue; r += data[i]; g += data[i + 1]; b += data[i + 2]; n++; }
+      resolve(n ? { r: r / n, g: g / n, b: b / n } : null);
+    } catch (_) { resolve(null); }   // tainted canvas (cross-origin, no CORS) — fall back
+  });
+}
+function ccClamp(v) { return Math.max(0, Math.min(255, Math.round(v))); }
+function ccRgbToHex(r, g, b) { return '#' + [r, g, b].map(v => ccClamp(v).toString(16).padStart(2, '0')).join(''); }
+// A vivid, sufficiently dark version of the average colour for buttons/badges,
+// so the "auto" look stays legible instead of washing out on light photos.
+function ccDeriveTheme(avg) {
+  if (!avg) return null;
+  const max = Math.max(avg.r, avg.g, avg.b) || 1;
+  const boost = Math.min(1.9, 210 / max);
+  let r = avg.r * boost, g = avg.g * boost, b = avg.b * boost;
+  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  if (lum > 0.62) { r *= 0.55; g *= 0.55; b *= 0.55; }   // too light to read white text on — darken
+  const bg = ccRgbToHex(r, g, b);
+  const textLum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return { bg, text: textLum > 0.55 ? '#1E1B29' : '#FFFFFF', badgeBg: ccRgbToHex(r * 0.22 + 255 * 0.78, g * 0.22 + 255 * 0.78, b * 0.22 + 255 * 0.78), badgeText: bg };
+}
+function ccLoadImageColor(url, applyFn) {
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => ccAverageColor(img).then(avg => { const theme = ccDeriveTheme(avg); if (theme) applyFn(theme); });
+  img.onerror = () => {};
+  img.src = url;
+}
+
+function renderSpotlightCards(cards) {
+  const grid = document.getElementById('spotlightGrid');
+  if (!grid) return;
+  if (!cards || !cards.length) { grid.closest('section').style.display = 'none'; return; }
+  grid.innerHTML = cards.map((c, i) => `
+    <div class="spotlight-card" data-cc-i="${i}" style="--cc-accent:#6D28D9">
+      <div class="spotlight-body">
+        <div>
+          ${c.badgeText ? `<span class="spotlight-badge" data-cc-badge style="background:#EDE9FE;color:#6D28D9">${ccEsc(c.badgeText)}</span>` : ''}
+          <h3 class="spotlight-heading">${ccEsc(c.title)}</h3>
+          <p class="spotlight-desc">${ccEsc(c.description)}</p>
+        </div>
+        <button type="button" class="spotlight-btn" data-cc-btn style="background:#6D28D9;color:#FFFFFF">${ccEsc(c.buttonText)}</button>
+      </div>
+    </div>`).join('');
+  grid.querySelectorAll('.spotlight-card').forEach((el, i) => {
+    const c = cards[i];
+    el.querySelector('[data-cc-btn]').addEventListener('click', () => ccHandleClick(c.buttonUrl));
+    if (c.accentColor && c.accentColor !== 'auto') {
+      el.querySelector('[data-cc-btn]').style.background = c.accentColor;
+      const badge = el.querySelector('[data-cc-badge]'); if (badge) { badge.style.color = c.accentColor; }
+    } else if (c.imageUrl) {
+      ccLoadImageColor(c.imageUrl, theme => {
+        const btn = el.querySelector('[data-cc-btn]'); if (btn) { btn.style.background = theme.bg; btn.style.color = theme.text; }
+        const badge = el.querySelector('[data-cc-badge]'); if (badge) { badge.style.background = theme.badgeBg; badge.style.color = theme.badgeText; }
+      });
+    }
+  });
+}
+
+function renderAdSlides(cards) {
+  const track = document.getElementById('carouselTrack'), dots = document.getElementById('carouselDots');
+  const section = track ? track.closest('section') : null;
+  if (!track || !dots) return;
+  if (!cards || !cards.length) { if (section) section.style.display = 'none'; totalSlides = 0; return; }
+  if (section) section.style.display = '';
+  track.innerHTML = cards.map((c, i) => `
+    <div class="carousel-slide" data-cc-i="${i}" style="background-image:url('${ccEsc(c.imageUrl)}')">
+      <div class="carousel-slide-overlay"></div>
+      <div class="slide-content">
+        ${c.badgeText ? `<span class="slide-badge">${ccEsc(c.badgeText)}</span>` : ''}
+        <h3 class="slide-title">${ccEsc(c.title)}</h3>
+        <p class="slide-desc">${ccEsc(c.description)}</p>
+        <button type="button" class="slide-btn" data-cc-btn>${ccEsc(c.buttonText)}</button>
+      </div>
+    </div>`).join('');
+  dots.innerHTML = cards.map((_, i) => `<span class="carousel-dot${i === 0 ? ' active' : ''}" onclick="goToSlide(${i})"></span>`).join('');
+  track.querySelectorAll('.carousel-slide').forEach((el, i) => {
+    const c = cards[i];
+    el.querySelector('[data-cc-btn]').addEventListener('click', () => ccHandleClick(c.buttonUrl));
+    if (c.buttonColor && c.buttonColor !== 'auto') {
+      el.querySelector('[data-cc-btn]').style.background = c.buttonColor;
+      el.querySelector('[data-cc-btn]').style.color = '#FFFFFF';
+    } else if (c.imageUrl) {
+      ccLoadImageColor(c.imageUrl, theme => {
+        const btn = el.querySelector('[data-cc-btn]'); if (btn) { btn.style.background = theme.bg; btn.style.color = theme.text; }
+      });
+    }
+  });
+  currentSlideIndex = 0; totalSlides = cards.length; updateCarousel(); resetCarouselInterval();
+}
+
+async function loadContentCards() {
+  try {
+    const res = await fetch('/api/public/content-cards');
+    if (!res.ok) return;
+    const data = await res.json();
+    renderSpotlightCards(data.spotlight || []);
+    renderAdSlides(data.ads || []);
+  } catch (_) { /* Spotlight/ads stay hidden if this fails; rest of the app still works. */ }
 }
 
 async function resumeHostedPayment() {

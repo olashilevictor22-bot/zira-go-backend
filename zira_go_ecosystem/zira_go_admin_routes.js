@@ -28,6 +28,15 @@ router.post('/hero-media', heroUpload.single('media'), (req, res) => {
     res.json({ success: true, url: `/hero-media/${encodeURIComponent(req.file.filename)}`, mediaType: req.file.mimetype.startsWith('video/') ? 'video' : 'image' });
 });
 
+// Images for Campus Spotlight cards and the Trending-on-Campus ad banners.
+const contentMediaDir = path.join(__dirname, 'uploads', 'content-media');
+fs.mkdirSync(contentMediaDir, { recursive: true });
+const contentUpload = multer({ storage: multer.diskStorage({ destination: contentMediaDir, filename: (_req, file, cb) => cb(null, `${Date.now()}-${file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_')}`) }), limits: { fileSize: 15 * 1024 * 1024 }, fileFilter: (_req, file, cb) => cb(null, /^image\/(jpeg|png|webp|gif)$/.test(file.mimetype)) });
+router.post('/content-media', contentUpload.single('image'), (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'Choose a JPG, PNG, WEBP, or GIF image (15 MB max).' });
+    res.json({ success: true, url: `/content-media/${encodeURIComponent(req.file.filename)}` });
+});
+
 // ------------------------------------------------------------------
 // GET /api/admin/analytics — High level financial & transport metrics
 // ------------------------------------------------------------------
@@ -334,7 +343,51 @@ router.post('/drivers/:id/toggle-flag', async (req, res) => {
                 details TEXT NOT NULL,
                 created_at TIMESTAMPTZ NOT NULL DEFAULT now()
             );
+
+            -- Campus Spotlight cards and Trending-on-Campus ad banners, both
+            -- fully admin-editable (image, copy, link, button colour).
+            CREATE TABLE IF NOT EXISTS content_cards (
+                id BIGSERIAL PRIMARY KEY,
+                section TEXT NOT NULL CHECK (section IN ('spotlight', 'ad_banner')),
+                sort_order INTEGER NOT NULL DEFAULT 0,
+                active BOOLEAN NOT NULL DEFAULT true,
+                image_url TEXT NOT NULL DEFAULT '',
+                badge_text TEXT NOT NULL DEFAULT '',
+                title TEXT NOT NULL DEFAULT '',
+                description TEXT NOT NULL DEFAULT '',
+                button_text TEXT NOT NULL DEFAULT 'Explore \u2192',
+                button_url TEXT NOT NULL DEFAULT '',
+                button_color TEXT NOT NULL DEFAULT 'auto',
+                accent_color TEXT NOT NULL DEFAULT 'auto',
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            );
+            CREATE INDEX IF NOT EXISTS idx_content_cards_section ON content_cards (section, sort_order);
         `);
+
+        // One-time seed: turn the old hard-coded Spotlight cards and ad-banner
+        // slides into editable rows, so nothing on the live site changes the
+        // moment this migration runs. `app:` button URLs are handled specially
+        // by the frontend to keep firing the same built-in JS action they always
+        // did; typing a real https:// link over one replaces that behaviour.
+        const cardsSeeded = await pool.query("SELECT 1 FROM content_cards LIMIT 1");
+        if (!cardsSeeded.rows.length) {
+            const seedCards = [
+                ['spotlight', 0, '/landmark_campus_banner.jpg', 'Vacation & Interstate', 'Need a Bus Ride Home?', 'Student-organized vacation coaches leaving Landmark directly to your city.', 'Find Buses \u2192', 'app:openBusRideHomeModal', '#6D28D9'],
+                ['spotlight', 1, '/landmark_campus_banner.jpg', 'Campus Runner', 'Send on Errand', 'Dispatch verified student runners to collect laundry, handouts, books and packages.', 'Dispatch Now \u2192', 'app:openErrandModal', '#D97706'],
+                ['spotlight', 2, '/landmark_campus_banner.jpg', 'Hostel Gear', 'Campus Essentials', 'Fast charging cables, power banks, stationery & study kits delivered across halls.', 'Explore Hub \u2192', 'app:nextSlide', '#4338CA'],
+                ['ad_banner', 0, '/ads/ad_pulse_gadgets.jpg', '\u26a1 Student Tech \u2022 15% Off', 'Pulse Gadgets & Accessories', 'High-speed type-C charging cables, power banks & night-study audio gear.', 'Explore Store \u2192', 'app:toastPulseGadgets', 'auto'],
+                ['ad_banner', 1, '/ads/ad_kulture_threads.jpg', '\ud83c\udfa8 Campus Merch & Streetwear', 'Kulture Threads Collection', 'Landmark campus hoodies, oversized tees, tote bags & custom student apparel.', 'View Drops \u2192', 'app:toastKultureThreads', 'auto'],
+                ['ad_banner', 2, '/landmark_campus_banner.jpg', '\ud83d\ude8c Campus Express Shuttles', 'Fast Morning Lecture Passes', 'Skip queues with instant 30-minute shuttle passcodes. Fixed \u20a6250 fare.', 'Get Ride Code \u2192', 'app:handleRideCodeButtonClick', 'auto']
+            ];
+            for (const [section, order, image_url, badge_text, title, description, button_text, button_url, button_color] of seedCards) {
+                await pool.query(
+                    `INSERT INTO content_cards (section, sort_order, image_url, badge_text, title, description, button_text, button_url, button_color, accent_color)
+                     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$9)`,
+                    [section, order, image_url, badge_text, title, description, button_text, button_url, button_color]
+                );
+            }
+        }
 
         await recordPlatformChange({
             key: '2026-09-20-wallet-balance-and-timeline',
@@ -383,6 +436,14 @@ router.post('/drivers/:id/toggle-flag', async (req, res) => {
             details: 'Gateway payout rejections are now logged in full server-side and shown to drivers as a plain-language message; the wallet is still refunded automatically when a payout is refused.'
         });
 
+        await recordPlatformChange({
+            key: '2026-09-25-editable-spotlight-and-ad-banners',
+            actor: 'Claude',
+            area: 'Student wallet & Admin portal',
+            title: 'Campus Spotlight and ad banners are now admin-editable',
+            details: 'Admin can add, edit, reorder and remove Campus Spotlight cards and the Trending-on-Campus ad banners: image, badge, heading, description, button text, destination link, and button colour (or automatic colour matched to the image).'
+        });
+
         // Seed default platform config if empty
         const cfg = await pool.query("SELECT key FROM platform_config WHERE key = 'app_settings'");
         if (!cfg.rows.length) {
@@ -408,6 +469,150 @@ router.post('/drivers/:id/toggle-flag', async (req, res) => {
 // ------------------------------------------------------------------
 // GET /api/admin/change-log — Persistent record of platform updates
 // ------------------------------------------------------------------
+
+// ------------------------------------------------------------------
+// Campus Spotlight cards & Trending-on-Campus ad banners
+// ------------------------------------------------------------------
+const CONTENT_SECTIONS = new Set(['spotlight', 'ad_banner']);
+const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
+
+function shapeCard(r) {
+    return {
+        id: Number(r.id),
+        section: r.section,
+        sortOrder: r.sort_order,
+        active: r.active,
+        imageUrl: r.image_url,
+        badgeText: r.badge_text,
+        title: r.title,
+        description: r.description,
+        buttonText: r.button_text,
+        buttonUrl: r.button_url,
+        buttonColor: r.button_color,
+        accentColor: r.accent_color,
+        updatedAt: r.updated_at
+    };
+}
+const CARD_CASTS = {
+    imageUrl: v => { const s = String(v || '').trim(); if (!s) throw new Error('An image is required.'); if (s.length > 500) throw new Error('Image URL is too long.'); return s; },
+    badgeText: v => String(v || '').trim().slice(0, 60),
+    title: v => { const s = String(v || '').trim(); if (!s) throw new Error('Title is required.'); return s.slice(0, 120); },
+    description: v => String(v || '').trim().slice(0, 300),
+    buttonText: v => { const s = String(v || '').trim(); return s ? s.slice(0, 40) : 'Explore \u2192'; },
+    buttonUrl: v => {
+        const s = String(v || '').trim();
+        if (!s) return '';
+        if (s.startsWith('app:')) return s;   // legacy built-in action, kept as-is
+        if (!/^https?:\/\//i.test(s)) throw new Error('The link must start with https:// (or http://).');
+        if (s.length > 500) throw new Error('Link is too long.');
+        return s;
+    },
+    buttonColor: v => { const s = String(v || 'auto').trim(); if (s !== 'auto' && !HEX_COLOR.test(s)) throw new Error('Button colour must be "auto" or a hex code like #6D28D9.'); return s; },
+    accentColor: v => { const s = String(v || 'auto').trim(); if (s !== 'auto' && !HEX_COLOR.test(s)) throw new Error('Accent colour must be "auto" or a hex code like #6D28D9.'); return s; }
+};
+// imageUrl and title must be present on create; every other field has a sane default.
+// On a partial (edit) update, only the fields the caller actually sent are touched.
+const CARD_REQUIRED = ['imageUrl', 'title'];
+function validateCardBody(body, { partial = false } = {}) {
+    const out = {};
+    if (!partial) {
+        if (!CONTENT_SECTIONS.has(body.section)) throw new Error('section must be "spotlight" or "ad_banner".');
+        out.section = body.section;
+        for (const key of Object.keys(CARD_CASTS)) {
+            if (body[key] === undefined && CARD_REQUIRED.includes(key)) throw new Error(`Missing field: ${key}`);
+            out[key] = CARD_CASTS[key](body[key]);
+        }
+    } else {
+        for (const key of Object.keys(CARD_CASTS)) {
+            if (body[key] === undefined) continue;
+            out[key] = CARD_CASTS[key](body[key]);
+        }
+    }
+    if (body.active !== undefined) out.active = Boolean(body.active);
+    return out;
+}
+
+// List every card in a section (including inactive ones — admin needs to see everything to manage it).
+router.get('/content-cards', async (req, res) => {
+    try {
+        const section = req.query.section;
+        if (section && !CONTENT_SECTIONS.has(section)) return res.status(400).json({ error: 'invalid_section' });
+        const rows = await pool.query(
+            section
+                ? 'SELECT * FROM content_cards WHERE section = $1 ORDER BY sort_order ASC, id ASC'
+                : 'SELECT * FROM content_cards ORDER BY section ASC, sort_order ASC, id ASC',
+            section ? [section] : []
+        );
+        res.json({ cards: rows.rows.map(shapeCard) });
+    } catch (err) {
+        console.error('[Content cards list]', err.message);
+        res.status(500).json({ error: 'internal_error' });
+    }
+});
+
+router.post('/content-cards', async (req, res) => {
+    try {
+        const v = validateCardBody(req.body || {});
+        const next = await pool.query('SELECT COALESCE(MAX(sort_order), -1) + 1 AS n FROM content_cards WHERE section = $1', [v.section]);
+        const inserted = await pool.query(
+            `INSERT INTO content_cards (section, sort_order, image_url, badge_text, title, description, button_text, button_url, button_color, accent_color)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+            [v.section, next.rows[0].n, v.imageUrl, v.badgeText, v.title, v.description, v.buttonText, v.buttonUrl, v.buttonColor, v.accentColor]
+        );
+        res.json({ success: true, card: shapeCard(inserted.rows[0]) });
+    } catch (err) {
+        res.status(400).json({ error: 'invalid_card', message: err.message });
+    }
+});
+
+router.put('/content-cards/:id', async (req, res) => {
+    try {
+        const id = Number.parseInt(req.params.id, 10);
+        const v = validateCardBody(req.body || {}, { partial: true });
+        const cols = Object.keys(v);
+        if (!cols.length) return res.status(400).json({ error: 'no_fields' });
+        const dbCol = { imageUrl: 'image_url', badgeText: 'badge_text', buttonText: 'button_text', buttonUrl: 'button_url', buttonColor: 'button_color', accentColor: 'accent_color' };
+        const setSql = cols.map((k, i) => `${dbCol[k] || k} = $${i + 2}`).join(', ');
+        const updated = await pool.query(
+            `UPDATE content_cards SET ${setSql}, updated_at = now() WHERE id = $1 RETURNING *`,
+            [id, ...cols.map(k => v[k])]
+        );
+        if (!updated.rows.length) return res.status(404).json({ error: 'card_not_found' });
+        res.json({ success: true, card: shapeCard(updated.rows[0]) });
+    } catch (err) {
+        res.status(400).json({ error: 'invalid_card', message: err.message });
+    }
+});
+
+router.delete('/content-cards/:id', async (req, res) => {
+    try {
+        const id = Number.parseInt(req.params.id, 10);
+        const deleted = await pool.query('DELETE FROM content_cards WHERE id = $1 RETURNING id', [id]);
+        if (!deleted.rows.length) return res.status(404).json({ error: 'card_not_found' });
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'internal_error' });
+    }
+});
+
+// Bulk reorder within one section — body: { section, ids: [id, id, ...] } in the new display order.
+router.post('/content-cards/reorder', async (req, res) => {
+    const { section, ids } = req.body || {};
+    if (!CONTENT_SECTIONS.has(section) || !Array.isArray(ids) || !ids.length) return res.status(400).json({ error: 'invalid_request' });
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        for (let i = 0; i < ids.length; i++) {
+            await client.query('UPDATE content_cards SET sort_order = $1 WHERE id = $2 AND section = $3', [i, Number(ids[i]), section]);
+        }
+        await client.query('COMMIT');
+        res.json({ success: true });
+    } catch (err) {
+        await client.query('ROLLBACK').catch(() => {});
+        res.status(500).json({ error: 'internal_error' });
+    } finally { client.release(); }
+});
+
 router.get('/change-log', async (_req, res) => {
     try {
         const result = await pool.query(

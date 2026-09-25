@@ -328,6 +328,27 @@
   .btn-sm.danger:hover { background: var(--danger); color: #fff; }
 
 
+  /* ---- Campus Spotlight & ad banners ---- */
+  .cc-row { display:flex; gap:12px; align-items:center; padding:10px; border:1px solid var(--line); border-radius:14px; background:var(--panel-alt); }
+  .cc-row.inactive { opacity:.55; }
+  .cc-thumb { width:64px; height:48px; border-radius:10px; object-fit:cover; flex-shrink:0; background:var(--panel); border:1px solid var(--line); }
+  .cc-mid { flex:1; min-width:0; }
+  .cc-title { font-weight:700; font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .cc-sub { font-size:11.5px; color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
+  .cc-actions { display:flex; gap:6px; flex-shrink:0; flex-wrap:wrap; justify-content:flex-end; }
+  .cc-actions button { border:1px solid var(--line); background:var(--panel); color:var(--text); font:600 11.5px 'Plus Jakarta Sans',sans-serif; padding:5px 9px; border-radius:8px; cursor:pointer; }
+  .cc-actions button:hover { border-color:var(--accent); color:var(--accent); }
+  .cc-actions button.danger:hover { border-color:var(--danger); color:var(--danger); }
+  .cc-empty { padding:18px; text-align:center; color:var(--text-dim); font-size:13px; }
+  .cc-form-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-top:14px; }
+  .cc-form-grid label { font-size:12px; font-weight:700; color:var(--text); display:block; }
+  .cc-form-grid input, .cc-form-grid textarea { width:100%; margin-top:6px; padding:9px 12px; border-radius:10px; border:1px solid var(--line); background:var(--panel-alt); color:var(--text); font:inherit; font-size:13px; }
+  .cc-form-grid textarea { resize:vertical; min-height:60px; }
+  .cc-color-row { display:flex; align-items:center; gap:10px; margin-top:6px; }
+  .cc-color-row input[type=color] { width:38px; height:32px; padding:0; border:1px solid var(--line); border-radius:8px; background:none; cursor:pointer; }
+  .cc-preview { width:100%; max-width:220px; height:100px; object-fit:cover; border-radius:10px; border:1px solid var(--line); margin-top:8px; background:var(--panel-alt); }
+  .cc-upload-row { display:flex; gap:8px; align-items:center; margin-top:6px; flex-wrap:wrap; }
+
   /* ---- Live support chat ---- */
   .tab-badge { min-width:18px; height:18px; padding:0 5px; border-radius:999px; background:var(--danger); color:#fff; font-size:10.5px; font-weight:800; display:inline-grid; place-items:center; }
   .sup-shell { display:grid; grid-template-columns: 340px 1fr; height: calc(100vh - 210px); min-height: 480px; background:var(--panel); border:1px solid var(--line); border-radius:20px; overflow:hidden; box-shadow:var(--card-shadow); }
@@ -585,6 +606,7 @@
     </button>
     <button class="tab-btn" onclick="switchTab('operations')">Operations desk</button>
     <button class="tab-btn" onclick="switchTab('support')">💬 Live support <span class="tab-badge" id="supTabBadge" hidden></span></button>
+    <button class="tab-btn" onclick="switchTab('content')">🖼️ Spotlight & Ads</button>
   </div>
 
   <!-- TAB 1: EXECUTIVE ANALYTICS -->
@@ -922,7 +944,59 @@
       </section>
     </div>
   </div>
+
+  <!-- TAB 7: CAMPUS SPOTLIGHT & AD BANNERS -->
+  <div class="tab-pane" id="paneContent">
+    <div class="panel-card" style="border-top:3px solid #6D28D9">
+      <div class="panel-header">
+        <div><h3 class="panel-title">Campus Spotlight</h3><div style="font-size:12px;color:var(--text-dim)">The 3-card row on the student home screen, above Trending on Campus.</div></div>
+        <button class="btn-sm primary" onclick="CC.openForm('spotlight')">+ Add card</button>
+      </div>
+      <div id="ccList_spotlight" style="display:grid;gap:10px"><div class="cc-empty">Loading…</div></div>
+    </div>
+    <div class="panel-card" style="border-top:3px solid #0EA5E9">
+      <div class="panel-header">
+        <div><h3 class="panel-title">Trending on Campus (ad banners)</h3><div style="font-size:12px;color:var(--text-dim)">The rotating banner carousel at the bottom of the student home screen.</div></div>
+        <button class="btn-sm primary" onclick="CC.openForm('ad_banner')">+ Add banner</button>
+      </div>
+      <div id="ccList_ad_banner" style="display:grid;gap:10px"><div class="cc-empty">Loading…</div></div>
+    </div>
+  </div>
 </main>
+
+<div class="modal-overlay" id="modalContentCard"><div class="modal-card" style="max-width:560px">
+  <button class="modal-close" onclick="closeModal('modalContentCard')">✕</button>
+  <h3 id="ccFormTitle" class="panel-title">Add card</h3>
+  <div style="font-size:12px;color:var(--text-dim);margin-top:4px" id="ccFormSub"></div>
+
+  <div class="cc-upload-row">
+    <label class="btn-sm" style="cursor:pointer">Upload image<input id="ccUploadInput" type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden onchange="CC.uploadImage(this)"></label>
+    <input class="search-input" id="ccImageUrl" placeholder="or paste an image URL" style="flex:1;min-width:200px;max-width:none" oninput="CC.previewImage()">
+  </div>
+  <img id="ccPreview" class="cc-preview" style="display:none">
+
+  <div class="cc-form-grid">
+    <label>Badge text (optional)<input id="ccBadgeText" maxlength="60" placeholder="e.g. 15% Off"></label>
+    <label>Button text<input id="ccButtonText" maxlength="40" placeholder="Explore →"></label>
+    <label style="grid-column:1/-1">Heading<input id="ccTitle" maxlength="120" placeholder="What this card is about"></label>
+    <label style="grid-column:1/-1">Description<textarea id="ccDescription" maxlength="300" placeholder="One or two short sentences"></textarea></label>
+    <label style="grid-column:1/-1">Button link (opens in a new tab — leave blank for no link)<input id="ccButtonUrl" placeholder="https://example.com"></label>
+    <label style="grid-column:1/-1">Button colour
+      <div class="cc-color-row">
+        <label style="font-weight:500;font-size:12.5px;display:flex;align-items:center;gap:6px;margin:0"><input type="radio" name="ccColorMode" value="auto" checked onchange="CC.onColorModeChange()"> Auto — match the image</label>
+        <label style="font-weight:500;font-size:12.5px;display:flex;align-items:center;gap:6px;margin:0"><input type="radio" name="ccColorMode" value="custom" onchange="CC.onColorModeChange()"> Custom</label>
+        <input type="color" id="ccColorPicker" value="#6D28D9" disabled oninput="CC.onColorModeChange()">
+      </div>
+    </label>
+    <label style="display:flex;align-items:center;gap:8px;grid-column:1/-1"><input type="checkbox" id="ccActive" checked style="width:auto;margin:0"> Visible to students</label>
+  </div>
+
+  <div id="ccFormError" style="display:none;margin-top:12px;padding:9px 12px;border-radius:10px;background:rgba(225,29,72,.1);border:1px solid var(--danger);color:var(--danger);font-size:12.5px;font-weight:600"></div>
+  <div style="display:flex;gap:10px;margin-top:16px">
+    <button class="btn-sm" onclick="closeModal('modalContentCard')" style="flex:0 0 30%">Cancel</button>
+    <button class="btn-sm primary" id="ccSaveBtn" onclick="CC.save()" style="flex:1">Save card</button>
+  </div>
+</div></div>
 
 <script>
   const API_BASE = '/api';
@@ -949,7 +1023,7 @@
       const isTarget = (tab === 'analytics' && i === 0) ||
                        (tab === 'students' && i === 1) ||
                        (tab === 'drivers' && i === 2) ||
-                       (tab === 'bankReviews' && i === 3) || (tab === 'operations' && i === 4) || (tab === 'support' && i === 5);
+                       (tab === 'bankReviews' && i === 3) || (tab === 'operations' && i === 4) || (tab === 'support' && i === 5) || (tab === 'content' && i === 6);
       b.classList.toggle('active', isTarget);
     });
 
@@ -972,6 +1046,9 @@
     } else if (tab === 'support') {
       document.getElementById('paneSupport').classList.add('active');
       Sup.opened();
+    } else if (tab === 'content') {
+      document.getElementById('paneContent').classList.add('active');
+      CC.opened();
     }
   }
 
@@ -1467,6 +1544,204 @@
       select, send, retry: retryMsg, quick, onKey, onInput, toggleStatus
     };
   })();
+
+  // ------------------------------------------------------------------
+  // Campus Spotlight cards & Trending-on-Campus ad banners
+  // ------------------------------------------------------------------
+  const CC = (() => {
+    const API = `${API_BASE}/admin/content-cards`;
+    const esc = v => { const d = document.createElement('div'); d.textContent = v == null ? '' : String(v); return d.innerHTML; };
+    let cache = { spotlight: [], ad_banner: [] };
+    let loaded = false;
+    let editing = null;   // { section, id } while editing; null while creating
+
+    const SECTION_LABEL = { spotlight: 'Campus Spotlight card', ad_banner: 'ad banner' };
+
+    async function loadSection(section) {
+      const box = document.getElementById(`ccList_${section}`);
+      try {
+        const r = await fetch(`${API}?section=${section}`);
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.message || 'Could not load.');
+        cache[section] = d.cards || [];
+        renderSection(section);
+      } catch (e) {
+        if (box) box.innerHTML = `<div class="cc-empty">${esc(e.message || 'Could not load.')}</div>`;
+      }
+    }
+
+    function renderSection(section) {
+      const box = document.getElementById(`ccList_${section}`);
+      if (!box) return;
+      const cards = cache[section];
+      if (!cards.length) { box.innerHTML = `<div class="cc-empty">No ${SECTION_LABEL[section]}s yet. Click "+ Add" above to create one.</div>`; return; }
+      box.innerHTML = cards.map((c, i) => `
+        <div class="cc-row ${c.active ? '' : 'inactive'}">
+          <img class="cc-thumb" src="${esc(c.imageUrl)}" alt="" onerror="this.style.visibility='hidden'">
+          <div class="cc-mid">
+            <div class="cc-title">${esc(c.title)}${c.active ? '' : ' <span class="badge">Hidden</span>'}</div>
+            <div class="cc-sub">${esc(c.buttonText)}${c.buttonUrl && !c.buttonUrl.startsWith('app:') ? ' → ' + esc(c.buttonUrl) : ''}</div>
+          </div>
+          <div class="cc-actions">
+            <button onclick="CC.move('${section}', ${i}, -1)" ${i === 0 ? 'disabled' : ''} title="Move up">↑</button>
+            <button onclick="CC.move('${section}', ${i}, 1)" ${i === cards.length - 1 ? 'disabled' : ''} title="Move down">↓</button>
+            <button onclick="CC.toggleActive('${section}', ${c.id})">${c.active ? 'Hide' : 'Show'}</button>
+            <button onclick="CC.openForm('${section}', ${c.id})">Edit</button>
+            <button class="danger" onclick="CC.remove('${section}', ${c.id})">Delete</button>
+          </div>
+        </div>`).join('');
+    }
+
+    function resetForm() {
+      document.getElementById('ccImageUrl').value = '';
+      document.getElementById('ccPreview').style.display = 'none';
+      document.getElementById('ccBadgeText').value = '';
+      document.getElementById('ccTitle').value = '';
+      document.getElementById('ccDescription').value = '';
+      document.getElementById('ccButtonText').value = '';
+      document.getElementById('ccButtonUrl').value = '';
+      document.getElementById('ccActive').checked = true;
+      document.querySelector('input[name="ccColorMode"][value="auto"]').checked = true;
+      document.getElementById('ccColorPicker').value = '#6D28D9';
+      document.getElementById('ccColorPicker').disabled = true;
+      document.getElementById('ccFormError').style.display = 'none';
+    }
+
+    function openForm(section, id) {
+      resetForm();
+      const card = id ? cache[section].find(c => c.id === id) : null;
+      editing = { section, id: card ? card.id : null };
+      document.getElementById('ccFormTitle').textContent = card ? `Edit ${SECTION_LABEL[section]}` : `Add ${SECTION_LABEL[section]}`;
+      document.getElementById('ccFormSub').textContent = section === 'spotlight'
+        ? 'Shown as one of the 3 cards in the Campus Spotlight row.'
+        : 'Shown as one slide in the Trending on Campus banner carousel.';
+      if (card) {
+        document.getElementById('ccImageUrl').value = card.imageUrl || '';
+        previewImage();
+        document.getElementById('ccBadgeText').value = card.badgeText || '';
+        document.getElementById('ccTitle').value = card.title || '';
+        document.getElementById('ccDescription').value = card.description || '';
+        document.getElementById('ccButtonText').value = card.buttonText || '';
+        // A legacy "app:..." action has no real link to show/edit — leave the field blank
+        // rather than show internal plumbing; saving with it blank keeps the built-in action.
+        document.getElementById('ccButtonUrl').value = (card.buttonUrl || '').startsWith('app:') ? '' : (card.buttonUrl || '');
+        document.getElementById('ccActive').checked = card.active;
+        const colorField = section === 'spotlight' ? card.accentColor : card.buttonColor;
+        if (colorField && colorField !== 'auto') {
+          document.querySelector('input[name="ccColorMode"][value="custom"]').checked = true;
+          document.getElementById('ccColorPicker').value = colorField;
+          document.getElementById('ccColorPicker').disabled = false;
+        }
+      }
+      openModal('modalContentCard');
+    }
+
+    function onColorModeChange() {
+      const custom = document.querySelector('input[name="ccColorMode"]:checked').value === 'custom';
+      document.getElementById('ccColorPicker').disabled = !custom;
+    }
+
+    function previewImage() {
+      const url = document.getElementById('ccImageUrl').value.trim();
+      const img = document.getElementById('ccPreview');
+      if (!url) { img.style.display = 'none'; return; }
+      img.src = url; img.style.display = 'block';
+    }
+
+    async function uploadImage(input) {
+      const file = input.files?.[0];
+      if (!file) return;
+      const form = new FormData();
+      form.append('image', file);
+      try {
+        const r = await fetch(`${API_BASE}/admin/content-media`, { method: 'POST', body: form });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || 'Upload failed.');
+        document.getElementById('ccImageUrl').value = d.url;
+        previewImage();
+      } catch (e) {
+        formError(e.message || 'Upload failed.');
+      } finally { input.value = ''; }
+    }
+
+    function formError(msg) { const el = document.getElementById('ccFormError'); el.textContent = msg; el.style.display = 'block'; }
+
+    async function save() {
+      const section = editing.section;
+      const colorMode = document.querySelector('input[name="ccColorMode"]:checked').value;
+      const color = colorMode === 'auto' ? 'auto' : document.getElementById('ccColorPicker').value;
+      const body = {
+        imageUrl: document.getElementById('ccImageUrl').value.trim(),
+        badgeText: document.getElementById('ccBadgeText').value.trim(),
+        title: document.getElementById('ccTitle').value.trim(),
+        description: document.getElementById('ccDescription').value.trim(),
+        buttonText: document.getElementById('ccButtonText').value.trim(),
+        buttonUrl: document.getElementById('ccButtonUrl').value.trim(),
+        active: document.getElementById('ccActive').checked
+      };
+      if (section === 'spotlight') body.accentColor = color; else body.buttonColor = color;
+      if (!body.imageUrl) return formError('Add an image — upload one or paste an image URL.');
+      if (!body.title) return formError('Add a heading.');
+      const btn = document.getElementById('ccSaveBtn');
+      btn.disabled = true; btn.textContent = 'Saving…';
+      try {
+        const isEdit = Boolean(editing.id);
+        const r = await fetch(isEdit ? `${API}/${editing.id}` : API, {
+          method: isEdit ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(isEdit ? body : { ...body, section })
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.message || 'Could not save.');
+        closeModal('modalContentCard');
+        adminToast(isEdit ? 'Card updated.' : 'Card added.');
+        await loadSection(section);
+      } catch (e) {
+        formError(e.message || 'Could not save.');
+      } finally {
+        btn.disabled = false; btn.textContent = 'Save card';
+      }
+    }
+
+    async function remove(section, id) {
+      if (!confirm('Delete this card? This cannot be undone.')) return;
+      try {
+        const r = await fetch(`${API}/${id}`, { method: 'DELETE' });
+        if (!r.ok) throw new Error();
+        adminToast('Card deleted.');
+        await loadSection(section);
+      } catch (_) { adminToast('Could not delete that card.'); }
+    }
+
+    async function toggleActive(section, id) {
+      const card = cache[section].find(c => c.id === id);
+      if (!card) return;
+      try {
+        const r = await fetch(`${API}/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ active: !card.active }) });
+        if (!r.ok) throw new Error();
+        await loadSection(section);
+      } catch (_) { adminToast('Could not update visibility.'); }
+    }
+
+    async function move(section, index, dir) {
+      const cards = cache[section];
+      const j = index + dir;
+      if (j < 0 || j >= cards.length) return;
+      [cards[index], cards[j]] = [cards[j], cards[index]];
+      renderSection(section);   // optimistic reorder, confirmed by the reload below
+      try {
+        const r = await fetch(`${API}/reorder`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ section, ids: cards.map(c => c.id) }) });
+        if (!r.ok) throw new Error();
+      } catch (_) { adminToast('Could not save the new order.'); }
+      await loadSection(section);
+    }
+
+    return {
+      opened() { if (!loaded) { loaded = true; loadSection('spotlight'); loadSection('ad_banner'); } },
+      openForm, save, remove, toggleActive, move, uploadImage, previewImage, onColorModeChange
+    };
+  })();
+
   Sup.init();
 
   // Splash screen dismiss

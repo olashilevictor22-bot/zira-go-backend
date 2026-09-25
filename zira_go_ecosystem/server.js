@@ -78,6 +78,7 @@ app.use('/api/trips', tripRoutes);
 app.use('/api/wallet', fundingRouter);
 app.use('/api/driver', driverRouter);
 app.use('/hero-media', express.static(path.join(__dirname, 'uploads', 'hero-media'), { maxAge: '1h' }));
+app.use('/content-media', express.static(path.join(__dirname, 'uploads', 'content-media'), { maxAge: '1h' }));
 
 // Public Support & Live Agent Dispatch
 app.post('/api/support/message', rateLimit({ windowMs: 60 * 60 * 1000, limit: 10 }), async (req, res) => {
@@ -113,6 +114,27 @@ app.get('/api/broadcasts/active', async (req, res) => {
     try {
         const result = await pool.query("SELECT * FROM campus_broadcasts WHERE active = true ORDER BY created_at DESC LIMIT 5");
         res.json(result.rows);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Public Campus Spotlight cards & Trending-on-Campus ad banners (active only)
+app.get('/api/public/content-cards', async (req, res) => {
+    try {
+        const rows = await pool.query(
+            `SELECT * FROM content_cards WHERE active = true ORDER BY section ASC, sort_order ASC, id ASC`
+        );
+        const spotlight = [], ads = [];
+        for (const r of rows.rows) {
+            const card = {
+                id: Number(r.id), imageUrl: r.image_url, badgeText: r.badge_text, title: r.title,
+                description: r.description, buttonText: r.button_text, buttonUrl: r.button_url,
+                buttonColor: r.button_color, accentColor: r.accent_color
+            };
+            (r.section === 'spotlight' ? spotlight : ads).push(card);
+        }
+        res.json({ spotlight, ads });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
