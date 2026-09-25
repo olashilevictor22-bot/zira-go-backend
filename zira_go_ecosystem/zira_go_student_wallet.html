@@ -3759,8 +3759,6 @@ function setupSpotlightDragScroll() {
   box.addEventListener('touchend', up);
   // Prevent a drag from also firing the card's click-through button.
   box.addEventListener('click', e => { if (moved) { e.preventDefault(); e.stopPropagation(); } }, true);
-  box.addEventListener('mouseenter', stopAuto);
-  box.addEventListener('mouseleave', () => { if (!isDown) startSpotlightAutoScroll(); });
   startSpotlightAutoScroll();
 }
 function startSpotlightAutoScroll() {

@@ -324,7 +324,43 @@ router.post('/:id/renew/verify', requireAuth, requireRole('student'), async (req
 // Expiry sweep — checks for live ads past their expires_at, pulls the
 // banner down, and emails the student a renewal link. Runs every 15
 // minutes; no extra dependency (node-cron) needed for that cadence.
+//
+// expireOneApplication() holds the actual per-row work so a single ad can
+// also be expired on demand (see the admin "simulate expiry" route), not
+// just by the scheduled sweep.
 // ------------------------------------------------------------------
+async function expireOneApplication(application) {
+    if (application.content_card_id) {
+        await pool.query('UPDATE content_cards SET active = false, updated_at = now() WHERE id = $1', [application.content_card_id]);
+    }
+    const reference = `ZG_AD_RENEW_${application.id}_${Date.now()}_${crypto.randomInt(100, 999)}`;
+    const redirectUrl = APP_BASE_URL ? `${APP_BASE_URL}/zira_go_student_wallet.html?adRenewalRef=${encodeURIComponent(reference)}&adId=${application.id}` : undefined;
+    let checkoutUrl = null;
+    try {
+        const result = await initializeKorapayFunding({
+            email: application.email,
+            amount: RENEWAL_AMOUNT,
+            reference,
+            customerName: application.business_name,
+            redirectUrl
+        });
+        checkoutUrl = result.checkoutUrl;
+    } catch (payErr) {
+        console.warn('[Ad Expiry] Korapay checkout not available:', payErr.message);
+    }
+
+    const updated = await pool.query(
+        `UPDATE ad_applications
+         SET status = 'expired_pending_renewal', renewal_reference = COALESCE($1, renewal_reference),
+             expiry_notice_sent_at = now(), updated_at = now()
+         WHERE id = $2 RETURNING *`,
+        [checkoutUrl ? reference : null, application.id]
+    );
+
+    if (checkoutUrl) await sendRenewalEmail(application, checkoutUrl);
+    return updated.rows[0];
+}
+
 async function runExpirySweep() {
     try {
         const expired = await pool.query(
@@ -332,34 +368,7 @@ async function runExpirySweep() {
         );
         for (const application of expired.rows) {
             try {
-                if (application.content_card_id) {
-                    await pool.query('UPDATE content_cards SET active = false, updated_at = now() WHERE id = $1', [application.content_card_id]);
-                }
-                const reference = `ZG_AD_RENEW_${application.id}_${Date.now()}_${crypto.randomInt(100, 999)}`;
-                const redirectUrl = APP_BASE_URL ? `${APP_BASE_URL}/zira_go_student_wallet.html?adRenewalRef=${encodeURIComponent(reference)}&adId=${application.id}` : undefined;
-                let checkoutUrl = null;
-                try {
-                    const result = await initializeKorapayFunding({
-                        email: application.email,
-                        amount: RENEWAL_AMOUNT,
-                        reference,
-                        customerName: application.business_name,
-                        redirectUrl
-                    });
-                    checkoutUrl = result.checkoutUrl;
-                } catch (payErr) {
-                    console.warn('[Ad Expiry Sweep] Korapay checkout not available:', payErr.message);
-                }
-
-                await pool.query(
-                    `UPDATE ad_applications
-                     SET status = 'expired_pending_renewal', renewal_reference = COALESCE($1, renewal_reference),
-                         expiry_notice_sent_at = now(), updated_at = now()
-                     WHERE id = $2`,
-                    [checkoutUrl ? reference : null, application.id]
-                );
-
-                if (checkoutUrl) await sendRenewalEmail(application, checkoutUrl);
+                await expireOneApplication(application);
             } catch (rowErr) {
                 console.warn('[Ad Expiry Sweep] row error', application.id, rowErr.message);
             }
@@ -376,3 +385,4 @@ module.exports.PLANS = PLANS;
 module.exports.RENEWAL_AMOUNT = RENEWAL_AMOUNT;
 module.exports.sendApprovedEmail = sendApprovedEmail;
 module.exports.sendRejectedEmail = sendRejectedEmail;
+module.exports.expireOneApplication = expireOneApplication;

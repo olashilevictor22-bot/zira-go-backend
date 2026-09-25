@@ -8,6 +8,7 @@ const fs = require('fs');
 const router = express.Router();
 const { requireAuth, requireRole } = require('./zira_go_auth_routes');
 const { notify } = require('./zira_go_notification_routes');
+const { expireOneApplication } = require('./zira_go_ads_routes');
 
 async function recordPlatformChange({ key, actor = 'Codex', area = 'Platform', title, details }) {
     await pool.query(
@@ -709,6 +710,25 @@ router.post('/ad-applications/:id/reject', async (req, res) => {
         if (!updated.rows.length) return res.status(400).json({ error: 'invalid_state', message: 'Only a pending application can be rejected.' });
         sendAdRejectedEmail(updated.rows[0], reason).catch(() => {});
         res.json({ success: true, application: updated.rows[0] });
+    } catch (err) {
+        res.status(500).json({ error: 'internal_error', message: err.message });
+    }
+});
+
+// Dev/testing: run the real expiry flow (content card pulled down, status ->
+// expired_pending_renewal, renewal email + Korapay link) for one live ad
+// right now, without waiting on expires_at or the 15-min sweep. Distinct
+// from /deactivate below, which just force-closes an ad with no renewal step.
+router.post('/ad-applications/:id/simulate-expiry', async (req, res) => {
+    try {
+        const id = Number(req.params.id);
+        const { rows } = await pool.query('SELECT * FROM ad_applications WHERE id = $1', [id]);
+        if (!rows.length) return res.status(404).json({ error: 'not_found' });
+        if (rows[0].status !== 'live') {
+            return res.status(400).json({ error: 'invalid_state', message: 'Only a live advert can be expired.' });
+        }
+        const updated = await expireOneApplication(rows[0]);
+        res.json({ success: true, application: updated });
     } catch (err) {
         res.status(500).json({ error: 'internal_error', message: err.message });
     }

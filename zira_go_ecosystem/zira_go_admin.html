@@ -1383,6 +1383,7 @@
             ${a.image_url ? `<a class="btn-sm" href="${a.image_url}" target="_blank" rel="noopener">Image</a>` : ''}
             ${['pending','rejected','expired','expired_pending_renewal'].includes(a.status) ? `<button class="btn-sm primary" onclick="approveAdApplication(${a.id})">Approve</button>` : ''}
             ${a.status === 'pending' ? `<button class="btn-sm danger" onclick="rejectAdApplication(${a.id})">Reject</button>` : ''}
+            ${a.status === 'live' ? `<button class="btn-sm" onclick="simulateAdExpiry(${a.id})">Simulate expiry</button>` : ''}
             ${a.status === 'live' ? `<button class="btn-sm danger" onclick="deactivateAdApplication(${a.id})">Take down</button>` : ''}
           </td>
         </tr>
@@ -1409,6 +1410,16 @@
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Could not reject this application.');
       showAdminNotice('Application rejected.');
+      loadAdApplications();
+    } catch (e) { showAdminNotice(e.message, true); }
+  }
+  async function simulateAdExpiry(id) {
+    if (!confirm('Run the real expiry flow now — banner pulled down, renewal email sent, status set to "expired, pending renewal"?')) return;
+    try {
+      const res = await fetch(`${API_BASE}/admin/ad-applications/${id}/simulate-expiry`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Could not simulate expiry for this advert.');
+      showAdminNotice('Expiry simulated — renewal email sent, banner pulled down.');
       loadAdApplications();
     } catch (e) { showAdminNotice(e.message, true); }
   }
