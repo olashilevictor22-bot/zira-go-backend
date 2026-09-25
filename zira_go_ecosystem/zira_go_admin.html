@@ -1633,7 +1633,7 @@
           document.getElementById('ccColorPicker').disabled = false;
         }
       }
-      openModal('modalContentCard');
+      document.getElementById('modalContentCard')?.classList.add('active');
     }
 
     function onColorModeChange() {
