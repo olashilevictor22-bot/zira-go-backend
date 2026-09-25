@@ -63,6 +63,7 @@ const adminPortalRouter = require('./zira_go_admin_routes');
 const { router: pinRouter, adminRouter: adminPinRouter } = require('./zira_go_pin_routes');
 const notificationRouter = require('./zira_go_notification_routes');
 const { userRouter: supportChatRouter, adminRouter: supportChatAdminRouter } = require('./zira_go_support_chat_routes');
+const adsRouter = require('./zira_go_ads_routes');
 
 app.use('/api/auth', authRouter);
 app.use('/api/bank', bankRouter);
@@ -77,8 +78,10 @@ app.use('/api/telegram', telegramLinkRouter);
 app.use('/api/trips', tripRoutes);
 app.use('/api/wallet', fundingRouter);
 app.use('/api/driver', driverRouter);
+app.use('/api/ads', adsRouter);
 app.use('/hero-media', express.static(path.join(__dirname, 'uploads', 'hero-media'), { maxAge: '1h' }));
 app.use('/content-media', express.static(path.join(__dirname, 'uploads', 'content-media'), { maxAge: '1h' }));
+app.use('/ad-media', express.static(path.join(__dirname, 'uploads', 'ad-media'), { maxAge: '1h' }));
 
 // Public Support & Live Agent Dispatch
 app.post('/api/support/message', rateLimit({ windowMs: 60 * 60 * 1000, limit: 10 }), async (req, res) => {

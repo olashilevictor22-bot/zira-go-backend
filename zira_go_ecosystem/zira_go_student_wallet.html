@@ -728,9 +728,17 @@
 
   .spotlight-marquee {
     position: relative;
-    overflow: hidden;
+    overflow-x: auto;
+    overflow-y: hidden;
     border-radius: 18px;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    cursor: grab;
+    user-select: none;
   }
+  .spotlight-marquee::-webkit-scrollbar { display: none; }
+  .spotlight-marquee.dragging { cursor: grabbing; scroll-snap-type: none; }
   .spotlight-marquee::before,
   .spotlight-marquee::after {
     content: '';
@@ -746,17 +754,6 @@
     display: flex;
     gap: 14px;
     width: max-content;
-    animation: spotlightDrift 42s linear infinite;
-  }
-  .spotlight-grid.spotlight-grid--static { animation: none; width: 100%; }
-  .spotlight-marquee:hover .spotlight-grid,
-  .spotlight-grid.paused { animation-play-state: paused; }
-  @keyframes spotlightDrift {
-    from { transform: translateX(-50%); }
-    to { transform: translateX(0); }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .spotlight-grid { animation: none !important; }
   }
   .spotlight-card {
     background: var(--panel);
@@ -772,6 +769,7 @@
     min-height: 145px;
     width: 260px;
     flex: 0 0 260px;
+    scroll-snap-align: start;
   }
   .spotlight-card:hover {
     transform: translateY(-2px);
@@ -2030,6 +2028,19 @@
         <span class="pmi-arrow">›</span>
       </div>
 
+      <div class="profile-menu-item" onclick="openMyAdsModal()">
+        <div class="pmi-left">
+          <div class="pmi-icon-box" style="background:rgba(109,40,217,0.1);color:#6D28D9">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg>
+          </div>
+          <div>
+            <div class="pmi-title">My Adverts</div>
+            <div class="pmi-desc">Track review status, renewals & expiry</div>
+          </div>
+        </div>
+        <span class="pmi-arrow" id="myAdsBadge">›</span>
+      </div>
+
       <div class="profile-menu-item" onclick="openBecomeRunnerModal()">
         <div class="pmi-left">
           <div class="pmi-icon-box" style="background:rgba(2,132,199,0.1);color:#0284C7">
@@ -2096,7 +2107,22 @@
 
     <div id="pinRequestStep" class="pin-flow">
       <p class="pin-intro"><b>Identity check required.</b><br>Upload an ID, then make a short selfie video saying your full name and registration number.</p>
-      <div class="pin-upload-card"><strong>1. Upload your student ID</strong><small>Your ID card, admission letter, or another clear document showing your details.</small><input type="file" id="pinIdentityDocument" accept="image/jpeg,image/png,image/webp,application/pdf"></div>
+      <div class="pin-upload-card">
+        <strong>1. Capture your student ID</strong>
+        <small>Keep it flat and well-lit, fitting fully in frame. The back camera usually gives a sharper shot — use the switch button below to change it.</small>
+        <div id="idCameraStatus" class="recording-status"><span class="recording-dot" style="display:none"></span><span id="idStatusText">Not captured yet</span></div>
+        <video id="idCameraPreview" class="selfie-preview" autoplay playsinline muted></video>
+        <img id="idCapturedPreview" class="selfie-preview" alt="Captured ID">
+        <canvas id="idCaptureCanvas" style="display:none"></canvas>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button type="button" class="primary" id="btnIdCamera" onclick="startIdCamera()" style="flex:1">📷 Open camera</button>
+          <button type="button" class="secondary" id="btnSwitchIdCamera" onclick="switchIdCamera()" style="display:none;flex:0 0 auto" title="Switch front/back camera">🔄 Switch camera</button>
+        </div>
+        <button type="button" class="primary" id="btnIdCapture" onclick="captureIdPhoto()" style="display:none;margin-top:8px;width:100%">Capture photo</button>
+        <button type="button" class="secondary" id="btnRetakeId" onclick="retakeIdPhoto()" style="display:none;margin-top:8px">Retake</button>
+        <div style="text-align:center;color:var(--text-dim);font-size:11px;margin:10px 0 7px">or upload an existing image / PDF</div>
+        <input type="file" id="pinIdentityDocument" accept="image/jpeg,image/png,image/webp,application/pdf" onchange="selectIdFile(this)">
+      </div>
       <div class="pin-upload-card"><strong>2. Record a selfie video</strong><small>Look at the camera and say your full name and registration number. A red indicator confirms recording is in progress.</small><div id="selfieCameraStatus" class="recording-status"><span class="recording-dot"></span><span id="selfieStatusText">Not recorded yet</span><span id="selfieRecordingTime" style="margin-left:auto;font-variant-numeric:tabular-nums"></span></div><video id="selfieCameraPreview" class="selfie-preview" autoplay playsinline muted></video><button type="button" class="primary" id="btnSelfieRecord" onclick="toggleSelfieRecording()" style="margin-top:10px">● Record selfie video</button><button type="button" class="secondary" id="btnRetakeSelfie" onclick="retakeSelfieVideo()" style="display:none;margin-top:8px">Record again</button><div style="text-align:center;color:var(--text-dim);font-size:11px;margin:10px 0 7px">or upload an existing selfie video</div><input type="file" id="pinSelfieVideo" accept="video/mp4,video/quicktime,video/webm" onchange="selectSelfieVideo(this)"></div>
       <button type="button" class="primary" onclick="submitPinChangeRequest()">Submit for identity review</button>
     </div>
@@ -2126,12 +2152,22 @@
       <label>Brand / Business Name</label>
       <input type="text" id="adBrandName" placeholder="e.g. Campus Fixes & Tech" required>
 
+      <label>Your Email (for updates on this application)</label>
+      <input type="email" id="adEmail" placeholder="you@example.com" required>
+
       <label>Category</label>
       <select id="adCategory" required>
         <option value="Student Tech & Gadgets">Student Tech & Gadgets</option>
         <option value="Campus Fashion & Apparel">Campus Merch & Apparel</option>
         <option value="Academics & Handouts">Handouts, Books & Printing</option>
         <option value="Hostel Essentials & Services">Hostel Essentials & Services</option>
+      </select>
+
+      <label>Plan (how long it runs once approved)</label>
+      <select id="adPlan" required>
+        <option value="basic">Basic — 7 days</option>
+        <option value="standard">Standard — 14 days</option>
+        <option value="premium">Premium — 30 days</option>
       </select>
 
       <label>Promotion Headline</label>
@@ -2143,13 +2179,25 @@
       <div style="background:var(--panel-alt);border:1px dashed var(--accent);border-radius:14px;padding:12px;text-align:center;margin-bottom:16px;cursor:pointer" onclick="document.getElementById('adFileInput').click()">
         <input type="file" id="adFileInput" accept="image/*" style="display:none" onchange="previewAdImage(event)">
         <div id="adUploadPreviewText" style="font-size:12.5px;color:var(--accent);font-weight:700">
-          📷 Attach Promo Banner Image (Optional)
+          📷 Attach Promo Banner Image (Required)
         </div>
       </div>
+      <div id="adFreeNotice" style="font-size:12px;color:var(--success);font-weight:700;margin:-6px 0 12px;display:none">✓ Your first advert is free!</div>
 
-      <button type="submit" class="primary">Submit Advert for Placement</button>
+      <button type="submit" class="primary" id="adSubmitBtn">Submit Advert for Placement</button>
       <button type="button" class="secondary" onclick="closeModal('modalPlaceAdvert')">Cancel</button>
     </form>
+  </div>
+</div>
+
+<!-- MY ADVERTS MODAL -->
+<div class="modal-overlay" id="modalMyAds">
+  <div class="modal-card" style="max-width:480px;max-height:82vh;overflow:auto">
+    <div class="modal-header">
+      <h3 style="margin:0">My Adverts</h3>
+      <button class="modal-close" onclick="closeModal('modalMyAds')">✕</button>
+    </div>
+    <div id="myAdsList" style="display:grid;gap:10px">Loading…</div>
   </div>
 </div>
 
@@ -2419,6 +2467,7 @@ document.addEventListener('pointerdown', () => ziraSound.unlock(), { once: true 
 const ADMIN_PREVIEW = new URLSearchParams(window.location.search).get('adminPreview') === 'student';
 let STUDENT_REG_NO = ADMIN_PREVIEW ? 'LMU/23/01030' : (localStorage.getItem('zira_reg_no') || '—');
 let STUDENT_NAME = ADMIN_PREVIEW ? 'Student Preview' : (localStorage.getItem('zira_name') || 'Student');
+let STUDENT_EMAIL = ADMIN_PREVIEW ? 'preview@lmu.edu.ng' : (localStorage.getItem('zira_email') || '');
 const STUDENT_TOKEN = localStorage.getItem('zira_token');
 if (!ADMIN_PREVIEW && (!STUDENT_TOKEN || localStorage.getItem('zira_role') !== 'student')) window.location.href = 'zira_go_login.html?role=student';
 const studentHeaders = { 'Authorization': `Bearer ${STUDENT_TOKEN}` };
@@ -2443,7 +2492,7 @@ if (ADMIN_PREVIEW) {
 // Modal Helpers
 // ------------------------------------------------------------------
 function openModal(id) { document.getElementById(id).classList.add('active'); ziraSound.open(); }
-function closeModal(id) { document.getElementById(id).classList.remove('active'); if (id === 'modalChangePin') stopSelfieCamera(); ziraSound.close(); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); if (id === 'modalChangePin') { stopSelfieCamera(); stopIdCamera(true); } ziraSound.close(); }
 function toggleSound() {
   const next = !ziraSound.isEnabled();
   ziraSound.setEnabled(next);
@@ -2468,7 +2517,7 @@ function openProfileModal() {
 }
 let activePinRequest = null, selfieCameraStream = null, selfieRecorder = null, selfieChunks = [], selfieRecordedFile = null, selfieTimer = null, selfieStartedAt = null, selfiePreviewUrl = null;
 function openChangePinModal() { closeModal('modalProfileInfo'); openModal('modalChangePin'); loadPinRequestStatus(); }
-function closeChangePinModal() { stopSelfieCamera(); closeModal('modalChangePin'); }
+function closeChangePinModal() { stopSelfieCamera(); stopIdCamera(true); closeModal('modalChangePin'); }
 async function loadPinRequestStatus() { const step=document.getElementById('pinRequestStep'),approved=document.getElementById('pinApprovedStep'),status=document.getElementById('pinRequestStatus'),codeForm=document.getElementById('pinCodeForm'),generate=document.getElementById('btnGeneratePinCode'); step.style.display='flex'; approved.style.display='none'; try { const res=await fetch('/api/pin/status',{headers:{Authorization:`Bearer ${localStorage.getItem('zira_token')||''}`}}); const data=await res.json(); activePinRequest=data.request; if(!data.request)return; step.style.display='none';approved.style.display='block';const hasCode=data.request.approval_code_expires_at && new Date(data.request.approval_code_expires_at)>new Date();status.textContent=data.request.status==='approved'?(hasCode?'Your approval code is active. Enter the code from your email and choose a new PIN.':'Approved. Generate your one-time code when you are ready; it will be sent to your email and expires after 15 minutes.'):data.request.status==='pending'?'Your identity review is being checked. You will receive an in-app notification once it is approved.':`Request status: ${data.request.status}. ${data.request.review_note||''}`;generate.style.display=data.request.status==='approved'&&!hasCode?'block':'none';codeForm.style.display=data.request.status==='approved'&&hasCode?'grid':'none'; } catch (_) { status.textContent='Sign in to submit a secure PIN-change request.'; } }
 async function generatePinApprovalCode() { const button=document.getElementById('btnGeneratePinCode');button.disabled=true;button.textContent='Sending secure code…';try { const res=await fetch('/api/pin/generate-code',{method:'POST',headers:{Authorization:`Bearer ${localStorage.getItem('zira_token')||''}`}});const data=await res.json();if(!res.ok)throw new Error(data.message);showToast(data.message);await loadPinRequestStatus(); } catch(e) { showToast(e.message||'Could not generate an approval code.');button.disabled=false;button.textContent='Generate approval code'; } }
 function setSelfieStatus(message, live=false, time='') { const status=document.getElementById('selfieCameraStatus');status.classList.toggle('live',live);document.getElementById('selfieStatusText').textContent=message;document.getElementById('selfieRecordingTime').textContent=time; }
@@ -2479,9 +2528,83 @@ function saveSelfieRecording() { clearInterval(selfieTimer);selfieRecordedFile=n
 function retakeSelfieVideo() { selfieRecordedFile=null;document.getElementById('pinSelfieVideo').value='';const preview=document.getElementById('selfieCameraPreview');preview.removeAttribute('src');preview.style.display='none';document.getElementById('btnSelfieRecord').style.display='block';document.getElementById('btnSelfieRecord').textContent='● Record selfie video';document.getElementById('btnSelfieRecord').classList.remove('danger');document.getElementById('btnRetakeSelfie').style.display='none';setSelfieStatus('Not recorded yet'); }
 function selectSelfieVideo(input) { if(!input.files[0])return; selfieRecordedFile=null;const preview=document.getElementById('selfieCameraPreview');preview.srcObject=null;preview.src=URL.createObjectURL(input.files[0]);preview.controls=true;preview.muted=false;preview.style.display='block';document.getElementById('btnSelfieRecord').style.display='none';document.getElementById('btnRetakeSelfie').style.display='block';setSelfieStatus('Video selected and ready',false); }
 function stopSelfieCamera() { clearInterval(selfieTimer);if(selfieRecorder?.state==='recording')selfieRecorder.stop();if(selfieCameraStream){selfieCameraStream.getTracks().forEach(track=>track.stop());selfieCameraStream=null;} }
-async function submitPinChangeRequest() { const doc=document.getElementById('pinIdentityDocument').files[0],video=selfieRecordedFile||document.getElementById('pinSelfieVideo').files[0];if(!doc||!video)return showToast('Please attach your identity document and record or select a selfie video.');const form=new FormData();form.append('identityDocument',doc);form.append('selfieVideo',video);try { const res=await fetch('/api/pin/request',{method:'POST',headers:{Authorization:`Bearer ${localStorage.getItem('zira_token')||''}`},body:form});const data=await res.json();if(!res.ok)throw new Error(data.message);showToast('Identity review submitted.');loadPinRequestStatus(); } catch(e){showToast(e.message||'Could not submit your review.');} }
+
+// ------------------------------------------------------------------
+// In-page ID card camera capture (no native camera app, no page leave/refresh)
+// ------------------------------------------------------------------
+let idCameraStream = null, idCapturedFile = null, idFacingMode = 'environment';
+async function startIdCamera(forceFacing) {
+  stopIdCamera(false);
+  try {
+    idFacingMode = forceFacing || idFacingMode;
+    idCameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: idFacingMode } });
+    const preview = document.getElementById('idCameraPreview');
+    preview.srcObject = idCameraStream;
+    preview.style.display = 'block';
+    document.getElementById('idCapturedPreview').style.display = 'none';
+    document.getElementById('btnIdCamera').style.display = 'none';
+    document.getElementById('btnSwitchIdCamera').style.display = 'inline-block';
+    document.getElementById('btnIdCapture').style.display = 'block';
+    document.getElementById('btnRetakeId').style.display = 'none';
+    document.getElementById('idStatusText').textContent = idFacingMode === 'environment' ? 'Back camera — line up the ID' : 'Front camera — line up the ID';
+  } catch (e) {
+    showToast('Camera access was not granted. You can upload an existing ID photo instead.');
+  }
+}
+function switchIdCamera() {
+  startIdCamera(idFacingMode === 'environment' ? 'user' : 'environment');
+}
+function captureIdPhoto() {
+  const video = document.getElementById('idCameraPreview');
+  const canvas = document.getElementById('idCaptureCanvas');
+  canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+  canvas.toBlob(blob => {
+    idCapturedFile = new File([blob], 'student-id.jpg', { type: 'image/jpeg' });
+    const img = document.getElementById('idCapturedPreview');
+    img.src = URL.createObjectURL(blob);
+    img.style.display = 'block';
+    video.style.display = 'none';
+    stopIdCamera(true);
+    document.getElementById('btnIdCapture').style.display = 'none';
+    document.getElementById('btnSwitchIdCamera').style.display = 'none';
+    document.getElementById('btnRetakeId').style.display = 'block';
+    document.getElementById('idStatusText').textContent = 'ID captured and ready';
+    document.getElementById('pinIdentityDocument').value = '';
+  }, 'image/jpeg', 0.92);
+}
+function retakeIdPhoto() {
+  idCapturedFile = null;
+  document.getElementById('idCapturedPreview').style.display = 'none';
+  document.getElementById('btnRetakeId').style.display = 'none';
+  document.getElementById('btnIdCamera').style.display = 'inline-block';
+  document.getElementById('idStatusText').textContent = 'Not captured yet';
+  startIdCamera();
+}
+function selectIdFile(input) {
+  if (!input.files[0]) return;
+  idCapturedFile = null;
+  stopIdCamera(true);
+  document.getElementById('idCameraPreview').style.display = 'none';
+  const img = document.getElementById('idCapturedPreview');
+  if (input.files[0].type.startsWith('image/')) { img.src = URL.createObjectURL(input.files[0]); img.style.display = 'block'; }
+  else { img.style.display = 'none'; }
+  document.getElementById('btnIdCamera').style.display = 'inline-block';
+  document.getElementById('btnSwitchIdCamera').style.display = 'none';
+  document.getElementById('btnIdCapture').style.display = 'none';
+  document.getElementById('btnRetakeId').style.display = 'none';
+  document.getElementById('idStatusText').textContent = 'File selected and ready';
+}
+function stopIdCamera(keepStatus) {
+  if (idCameraStream) { idCameraStream.getTracks().forEach(t => t.stop()); idCameraStream = null; }
+  if (!keepStatus) {
+    document.getElementById('btnSwitchIdCamera').style.display = 'none';
+    document.getElementById('btnIdCapture').style.display = 'none';
+  }
+}
+async function submitPinChangeRequest() { const doc=idCapturedFile||document.getElementById('pinIdentityDocument').files[0],video=selfieRecordedFile||document.getElementById('pinSelfieVideo').files[0];if(!doc||!video)return showToast('Please capture or attach your identity document and record or select a selfie video.');const form=new FormData();form.append('identityDocument',doc);form.append('selfieVideo',video);try { const res=await fetch('/api/pin/request',{method:'POST',headers:{Authorization:`Bearer ${localStorage.getItem('zira_token')||''}`},body:form});const data=await res.json();if(!res.ok)throw new Error(data.message);showToast('Identity review submitted.');loadPinRequestStatus(); } catch(e){showToast(e.message||'Could not submit your review.');} }
 async function confirmPinChange() { const pin=document.getElementById('pinNew').value,confirm=document.getElementById('pinConfirm').value,code=document.getElementById('pinApprovalCode').value;if(pin!==confirm)return showToast('The new PIN entries do not match.');try { const res=await fetch('/api/pin/confirm',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${localStorage.getItem('zira_token')||''}`},body:JSON.stringify({requestId:activePinRequest?.id,code,newPin:pin})});const data=await res.json();if(!res.ok)throw new Error(data.message);closeModal('modalChangePin');showToast('Wallet PIN changed successfully.'); } catch(e){showToast(e.message||'Could not change your PIN.');} }
-function openPlaceAdvertModal() { closeModal('modalProfileInfo'); openModal('modalPlaceAdvert'); }
+function openPlaceAdvertModal() { closeModal('modalProfileInfo'); document.getElementById('adEmail').value = STUDENT_EMAIL || ''; adUploadedImageUrl = null; document.getElementById('adUploadPreviewText').textContent = '📷 Attach Promo Banner Image (Required)'; checkFreeAdEligibility(); openModal('modalPlaceAdvert'); }
 function openBecomeRunnerModal() { closeModal('modalProfileInfo'); openModal('modalBecomeRunner'); }
 function openBusRideHomeModal() { renderBuses(); openModal('modalBusRideHome'); }
 function openPinSupportModal() { openProfileModal(); }
@@ -2992,50 +3115,156 @@ function submitChangePin() {
   document.getElementById('pinConfirm').value = '';
 }
 
-function previewAdImage(e) {
+let adUploadedImageUrl = null;
+async function checkFreeAdEligibility() {
+  const notice = document.getElementById('adFreeNotice');
+  notice.style.display = 'none';
+  try {
+    const res = await fetch('/api/ads/my', { headers: studentHeaders });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!(data.applications || []).length) notice.style.display = 'block';
+  } catch (_) {}
+}
+
+async function previewAdImage(e) {
   const file = e.target.files[0];
-  if (file) {
-    const textEl = document.getElementById('adUploadPreviewText');
-    if (textEl) textEl.textContent = `✓ Image selected: ${file.name}`;
+  if (!file) return;
+  const textEl = document.getElementById('adUploadPreviewText');
+  textEl.textContent = `Uploading ${file.name}…`;
+  const form = new FormData();
+  form.append('image', file);
+  try {
+    const res = await fetch('/api/ads/media', { method: 'POST', headers: studentHeaders, body: form });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Upload failed.');
+    adUploadedImageUrl = data.url;
+    textEl.textContent = `✓ Image selected: ${file.name}`;
+  } catch (err) {
+    adUploadedImageUrl = null;
+    textEl.textContent = '📷 Attach Promo Banner Image (Required)';
+    showToast(err.message || 'Could not upload that image.');
   }
 }
 
-function submitAdvert() {
+async function submitAdvert() {
   const brand = document.getElementById('adBrandName').value.trim();
+  const email = document.getElementById('adEmail').value.trim();
   const headline = document.getElementById('adHeadline').value.trim();
+  const details = document.getElementById('adDetails').value.trim();
   const cat = document.getElementById('adCategory').value;
+  const plan = document.getElementById('adPlan').value;
 
-  closeModal('modalPlaceAdvert');
-  showToast(`✓ Advert for "${brand}" submitted for placement review!`);
-
-  // Dynamically append new slide to Trending on Campus carousel
-  const track = document.getElementById('carouselTrack');
-  const dotsContainer = document.getElementById('carouselDots');
-  if (track) {
-    const slide = document.createElement('div');
-    slide.className = 'carousel-slide';
-    slide.style.backgroundImage = `url('landmark_campus_banner.jpg')`;
-    slide.innerHTML = `
-      <div class="carousel-slide-overlay"></div>
-      <div class="slide-content">
-        <span class="slide-badge">⭐ Student Brand • ${cat}</span>
-        <h3 class="slide-title">${brand}</h3>
-        <p class="slide-desc">${headline}</p>
-        <button type="button" class="slide-btn" onclick="showToast('Contacting ${brand} on campus...')">Contact Brand →</button>
-      </div>
-    `;
-    track.appendChild(slide);
-    totalSlides = track.children.length;
-
-    if (dotsContainer) {
-      const dot = document.createElement('span');
-      dot.className = 'carousel-dot';
-      const newIndex = track.children.length - 1;
-      dot.onclick = () => goToSlide(newIndex);
-      dotsContainer.appendChild(dot);
-    }
+  if (!adUploadedImageUrl) return showToast('Please attach a promo banner image first.');
+  const btn = document.getElementById('adSubmitBtn');
+  btn.disabled = true; btn.textContent = 'Submitting…';
+  try {
+    const res = await fetch('/api/ads/apply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...studentHeaders },
+      body: JSON.stringify({
+        businessName: brand,
+        email,
+        title: headline,
+        description: `${cat} — ${details}`,
+        imageUrl: adUploadedImageUrl,
+        buttonText: 'Explore →',
+        plan
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Could not submit your application.');
+    closeModal('modalPlaceAdvert');
+    showToast(data.application?.isFreeAd
+      ? `✓ Free advert submitted! Check "${email}" for your application summary.`
+      : `✓ Advert submitted for review! Check "${email}" for your application summary.`);
+    document.getElementById('adBrandName').value = '';
+    document.getElementById('adHeadline').value = '';
+    document.getElementById('adDetails').value = '';
+    adUploadedImageUrl = null;
+  } catch (err) {
+    showToast(err.message || 'Could not submit your application.');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Submit Advert for Placement';
   }
 }
+
+// ------------------------------------------------------------------
+// My Adverts — review status, live countdown, and paid renewal
+// ------------------------------------------------------------------
+const AD_STATUS_TEXT = {
+  pending: { label: 'Under review', color: 'var(--warning)' },
+  live: { label: 'Live now', color: 'var(--success)' },
+  expired_pending_renewal: { label: 'Expired — renew to relist', color: 'var(--danger)' },
+  expired: { label: 'Expired', color: 'var(--text-dim)' },
+  rejected: { label: 'Not approved', color: 'var(--danger)' }
+};
+function openMyAdsModal() { closeModal('modalProfileInfo'); openModal('modalMyAds'); loadMyAds(); }
+
+async function loadMyAds() {
+  const box = document.getElementById('myAdsList');
+  box.textContent = 'Loading…';
+  try {
+    const res = await fetch('/api/ads/my', { headers: studentHeaders });
+    const data = await res.json();
+    const apps = data.applications || [];
+    if (!apps.length) { box.innerHTML = `<div style="text-align:center;color:var(--text-dim);padding:20px">You haven't applied to place an advert yet.</div>`; return; }
+    box.innerHTML = apps.map(a => {
+      const st = AD_STATUS_TEXT[a.status] || { label: a.status, color: 'var(--text-dim)' };
+      const canRenew = a.status === 'expired_pending_renewal';
+      return `
+        <div style="border:1px solid var(--border);border-radius:14px;padding:12px 14px">
+          <div style="display:flex;justify-content:space-between;gap:8px">
+            <b>${a.business_name}</b>
+            <span style="font-weight:700;color:${st.color};font-size:12.5px">${st.label}</span>
+          </div>
+          <div style="font-size:12.5px;color:var(--text-dim);margin-top:2px">${a.title}</div>
+          <div style="font-size:11.5px;color:var(--text-dim);margin-top:6px">
+            ${a.is_free_ad ? 'Free advert · ' : ''}${a.plan} plan (${a.plan_days} days)
+            ${a.expires_at ? ` · Runs until ${new Date(a.expires_at).toLocaleDateString()}` : ''}
+          </div>
+          ${a.status === 'rejected' && a.reject_reason ? `<div style="font-size:11.5px;color:var(--danger);margin-top:6px">Reason: ${a.reject_reason}</div>` : ''}
+          ${canRenew ? `<button class="primary" style="margin-top:10px;padding:8px 14px;font-size:12.5px" onclick="renewAd(${a.id})">Renew for ₦${Number(a.renewal_amount || 1000).toLocaleString()}</button>` : ''}
+        </div>`;
+    }).join('');
+  } catch (_) {
+    box.innerHTML = `<div style="text-align:center;color:var(--danger);padding:20px">Could not load your adverts.</div>`;
+  }
+}
+
+async function renewAd(id) {
+  try {
+    const res = await fetch(`/api/ads/${id}/renew/initialize`, { method: 'POST', headers: studentHeaders });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Could not start the renewal payment.');
+    window.location.href = data.checkoutUrl;
+  } catch (err) {
+    showToast(err.message || 'Could not start the renewal payment.');
+  }
+}
+
+async function checkAdRenewalRedirect() {
+  const params = new URLSearchParams(window.location.search);
+  const reference = params.get('adRenewalRef');
+  const adId = params.get('adId');
+  if (!reference || !adId) return;
+  try {
+    const res = await fetch(`/api/ads/${adId}/renew/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...studentHeaders },
+      body: JSON.stringify({ reference })
+    });
+    const data = await res.json();
+    showToast(res.ok ? '✓ Advert renewed and back live on the campus banners!' : (data.message || 'Renewal payment could not be verified yet.'));
+  } catch (_) {
+    showToast('Renewal payment could not be verified yet.');
+  } finally {
+    params.delete('adRenewalRef'); params.delete('adId');
+    const clean = `${window.location.pathname}${params.toString() ? `?${params}` : ''}`;
+    window.history.replaceState({}, '', clean);
+  }
+}
+document.addEventListener('DOMContentLoaded', checkAdRenewalRedirect);
 
 // ------------------------------------------------------------------
 // 4C. Student Vacation Bus Transit Data & Filter
@@ -3427,7 +3656,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function loadStudentProfile() {
-  try { const res=await fetch('/api/auth/me',{headers:studentHeaders}); if(!res.ok)return; const data=await res.json(); STUDENT_NAME=data.fullName||STUDENT_NAME; STUDENT_REG_NO=data.regNo||STUDENT_REG_NO; balance=Number(data.walletBalance||balance); localStorage.setItem('zira_name',STUDENT_NAME);localStorage.setItem('zira_reg_no',STUDENT_REG_NO);['headerRegNoDisplay','regNoDisplay','profRegNo'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=STUDENT_REG_NO;});const nameEl=document.getElementById('profName'),avatar=document.getElementById('profAvatar');if(nameEl)nameEl.textContent=STUDENT_NAME;if(avatar)avatar.textContent=STUDENT_NAME.charAt(0).toUpperCase();updateBalanceDisplay(); } catch (_) {} }
+  try { const res=await fetch('/api/auth/me',{headers:studentHeaders}); if(!res.ok)return; const data=await res.json(); STUDENT_NAME=data.fullName||STUDENT_NAME; STUDENT_REG_NO=data.regNo||STUDENT_REG_NO; STUDENT_EMAIL=data.email||STUDENT_EMAIL; balance=Number(data.walletBalance||balance); localStorage.setItem('zira_name',STUDENT_NAME);localStorage.setItem('zira_reg_no',STUDENT_REG_NO);if(data.email)localStorage.setItem('zira_email',data.email);['headerRegNoDisplay','regNoDisplay','profRegNo'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=STUDENT_REG_NO;});const nameEl=document.getElementById('profName'),avatar=document.getElementById('profAvatar');if(nameEl)nameEl.textContent=STUDENT_NAME;if(avatar)avatar.textContent=STUDENT_NAME.charAt(0).toUpperCase();updateBalanceDisplay(); } catch (_) {} }
 
 async function loadPublicExperience() {
   try {
@@ -3510,6 +3739,40 @@ function ccLoadImageColor(url, applyFn) {
   img.src = url;
 }
 
+let spotlightAutoScroll = null;
+function setupSpotlightDragScroll() {
+  const box = document.querySelector('.spotlight-marquee');
+  if (!box || box.dataset.dragBound) { startSpotlightAutoScroll(); return; }
+  box.dataset.dragBound = '1';
+  let isDown = false, startX = 0, startScroll = 0, moved = false;
+
+  const stopAuto = () => clearInterval(spotlightAutoScroll);
+  const down = (x) => { isDown = true; moved = false; startX = x; startScroll = box.scrollLeft; box.classList.add('dragging'); stopAuto(); };
+  const move = (x) => { if (!isDown) return; const delta = x - startX; if (Math.abs(delta) > 4) moved = true; box.scrollLeft = startScroll - delta; };
+  const up = () => { isDown = false; box.classList.remove('dragging'); startSpotlightAutoScroll(); };
+
+  box.addEventListener('mousedown', e => down(e.pageX));
+  window.addEventListener('mousemove', e => move(e.pageX));
+  window.addEventListener('mouseup', up);
+  box.addEventListener('touchstart', e => down(e.touches[0].pageX), { passive: true });
+  box.addEventListener('touchmove', e => move(e.touches[0].pageX), { passive: true });
+  box.addEventListener('touchend', up);
+  // Prevent a drag from also firing the card's click-through button.
+  box.addEventListener('click', e => { if (moved) { e.preventDefault(); e.stopPropagation(); } }, true);
+  box.addEventListener('mouseenter', stopAuto);
+  box.addEventListener('mouseleave', () => { if (!isDown) startSpotlightAutoScroll(); });
+  startSpotlightAutoScroll();
+}
+function startSpotlightAutoScroll() {
+  clearInterval(spotlightAutoScroll);
+  const box = document.querySelector('.spotlight-marquee');
+  if (!box || box.scrollWidth <= box.clientWidth + 4) return;
+  spotlightAutoScroll = setInterval(() => {
+    const atEnd = box.scrollLeft + box.clientWidth >= box.scrollWidth - 4;
+    box.scrollTo({ left: atEnd ? 0 : box.scrollLeft + 1, behavior: atEnd ? 'smooth' : 'auto' });
+  }, 40);
+}
+
 function renderSpotlightCards(cards) {
   const grid = document.getElementById('spotlightGrid');
   if (!grid) return;
@@ -3527,14 +3790,9 @@ function renderSpotlightCards(cards) {
         <button type="button" class="spotlight-btn" data-cc-btn style="background:#6D28D9;color:#FFFFFF">${ccEsc(c.buttonText)}</button>
       </div>
     </div>`;
-  // A single card has nothing to loop into, so it just sits still; two or more
-  // get a duplicated, doubled-up track so the drift can loop seamlessly.
-  const loop = cards.length > 1;
-  const sequence = loop ? cards.concat(cards) : cards;
-  grid.innerHTML = sequence.map(cardHtml).join('');
-  grid.classList.toggle('spotlight-grid--static', !loop);
+  grid.innerHTML = cards.map(cardHtml).join('');
   grid.querySelectorAll('.spotlight-card').forEach((el, i) => {
-    const c = sequence[i];
+    const c = cards[i];
     el.querySelector('[data-cc-btn]').addEventListener('click', () => ccHandleClick(c.buttonUrl));
     if (c.accentColor && c.accentColor !== 'auto') {
       el.querySelector('[data-cc-btn]').style.background = c.accentColor;
@@ -3546,20 +3804,8 @@ function renderSpotlightCards(cards) {
       });
     }
   });
-  if (loop) {
-    // Keep the drift speed constant (not "faster with more cards") by basing
-    // the animation duration on the actual track width once it's laid out.
-    requestAnimationFrame(() => {
-      const halfWidth = grid.scrollWidth / 2;
-      const SLOW_PX_PER_SEC = 26;
-      const duration = Math.min(90, Math.max(22, halfWidth / SLOW_PX_PER_SEC));
-      grid.style.animationDuration = `${duration}s`;
-    });
-  } else {
-    grid.style.animationDuration = '';
-  }
+  setupSpotlightDragScroll();
 }
-
 function renderAdSlides(cards) {
   const track = document.getElementById('carouselTrack'), dots = document.getElementById('carouselDots');
   const section = track ? track.closest('section') : null;

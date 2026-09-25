@@ -177,10 +177,12 @@ router.get('/change-request/status', requireAuth, async (req, res) => {
 // GET /api/admin/bank/change-requests?status=pending
 adminRouter.get('/change-requests', requireAuth, requireRole('admin'), async (req, res) => {
     const status = req.query.status || 'pending';
-    const result = await pool.query(
-        `SELECT * FROM bank_account_change_requests WHERE status = $1 ORDER BY created_at ASC`,
-        [status]
-    );
+    const result = status === 'all'
+        ? await pool.query(`SELECT * FROM bank_account_change_requests ORDER BY created_at DESC`)
+        : await pool.query(
+            `SELECT * FROM bank_account_change_requests WHERE status = $1 ORDER BY created_at ASC`,
+            [status]
+        );
     res.json(result.rows);
 });
 

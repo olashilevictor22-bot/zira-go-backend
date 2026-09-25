@@ -607,6 +607,7 @@
     <button class="tab-btn" onclick="switchTab('operations')">Operations desk</button>
     <button class="tab-btn" onclick="switchTab('support')">💬 Live support <span class="tab-badge" id="supTabBadge" hidden></span></button>
     <button class="tab-btn" onclick="switchTab('content')">🖼️ Spotlight & Ads</button>
+    <button class="tab-btn" onclick="switchTab('adApplications')">📢 Ad Applications <span class="tab-badge" id="adAppTabBadge" hidden></span></button>
   </div>
 
   <!-- TAB 1: EXECUTIVE ANALYTICS -->
@@ -748,6 +749,27 @@
       <div class="panel-header">
         <h3 class="panel-title">Real-Time Universal Transaction Stream</h3>
       </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+        <input type="text" class="search-input" id="txSearch" placeholder="Search receipt, ref or user..." style="max-width:220px" oninput="renderRecentTx()">
+        <select id="txType" class="search-input" style="max-width:160px" onchange="renderRecentTx()">
+          <option value="all">All types</option>
+          <option value="funding">Funding</option>
+          <option value="ride_debit">Ride debit</option>
+          <option value="ride_credit">Ride credit</option>
+          <option value="withdrawal">Withdrawal</option>
+          <option value="admin_credit">Admin credit</option>
+          <option value="admin_debit">Admin debit</option>
+        </select>
+        <select id="txStatus" class="search-input" style="max-width:150px" onchange="renderRecentTx()">
+          <option value="all">All statuses</option>
+          <option value="success">Success</option>
+          <option value="pending">Pending</option>
+          <option value="failed">Failed</option>
+        </select>
+        <input type="date" class="search-input" id="txFrom" style="max-width:150px" onchange="renderRecentTx()" aria-label="From date">
+        <input type="date" class="search-input" id="txTo" style="max-width:150px" onchange="renderRecentTx()" aria-label="To date">
+        <button class="btn-sm" onclick="document.getElementById('txSearch').value='';document.getElementById('txType').value='all';document.getElementById('txStatus').value='all';document.getElementById('txFrom').value='';document.getElementById('txTo').value='';renderRecentTx();">Clear filters</button>
+      </div>
       <div class="table-wrap">
         <table>
           <thead>
@@ -824,6 +846,7 @@
     <div class="panel-card">
       <div class="panel-header">
         <h3 class="panel-title">Driver Fleet & Bank Verification</h3>
+        <input type="text" class="search-input" id="searchDriver" placeholder="Search name or email..." oninput="loadDriverLedger()">
       </div>
       <div class="table-wrap">
         <table>
@@ -847,6 +870,18 @@
     <div class="panel-card">
       <div class="panel-header">
         <h3 class="panel-title">Driver Payout & Withdrawal Ledger</h3>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+        <input type="text" class="search-input" id="wdSearch" placeholder="Search receipt, ref or driver..." style="max-width:220px" oninput="renderDriverWithdrawals()">
+        <select id="wdStatus" class="search-input" style="max-width:160px" onchange="renderDriverWithdrawals()">
+          <option value="all">All statuses</option>
+          <option value="completed">Completed</option>
+          <option value="processing">Processing</option>
+          <option value="rejected">Rejected</option>
+        </select>
+        <input type="date" class="search-input" id="wdFrom" style="max-width:150px" onchange="renderDriverWithdrawals()" aria-label="From date">
+        <input type="date" class="search-input" id="wdTo" style="max-width:150px" onchange="renderDriverWithdrawals()" aria-label="To date">
+        <button class="btn-sm" onclick="document.getElementById('wdSearch').value='';document.getElementById('wdStatus').value='all';document.getElementById('wdFrom').value='';document.getElementById('wdTo').value='';renderDriverWithdrawals();">Clear filters</button>
       </div>
       <div class="table-wrap">
         <table>
@@ -872,6 +907,12 @@
     <div class="panel-card">
       <div class="panel-header">
         <h3 class="panel-title">Bank Account Change Requests Queue</h3>
+        <select id="bankReviewStatus" class="search-input" style="max-width:170px" onchange="loadBankReviews()">
+          <option value="pending">Pending</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+          <option value="all">All</option>
+        </select>
       </div>
       <div class="table-wrap">
         <table>
@@ -960,6 +1001,35 @@
         <button class="btn-sm primary" onclick="CC.openForm('ad_banner')">+ Add banner</button>
       </div>
       <div id="ccList_ad_banner" style="display:grid;gap:10px"><div class="cc-empty">Loading…</div></div>
+    </div>
+  </div>
+
+  <!-- TAB: AD APPLICATIONS -->
+  <div class="tab-pane" id="paneAdApplications">
+    <div class="panel-card" style="border-top:3px solid #6D28D9">
+      <div class="panel-header">
+        <div><h3 class="panel-title">Student advert applications</h3><div style="font-size:12px;color:var(--text-dim)">Every student's first advert is free. Approving publishes it straight to the Trending-on-Campus banners; it auto-expires and emails the student a ₦1,000 Korapay renewal link.</div></div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+        <select id="adAppStatus" class="search-input" style="max-width:190px" onchange="loadAdApplications()">
+          <option value="all">All statuses</option>
+          <option value="pending">Pending review</option>
+          <option value="live">Live</option>
+          <option value="expired_pending_renewal">Expired — awaiting renewal</option>
+          <option value="expired">Expired (no renewal)</option>
+          <option value="rejected">Rejected</option>
+        </select>
+        <input type="text" class="search-input" id="adAppSearch" placeholder="Search business, title or email..." style="max-width:240px" oninput="debounceAdAppSearch()">
+        <input type="date" class="search-input" id="adAppFrom" style="max-width:150px" onchange="loadAdApplications()" aria-label="Submitted from">
+        <input type="date" class="search-input" id="adAppTo" style="max-width:150px" onchange="loadAdApplications()" aria-label="Submitted to">
+        <button class="btn-sm" onclick="document.getElementById('adAppStatus').value='all';document.getElementById('adAppSearch').value='';document.getElementById('adAppFrom').value='';document.getElementById('adAppTo').value='';loadAdApplications();">Clear filters</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Business</th><th>Ad title</th><th>Email</th><th>Plan</th><th>Cost</th><th>Status</th><th>Submitted</th><th>Runs until</th><th>Actions</th></tr></thead>
+          <tbody id="tblAdApplications"><tr><td colspan="9" style="text-align:center;color:var(--text-dim);padding:18px">Loading…</td></tr></tbody>
+        </table>
+      </div>
     </div>
   </div>
 </main>
@@ -1067,6 +1137,7 @@
     const heroInput=document.getElementById('configHeroImage');
     if(heroInput){const card=heroInput.parentElement?.parentElement;const panel=card?.closest('.panel-card');if(panel){panel.id='experienceSettings';card.classList.add('hero-card');document.getElementById('configHeroTitle')?.parentElement?.parentElement?.classList.add('hero-grid');heroInput.parentElement?.classList.add('hero-upload-row');const schedule=document.getElementById('configScheduledHeroUrl')?.parentElement;schedule?.classList.add('schedule-grid');const start=document.getElementById('configHeroStartHour'),end=document.getElementById('configHeroEndHour');[start,end].forEach(input=>{if(input){input.type='time';input.step='3600';}});start?.setAttribute('aria-label','Scheduled hero start time');end?.setAttribute('aria-label','Scheduled hero end time');}}
     loadAnalytics();
+    refreshAdAppBadge();
   }
   function closeModal(id) { document.getElementById(id)?.classList.remove('active'); ziraSound.close(); }
 
@@ -1075,7 +1146,7 @@
       const isTarget = (tab === 'analytics' && i === 0) ||
                        (tab === 'students' && i === 1) ||
                        (tab === 'drivers' && i === 2) ||
-                       (tab === 'bankReviews' && i === 3) || (tab === 'operations' && i === 4) || (tab === 'support' && i === 5) || (tab === 'content' && i === 6);
+                       (tab === 'bankReviews' && i === 3) || (tab === 'operations' && i === 4) || (tab === 'support' && i === 5) || (tab === 'content' && i === 6) || (tab === 'adApplications' && i === 7);
       b.classList.toggle('active', isTarget);
     });
 
@@ -1101,6 +1172,9 @@
     } else if (tab === 'content') {
       document.getElementById('paneContent').classList.add('active');
       CC.opened();
+    } else if (tab === 'adApplications') {
+      document.getElementById('paneAdApplications').classList.add('active');
+      loadAdApplications();
     }
   }
 
@@ -1119,12 +1193,38 @@
       document.getElementById('kpiTrips').textContent = kpi.totalTrips.toLocaleString();
       document.getElementById('kpiTripSplit').textContent = `${kpi.completeRides} Complete Rides • ${kpi.charters} Charters`;
 
-      const tbody = document.getElementById('tblRecentTx');
-      if (!data.recentTransactions.length) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-dim)">No transactions recorded yet.</td></tr>';
-        return;
-      }
-      tbody.innerHTML = data.recentTransactions.map(tx => `
+      window.allRecentTx = data.recentTransactions || [];
+      renderRecentTx();
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  function renderRecentTx() {
+    const tbody = document.getElementById('tblRecentTx');
+    const all = window.allRecentTx || [];
+    if (!all.length) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-dim)">No transactions recorded yet.</td></tr>';
+      return;
+    }
+    const q = (document.getElementById('txSearch')?.value || '').trim().toLowerCase();
+    const type = document.getElementById('txType')?.value || 'all';
+    const status = document.getElementById('txStatus')?.value || 'all';
+    const from = document.getElementById('txFrom')?.value;
+    const to = document.getElementById('txTo')?.value;
+    const filtered = all.filter(tx => {
+      if (type !== 'all' && tx.type !== type) return false;
+      if (status !== 'all' && tx.status !== status) return false;
+      if (q && !(`${tx.receiptNumber} ${tx.id} ${tx.user}`.toLowerCase().includes(q))) return false;
+      if (from && new Date(tx.date) < new Date(from)) return false;
+      if (to && new Date(tx.date) > new Date(new Date(to).getTime() + 86400000)) return false;
+      return true;
+    });
+    if (!filtered.length) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-dim)">No transactions match these filters.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = filtered.map(tx => `
         <tr>
           <td><b>${tx.receiptNumber}</b><br><small style="color:var(--text-dim)">${tx.id}</small></td>
           <td>${tx.user}<br><small style="color:var(--text-dim)">${tx.userType}</small></td>
@@ -1136,9 +1236,6 @@
           <td>${tx.date}</td>
         </tr>
       `).join('');
-    } catch (err) {
-      console.error(err);
-    }
   }
 
   async function loadStudentLedger() {
@@ -1184,9 +1281,21 @@
     try {
       const res = await fetch(`${API_BASE}/admin/ledgers/drivers`);
       const data = await res.json();
+      window.allDrivers = data.drivers || [];
+      window.allDriverWithdrawals = data.withdrawals || [];
+      renderDrivers();
+      renderDriverWithdrawals();
+    } catch (e) {
+      console.error(e);
+    }
+  }
 
-      const tblDri = document.getElementById('tblDrivers');
-      tblDri.innerHTML = (data.drivers || []).map(d => `
+  function renderDrivers() {
+    const q = (document.getElementById('searchDriver')?.value || '').trim().toLowerCase();
+    const all = window.allDrivers || [];
+    const rows = q ? all.filter(d => `${d.fullName} ${d.email}`.toLowerCase().includes(q)) : all;
+    const tblDri = document.getElementById('tblDrivers');
+    tblDri.innerHTML = rows.map(d => `
         <tr>
           <td><b>${d.fullName}</b></td>
           <td>${d.email}</td>
@@ -1204,10 +1313,24 @@
             <button class="btn-sm" onclick="openWalletLedger(${d.id},'driver','${d.fullName.replace(/'/g, '&#39;')}')">Ledger</button><button class="btn-sm primary" onclick="openWalletAdjustment(${d.id},'driver','${d.fullName.replace(/'/g, '&#39;')}','credit')">Credit</button><button class="btn-sm danger" onclick="openWalletAdjustment(${d.id},'driver','${d.fullName.replace(/'/g, '&#39;')}','debit')">Debit</button>
           </td>
         </tr>
-      `).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text-dim)">No drivers registered.</td></tr>';
+      `).join('') || `<tr><td colspan="8" style="text-align:center;color:var(--text-dim)">${q ? 'No drivers match this search.' : 'No drivers registered.'}</td></tr>`;
+  }
 
-      const tblWth = document.getElementById('tblDriverWithdrawals');
-      tblWth.innerHTML = (data.withdrawals || []).map(w => `
+  function renderDriverWithdrawals() {
+    const all = window.allDriverWithdrawals || [];
+    const q = (document.getElementById('wdSearch')?.value || '').trim().toLowerCase();
+    const status = document.getElementById('wdStatus')?.value || 'all';
+    const from = document.getElementById('wdFrom')?.value;
+    const to = document.getElementById('wdTo')?.value;
+    const filtered = all.filter(w => {
+      if (status !== 'all' && w.status !== status) return false;
+      if (q && !(`${w.receiptNumber} ${w.reference} ${w.driverName}`.toLowerCase().includes(q))) return false;
+      if (from && new Date(w.date) < new Date(from)) return false;
+      if (to && new Date(w.date) > new Date(new Date(to).getTime() + 86400000)) return false;
+      return true;
+    });
+    const tblWth = document.getElementById('tblDriverWithdrawals');
+    tblWth.innerHTML = filtered.map(w => `
         <tr>
           <td><b>${w.receiptNumber}</b><br><small style="color:var(--text-dim)">${w.reference}</small></td>
           <td>${w.driverName}</td>
@@ -1219,22 +1342,107 @@
           <td><span class="badge ${w.status === 'completed' ? 'success' : w.status === 'rejected' ? 'danger' : 'pending'}">${w.status}</span></td>
           <td>${w.date}</td>
         </tr>
-      `).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No withdrawal requests yet.</td></tr>';
+      `).join('') || `<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">${all.length ? 'No withdrawals match these filters.' : 'No withdrawal requests yet.'}</td></tr>`;
+  }
+
+  // ------------------------------------------------------------------
+  // Ad Applications — student "place an advert" review queue
+  // ------------------------------------------------------------------
+  const ADAPP_STATUS_LABEL = { pending: 'Pending review', live: 'Live', expired_pending_renewal: 'Awaiting renewal', expired: 'Expired', rejected: 'Rejected' };
+  const ADAPP_STATUS_BADGE = { pending: 'pending', live: 'success', expired_pending_renewal: 'pending', expired: 'danger', rejected: 'danger' };
+  let adAppSearchTimer = null;
+  function debounceAdAppSearch() { clearTimeout(adAppSearchTimer); adAppSearchTimer = setTimeout(loadAdApplications, 350); }
+
+  async function loadAdApplications() {
+    const tbody = document.getElementById('tblAdApplications');
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-dim);padding:18px">Loading…</td></tr>';
+    try {
+      const status = document.getElementById('adAppStatus').value;
+      const q = document.getElementById('adAppSearch').value.trim();
+      const from = document.getElementById('adAppFrom').value;
+      const to = document.getElementById('adAppTo').value;
+      const params = new URLSearchParams();
+      if (status && status !== 'all') params.set('status', status);
+      if (q) params.set('q', q);
+      if (from) params.set('from', from);
+      if (to) params.set('to', to);
+      const res = await fetch(`${API_BASE}/admin/ad-applications?${params.toString()}`);
+      const data = await res.json();
+      const rows = data.applications || [];
+      tbody.innerHTML = rows.map(a => `
+        <tr>
+          <td><b>${a.business_name}</b>${a.student_reg_no ? `<br><small style="color:var(--text-dim)">${a.student_reg_no}</small>` : ''}</td>
+          <td>${a.title}</td>
+          <td>${a.email}</td>
+          <td>${a.plan} · ${a.plan_days}d</td>
+          <td>${a.is_free_ad ? '<span class="badge success">Free</span>' : `₦${Number(a.renewal_amount || 1000).toLocaleString()}`}</td>
+          <td><span class="badge ${ADAPP_STATUS_BADGE[a.status] || 'pending'}">${ADAPP_STATUS_LABEL[a.status] || a.status}</span></td>
+          <td>${new Date(a.submitted_at).toLocaleDateString()}</td>
+          <td>${a.expires_at ? new Date(a.expires_at).toLocaleDateString() : '—'}</td>
+          <td style="display:flex;gap:6px;flex-wrap:wrap">
+            ${a.image_url ? `<a class="btn-sm" href="${a.image_url}" target="_blank" rel="noopener">Image</a>` : ''}
+            ${['pending','rejected','expired','expired_pending_renewal'].includes(a.status) ? `<button class="btn-sm primary" onclick="approveAdApplication(${a.id})">Approve</button>` : ''}
+            ${a.status === 'pending' ? `<button class="btn-sm danger" onclick="rejectAdApplication(${a.id})">Reject</button>` : ''}
+            ${a.status === 'live' ? `<button class="btn-sm danger" onclick="deactivateAdApplication(${a.id})">Take down</button>` : ''}
+          </td>
+        </tr>
+      `).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--text-dim);padding:18px">No applications match these filters.</td></tr>';
+      refreshAdAppBadge(rows);
     } catch (e) {
-      console.error(e);
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--danger);padding:18px">Could not load ad applications.</td></tr>';
     }
   }
+  async function approveAdApplication(id) {
+    try {
+      const res = await fetch(`${API_BASE}/admin/ad-applications/${id}/approve`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Could not approve this application.');
+      showAdminNotice('Advert approved and published.');
+      loadAdApplications();
+    } catch (e) { showAdminNotice(e.message, true); }
+  }
+  async function rejectAdApplication(id) {
+    const reason = prompt('Reason for rejecting this advert (shown to the student by email):', '');
+    if (reason === null) return;
+    try {
+      const res = await fetch(`${API_BASE}/admin/ad-applications/${id}/reject`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reason }) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Could not reject this application.');
+      showAdminNotice('Application rejected.');
+      loadAdApplications();
+    } catch (e) { showAdminNotice(e.message, true); }
+  }
+  async function deactivateAdApplication(id) {
+    if (!confirm('Take this advert down now?')) return;
+    try {
+      const res = await fetch(`${API_BASE}/admin/ad-applications/${id}/deactivate`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Could not take this advert down.');
+      showAdminNotice('Advert taken down.');
+      loadAdApplications();
+    } catch (e) { showAdminNotice(e.message, true); }
+  }
+  async function refreshAdAppBadge(knownRows) {
+    try {
+      const rows = knownRows || (await (await fetch(`${API_BASE}/admin/ad-applications?status=pending`)).json()).applications || [];
+      const n = knownRows ? rows.filter(a => a.status === 'pending').length : rows.length;
+      const b = document.getElementById('adAppTabBadge');
+      b.hidden = !n; b.textContent = n > 99 ? '99+' : n;
+    } catch (_e) {}
+  }
+  setInterval(() => refreshAdAppBadge(), 60000);
 
   async function loadBankReviews() {
     try {
-      const res = await fetch(`${API_BASE}/admin/bank/change-requests?status=pending`, {
+      const status = document.getElementById('bankReviewStatus')?.value || 'pending';
+      const res = await fetch(`${API_BASE}/admin/bank/change-requests?status=${encodeURIComponent(status)}`, {
         headers: { 'Authorization': `Bearer ${ADMIN_TOKEN}` }
       });
       const data = await res.json();
       const tbody = document.getElementById('tblBankReviews');
 
       if (!Array.isArray(data) || !data.length) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-dim)">No pending bank account change reviews.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-dim)">No bank account change requests match this filter.</td></tr>';
         return;
       }
 

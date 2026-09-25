@@ -444,6 +444,14 @@ router.post('/drivers/:id/toggle-flag', async (req, res) => {
             details: 'Admin can add, edit, reorder and remove Campus Spotlight cards and the Trending-on-Campus ad banners: image, badge, heading, description, button text, destination link, and button colour (or automatic colour matched to the image).'
         });
 
+        await recordPlatformChange({
+            key: '2026-09-25-student-ad-marketplace',
+            actor: 'Claude',
+            area: 'Student wallet & Admin portal',
+            title: 'Students can now apply to place their own advert',
+            details: 'Students submit an ad application with an email address, get an automatic "under review" email, and another when it goes live. A free first advert, admin approval queue with filters, auto-expiry that pulls the banner down, and a ₦1,000 Korapay renewal email are now all wired up.'
+        });
+
         // Seed default platform config if empty
         const cfg = await pool.query("SELECT key FROM platform_config WHERE key = 'app_settings'");
         if (!cfg.rows.length) {
@@ -610,6 +618,123 @@ router.post('/content-cards/reorder', async (req, res) => {
     } catch (err) {
         await client.query('ROLLBACK').catch(() => {});
         res.status(500).json({ error: 'internal_error' });
+    } finally { client.release(); }
+});
+
+// ------------------------------------------------------------------
+// Ad applications — students apply to place an advert (zira_go_ads_routes.js
+// handles the student-facing side + auto-expiry + Korapay renewal). Here
+// admin reviews, approves (which publishes an ad_banner content card) or
+// rejects, with filters for the review queue.
+// ------------------------------------------------------------------
+const { PLANS: AD_PLANS, RENEWAL_AMOUNT: AD_RENEWAL_AMOUNT, sendApprovedEmail: sendAdApprovedEmail, sendRejectedEmail: sendAdRejectedEmail } = require('./zira_go_ads_routes');
+
+// GET /admin/ad-applications?status=pending&q=business+or+title+or+email&from=YYYY-MM-DD&to=YYYY-MM-DD
+router.get('/ad-applications', async (req, res) => {
+    try {
+        const { status, q, from, to } = req.query;
+        const clauses = [];
+        const params = [];
+        if (status && status !== 'all') { params.push(status); clauses.push(`status = $${params.length}`); }
+        if (q) { params.push(`%${q}%`); clauses.push(`(business_name ILIKE $${params.length} OR title ILIKE $${params.length} OR email ILIKE $${params.length})`); }
+        if (from) { params.push(from); clauses.push(`submitted_at >= $${params.length}`); }
+        if (to) { params.push(to); clauses.push(`submitted_at <= $${params.length}::date + interval '1 day'`); }
+        const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
+        const rows = await pool.query(
+            `SELECT a.*, s.reg_no AS student_reg_no
+             FROM ad_applications a LEFT JOIN students s ON s.id = a.student_id
+             ${where} ORDER BY a.submitted_at DESC LIMIT 300`,
+            params
+        );
+        res.json({ applications: rows.rows, plans: AD_PLANS, renewalAmount: AD_RENEWAL_AMOUNT });
+    } catch (err) {
+        res.status(500).json({ error: 'internal_error', message: err.message });
+    }
+});
+
+router.post('/ad-applications/:id/approve', async (req, res) => {
+    const client = await pool.connect();
+    try {
+        const id = Number(req.params.id);
+        await client.query('BEGIN');
+        const appRes = await client.query('SELECT * FROM ad_applications WHERE id = $1 FOR UPDATE', [id]);
+        if (!appRes.rows.length) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'not_found' }); }
+        const application = appRes.rows[0];
+        if (!['pending', 'rejected', 'expired', 'expired_pending_renewal'].includes(application.status)) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({ error: 'invalid_state', message: `Cannot approve an application that is already "${application.status}".` });
+        }
+
+        const next = await client.query("SELECT COALESCE(MAX(sort_order), -1) + 1 AS n FROM content_cards WHERE section = 'ad_banner'");
+        const card = await client.query(
+            `INSERT INTO content_cards (section, sort_order, active, image_url, badge_text, title, description, button_text, button_url, button_color, accent_color)
+             VALUES ('ad_banner', $1, true, $2, $3, $4, $5, $6, $7, 'auto', 'auto') RETURNING id`,
+            [next.rows[0].n, application.image_url, application.business_name, application.title, application.description, application.button_text, application.button_url]
+        );
+        const expiresAt = new Date(Date.now() + application.plan_days * 24 * 60 * 60 * 1000);
+        const updated = await client.query(
+            `UPDATE ad_applications
+             SET status = 'live', content_card_id = $1, reviewed_at = now(), live_at = now(), expires_at = $2, updated_at = now()
+             WHERE id = $3 RETURNING *`,
+            [card.rows[0].id, expiresAt, id]
+        );
+        await client.query('COMMIT');
+
+        const approvedApp = updated.rows[0];
+        sendAdApprovedEmail(approvedApp).catch(() => {});
+        await recordPlatformChange({
+            key: `ad-application-${id}-approved`,
+            actor: 'Admin',
+            area: 'Student wallet',
+            title: 'Student advert approved and published',
+            details: `"${approvedApp.title}" by ${approvedApp.business_name} is now live on the Trending-on-Campus banners until ${expiresAt.toDateString()}.`
+        });
+        res.json({ success: true, application: approvedApp });
+    } catch (err) {
+        await client.query('ROLLBACK').catch(() => {});
+        console.error('[Ad Approve Error]', err);
+        res.status(500).json({ error: 'internal_error', message: err.message });
+    } finally { client.release(); }
+});
+
+router.post('/ad-applications/:id/reject', async (req, res) => {
+    try {
+        const id = Number(req.params.id);
+        const { reason = '' } = req.body || {};
+        const updated = await pool.query(
+            `UPDATE ad_applications SET status = 'rejected', reject_reason = $1, reviewed_at = now(), updated_at = now()
+             WHERE id = $2 AND status IN ('pending','expired_pending_renewal') RETURNING *`,
+            [reason, id]
+        );
+        if (!updated.rows.length) return res.status(400).json({ error: 'invalid_state', message: 'Only a pending application can be rejected.' });
+        sendAdRejectedEmail(updated.rows[0], reason).catch(() => {});
+        res.json({ success: true, application: updated.rows[0] });
+    } catch (err) {
+        res.status(500).json({ error: 'internal_error', message: err.message });
+    }
+});
+
+// Manually take a live advert down (distinct from the automatic expiry sweep).
+router.post('/ad-applications/:id/deactivate', async (req, res) => {
+    const client = await pool.connect();
+    try {
+        const id = Number(req.params.id);
+        await client.query('BEGIN');
+        const appRes = await client.query('SELECT * FROM ad_applications WHERE id = $1 FOR UPDATE', [id]);
+        if (!appRes.rows.length) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'not_found' }); }
+        const application = appRes.rows[0];
+        if (application.content_card_id) {
+            await client.query('UPDATE content_cards SET active = false, updated_at = now() WHERE id = $1', [application.content_card_id]);
+        }
+        const updated = await client.query(
+            `UPDATE ad_applications SET status = 'expired', updated_at = now() WHERE id = $1 RETURNING *`,
+            [id]
+        );
+        await client.query('COMMIT');
+        res.json({ success: true, application: updated.rows[0] });
+    } catch (err) {
+        await client.query('ROLLBACK').catch(() => {});
+        res.status(500).json({ error: 'internal_error', message: err.message });
     } finally { client.release(); }
 });
 
