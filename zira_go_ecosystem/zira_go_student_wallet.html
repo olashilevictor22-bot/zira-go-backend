@@ -1423,7 +1423,14 @@
     color: var(--text);
   }
   .profile-menu-item:first-of-type { border-top: none; }
-  .profile-menu-item:hover { background: rgba(109, 40, 217, 0.04); }
+  .profile-menu-item:hover, .profile-menu-item:focus-visible { background: var(--accent-glow); }
+  .profile-menu-item:active { background: var(--accent-light); }
+  .profile-menu-item:focus-visible, .modal-close:focus-visible, button:focus-visible, a:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .profile-hero-card { box-shadow: 0 8px 24px -6px rgba(109, 40, 217, 0.18); }
+  [data-theme="dark"] .profile-hero-card { box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.4); }
   .pmi-left {
     display: flex;
     align-items: center;
@@ -2640,6 +2647,31 @@ if (ADMIN_PREVIEW) {
 // ------------------------------------------------------------------
 function openModal(id) { document.getElementById(id).classList.add('active'); ziraSound.open(); }
 function closeModal(id) { document.getElementById(id).classList.remove('active'); if (id === 'modalChangePin') { stopSelfieCamera(); stopIdCamera(true); } ziraSound.close(); }
+
+// --- Modal accessibility/UX pass ---------------------------------------
+// 1. Esc closes whichever modal is currently open.
+// 2. Clicking the dimmed backdrop (not the card itself) closes it too.
+// 3. Rows built as `<div onclick=...>` (menu items, category tiles) get
+//    keyboard focus + Enter/Space activation, since a div is invisible to
+//    keyboard and screen-reader users otherwise.
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  const open = document.querySelector('.modal-overlay.active');
+  if (open) closeModal(open.id);
+});
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('mousedown', (e) => { if (e.target === overlay) closeModal(overlay.id); });
+});
+document.querySelectorAll('[onclick]').forEach(el => {
+  const tag = el.tagName.toLowerCase();
+  if (tag === 'button' || tag === 'a' || tag === 'input' || el.hasAttribute('tabindex')) return;
+  if (!el.classList.contains('profile-menu-item') && !el.classList.contains('carousel-dot')) return;
+  el.setAttribute('tabindex', '0');
+  el.setAttribute('role', tag === 'div' && el.classList.contains('profile-menu-item') ? 'button' : 'presentation');
+  el.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); }
+  });
+});
 function toggleSound() {
   const next = !ziraSound.isEnabled();
   ziraSound.setEnabled(next);

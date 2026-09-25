@@ -449,7 +449,12 @@
     box-shadow: var(--card-shadow);
   }
   .modal-header { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:18px; }
-  .modal-close { width:34px; height:34px; border:1px solid var(--line); border-radius:50%; background:var(--panel-alt); color:var(--text-dim); font-size:18px; line-height:1; cursor:pointer; display:grid; place-items:center; flex:0 0 auto; }
+  .modal-close { width:34px; height:34px; border:1px solid var(--line); border-radius:50%; background:var(--panel-alt); color:var(--text-dim); font-size:18px; line-height:1; cursor:pointer; display:grid; place-items:center; flex:0 0 auto; transition:background .15s,color .15s; }
+  .modal-close:hover { background:var(--line); color:var(--text); }
+  .modal-close:focus-visible, button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
   .modal-close:hover { border-color:var(--accent); color:var(--accent); }
   .wallet-credit-card { max-width:440px!important; padding:0!important; overflow:hidden; }
   .wallet-credit-head { padding:22px 22px 16px; background:linear-gradient(135deg,rgba(124,58,237,.11),rgba(124,58,237,.025)); border-bottom:1px solid var(--line); }
@@ -946,7 +951,7 @@
     </div>
     <div class="panel-card" style="border-top:3px solid #2563eb"><div class="panel-header"><div><h3 class="panel-title">Experience settings</h3><div style="font-size:12px;color:var(--text-dim)">Set the fixed ride price, payment provider, and the student home hero in one place.</div></div></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px"><label style="font-size:12px;font-weight:700">Ride fare (₦)<input class="search-input" id="configFare" type="number" min="0" style="max-width:none;margin-top:6px" placeholder="250"></label><label style="font-size:12px;font-weight:700">Platform fee (₦)<input class="search-input" id="configFee" type="number" min="0" style="max-width:none;margin-top:6px" placeholder="10"></label><label style="font-size:12px;font-weight:700">Payment provider<select id="configGateway" class="search-input" style="max-width:none;margin-top:6px"><option value="korapay">Korapay</option><option value="flutterwave">Flutterwave</option></select></label></div><div style="margin-top:18px;padding:15px;border-radius:14px;background:var(--panel-alt);border:1px solid var(--line)"><b style="font-size:13px">Student home hero</b><div style="font-size:12px;color:var(--text-dim);margin:4px 0 10px">Upload an image or video, or use a direct URL. A scheduled asset replaces the default only during its chosen hours.</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px"><label style="font-size:12px">Headline<input class="search-input" id="configHeroTitle" style="max-width:none;margin-top:5px" placeholder="Campus Life, Made Easier."></label><label style="font-size:12px">Default media type<select id="configHeroMediaType" class="search-input" style="max-width:none;margin-top:5px"><option value="image">Image</option><option value="video">Video</option></select></label></div><div style="display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap"><input class="search-input" id="configHeroImage" placeholder="Default image or video URL" style="flex:1;min-width:220px;max-width:none"><label class="btn-sm" style="cursor:pointer">Upload image/video<input id="configHeroUpload" type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime" hidden onchange="uploadHeroMedia(this)"></label></div><div style="display:grid;grid-template-columns:1fr 130px 130px;gap:10px;margin-top:10px"><input class="search-input" id="configScheduledHeroUrl" placeholder="Optional scheduled image/video URL" style="max-width:none"><input class="search-input" id="configHeroStartHour" type="number" min="0" max="23" placeholder="Start hour"><input class="search-input" id="configHeroEndHour" type="number" min="0" max="23" placeholder="End hour"></div></div><button class="btn-sm primary" style="margin-top:14px" onclick="saveConfig()">Save experience settings</button><span id="operationsNotice" style="margin-left:10px;font-size:12px;color:var(--text-dim)"></span></div>
     <div class="panel-card" style="border-top:3px solid #f59e0b"><div class="panel-header"><div><h3 class="panel-title">PIN identity reviews</h3><div style="font-size:12px;color:var(--text-dim)">Review the ID and selfie video before granting a secure approval code.</div></div></div><div id="pinReviewList" style="display:grid;gap:9px">Loading requests…</div></div>
-    <div class="panel-card" style="border-top:3px solid #7c3aed"><div class="panel-header"><div><h3 class="panel-title">Platform change timeline</h3><div style="font-size:12px;color:var(--text-dim)">A permanent record of Codex and ChatGPT platform updates.</div></div></div><div id="changeTimeline" style="display:grid;gap:9px">Loading platform updates…</div></div>
+    <div class="panel-card" style="border-top:3px solid #7c3aed"><div class="panel-header"><div><h3 class="panel-title">Platform change timeline</h3><div style="font-size:12px;color:var(--text-dim)">A permanent record of Codex, ChatGPT and Claude platform updates — filter by who made a change or which area it touched.</div></div></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px"><select id="changeActorFilter" class="search-input" style="max-width:160px" onchange="loadChangeTimeline()"><option value="">All contributors</option></select><select id="changeAreaFilter" class="search-input" style="max-width:200px" onchange="loadChangeTimeline()"><option value="">All areas</option></select></div><div id="changeTimeline" style="display:grid;gap:9px">Loading platform updates…</div></div>
   </div>
 
   <!-- TAB 6: LIVE SUPPORT CHAT -->
@@ -1140,6 +1145,17 @@
     refreshAdAppBadge();
   }
   function closeModal(id) { document.getElementById(id)?.classList.remove('active'); ziraSound.close(); }
+
+  // Esc closes the open modal; clicking the dimmed backdrop closes it too —
+  // same behaviour added to the student and driver apps.
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    const open = document.querySelector('.modal-overlay.active');
+    if (open) closeModal(open.id);
+  });
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('mousedown', (e) => { if (e.target === overlay) closeModal(overlay.id); });
+  });
 
   function switchTab(tab) {
     document.querySelectorAll('.tab-btn').forEach((b, i) => {
@@ -1495,14 +1511,44 @@
 
   async function loadOperations() {
     try {
-      const requests = await Promise.allSettled([fetch(`${API_BASE}/admin/broadcasts`), fetch(`${API_BASE}/admin/config`), fetch(`${API_BASE}/admin/pin-requests`), fetch(`${API_BASE}/admin/change-log`)]);
+      const requests = await Promise.allSettled([fetch(`${API_BASE}/admin/broadcasts`), fetch(`${API_BASE}/admin/config`), fetch(`${API_BASE}/admin/pin-requests`)]);
       const read = async (index, fallback) => requests[index].status === 'fulfilled' && requests[index].value.ok ? requests[index].value.json() : fallback;
-      const [list, cfg, pins, changes] = await Promise.all([read(0,[]),read(1,{}),read(2,[]),read(3,[])]);
+      const [list, cfg, pins] = await Promise.all([read(0,[]),read(1,{}),read(2,[])]);
       document.getElementById('broadcastList').innerHTML = (list || []).map(b => `<div style="padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--panel-alt)"><div style="display:flex;justify-content:space-between;gap:8px"><b>${b.title}</b><span class="badge">${b.target}</span></div><span style="font-size:12px;color:var(--text-dim)">${b.message}</span><div style="font-size:11px;color:var(--text-dim);margin-top:7px">${b.send_email?'✉ Email enabled':'In-app only'} · ${new Date(b.created_at).toLocaleString()}</div></div>`).join('') || '<span style="color:var(--text-dim)">No broadcasts yet.</span>';
       const hourTime=value=>Number.isInteger(Number(value))?`${String(Number(value)).padStart(2,'0')}:00`:''; document.getElementById('configFare').value = cfg.driverFare ?? 250; document.getElementById('configFee').value = cfg.platformFee ?? 10; document.getElementById('configGateway').value = cfg.activeGateway || 'korapay'; document.getElementById('configHeroImage').value = cfg.heroBannerImage || ''; document.getElementById('configHeroTitle').value = cfg.heroTitle || ''; document.getElementById('configHeroMediaType').value = cfg.heroMediaType || 'image'; document.getElementById('configScheduledHeroUrl').value = cfg.heroSchedule?.url || ''; document.getElementById('configHeroStartHour').value = hourTime(cfg.heroSchedule?.startHour); document.getElementById('configHeroEndHour').value = hourTime(cfg.heroSchedule?.endHour);
       document.getElementById('pinReviewList').innerHTML = (pins || []).map(p => `<div style="padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--panel-alt)"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><div><b>${p.reg_no}</b><div style="font-size:11px;color:var(--text-dim);margin-top:3px">${p.email}</div></div><span class="badge ${p.status === 'pending' ? 'pending' : 'success'}">${p.status}</span></div><div style="font-size:11px;color:var(--text-dim);margin:9px 0">Requested ${new Date(p.created_at).toLocaleString()}</div><div style="display:flex;gap:7px;flex-wrap:wrap"><button class="btn-sm" onclick="openPrivateReview(${p.id},'document')">View ID</button><button class="btn-sm" onclick="openPrivateReview(${p.id},'selfie')">View selfie video</button>${p.status === 'pending' ? `<button class="btn-sm primary" onclick="approvePinReview(${p.id})">Approve & send code</button><button class="btn-sm danger" onclick="rejectPinReview(${p.id})">Reject</button>` : ''}</div></div>`).join('') || '<span style="color:var(--text-dim)">No PIN reviews yet.</span>';
-      document.getElementById('changeTimeline').innerHTML = (Array.isArray(changes) ? changes : []).map(c => `<div style="position:relative;padding:12px 12px 12px 18px;border-left:3px solid var(--accent);border-radius:0 12px 12px 0;background:var(--panel-alt)"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><b>${c.title}</b><span class="badge">${c.actor}</span></div><div style="font-size:12px;color:var(--text-dim);margin-top:5px">${c.details}</div><div style="font-size:11px;color:var(--text-dim);margin-top:8px">${c.area} · ${new Date(c.created_at).toLocaleString()}</div></div>`).join('') || '<span style="color:var(--text-dim)">No platform updates have been logged yet.</span>';
+      await loadChangeTimeline(true);
     } catch (e) { console.error(e); showAdminNotice('Could not load some Operations data. Refresh and sign in again if this continues.', true); }
+  }
+
+  // Platform change timeline: who (Codex/ChatGPT/Claude/Admin) did what,
+  // filterable by contributor and by area. `populateFilters` is true only
+  // on the first load of a session, so the dropdown options are built from
+  // the full unfiltered set and don't shrink to just what's currently shown.
+  const changeEsc = v => { const d = document.createElement('div'); d.textContent = v == null ? '' : String(v); return d.innerHTML; };
+  async function loadChangeTimeline(populateFilters) {
+    const box = document.getElementById('changeTimeline');
+    const actor = document.getElementById('changeActorFilter').value;
+    const area = document.getElementById('changeAreaFilter').value;
+    try {
+      const params = new URLSearchParams();
+      if (actor) params.set('actor', actor);
+      if (area) params.set('area', area);
+      const res = await fetch(`${API_BASE}/admin/change-log${params.toString() ? '?' + params.toString() : ''}`);
+      const changes = res.ok ? await res.json() : [];
+      if (populateFilters) {
+        const actorSel = document.getElementById('changeActorFilter');
+        const areaSel = document.getElementById('changeAreaFilter');
+        const actors = [...new Set(changes.map(c => c.actor).filter(Boolean))].sort();
+        const areas = [...new Set(changes.map(c => c.area).filter(Boolean))].sort();
+        actorSel.innerHTML = '<option value="">All contributors</option>' + actors.map(a => `<option value="${changeEsc(a)}">${changeEsc(a)}</option>`).join('');
+        areaSel.innerHTML = '<option value="">All areas</option>' + areas.map(a => `<option value="${changeEsc(a)}">${changeEsc(a)}</option>`).join('');
+      }
+      box.innerHTML = (Array.isArray(changes) ? changes : []).map(c => `<div style="position:relative;padding:12px 12px 12px 18px;border-left:3px solid var(--accent);border-radius:0 12px 12px 0;background:var(--panel-alt)"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><b>${changeEsc(c.title)}</b><span class="badge">${changeEsc(c.actor)}</span></div><div style="font-size:12px;color:var(--text-dim);margin-top:5px">${changeEsc(c.details)}</div><div style="font-size:11px;color:var(--text-dim);margin-top:8px">${changeEsc(c.area)} · ${new Date(c.created_at).toLocaleString()}</div></div>`).join('') || '<span style="color:var(--text-dim)">No platform updates match this filter.</span>';
+    } catch (e) {
+      console.error(e);
+      box.innerHTML = '<span style="color:var(--danger)">Could not load the change timeline.</span>';
+    }
   }
   async function sendBroadcast() { const title = broadcastTitle.value.trim(), message = broadcastMessage.value.trim(), imageUrl=broadcastImageUrl.value.trim(); if (!title || !message) return alert('Add a title and message.'); const res = await fetch(`${API_BASE}/admin/broadcasts`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ title, message, target:broadcastTarget.value, urgency:broadcastUrgency.value, imageUrl, sendEmail:broadcastSendEmail.checked }) }); if (!res.ok) return alert('Broadcast could not be published.'); broadcastTitle.value=''; broadcastMessage.value=''; broadcastImageUrl.value=''; loadOperations(); }
   async function saveConfig() { const scheduleUrl=configScheduledHeroUrl.value.trim(), startTime=configHeroStartHour.value,endTime=configHeroEndHour.value,start=startTime?Number(startTime.split(':')[0]):NaN,end=endTime?Number(endTime.split(':')[0]):NaN; if(scheduleUrl && (!startTime||!endTime||!Number.isInteger(start)||!Number.isInteger(end))) return showAdminNotice('Choose both start and end times for scheduled media.', true); const config = { driverFare:Number(configFare.value), platformFee:Number(configFee.value), activeGateway:configGateway.value, heroBannerImage:configHeroImage.value.trim(), heroTitle:configHeroTitle.value.trim(), heroMediaType:configHeroMediaType.value, heroSchedule:scheduleUrl?{url:scheduleUrl,type:configHeroMediaType.value,startHour:start,endHour:end}:null }; try { const res = await fetch(`${API_BASE}/admin/config`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(config) }); const data=await res.json(); showAdminNotice(res.ok ? 'Settings saved and now live.' : (data.error||'Could not save settings.'), !res.ok); } catch (_) { showAdminNotice('Connection failed. Please try again.', true); } }

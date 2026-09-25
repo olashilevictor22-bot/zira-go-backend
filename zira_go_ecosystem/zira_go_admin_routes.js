@@ -495,6 +495,21 @@ router.post('/drivers/:id/toggle-flag', async (req, res) => {
             details: 'Students submit an ad application with an email address, get an automatic "under review" email, and another when it goes live. A free first advert, admin approval queue with filters, auto-expiry that pulls the banner down, and a ₦1,000 Korapay renewal email are now all wired up.'
         });
 
+        await recordPlatformChange({
+            key: '2026-09-25-popup-accessibility-pass',
+            actor: 'Claude',
+            area: 'Student wallet, Driver panel & Admin portal',
+            title: 'Popups now close on Esc/backdrop click and are keyboard-operable',
+            details: 'Every modal across the student, driver and admin apps now closes on the Escape key and on a click outside the card. Profile-menu rows built as clickable divs now get keyboard focus and Enter/Space activation, plus visible focus rings, for accessibility.'
+        });
+        await recordPlatformChange({
+            key: '2026-09-25-change-timeline-filters',
+            actor: 'Claude',
+            area: 'Admin Operations desk',
+            title: 'Platform change timeline is now filterable by contributor and area',
+            details: 'Operations desk now has two dropdowns above the change timeline — "All contributors" (Codex, ChatGPT, Claude, Admin, etc.) and "All areas" — so it is easy to see which AI or person made a given change and what they touched, without scrolling the full history.'
+        });
+
         // Seed default platform config if empty
         const cfg = await pool.query("SELECT key FROM platform_config WHERE key = 'app_settings'");
         if (!cfg.rows.length) {
@@ -870,13 +885,26 @@ router.get('/audit-log', async (req, res) => {
     }
 });
 
-router.get('/change-log', async (_req, res) => {
+// GET /admin/change-log?actor=Claude&area=driver — filter the platform
+// timeline by who made the change (Codex, ChatGPT, Claude, Admin, etc.)
+// and/or which area it touched. Both are optional; omit either to see
+// everything. Matching is partial/case-insensitive so "claude" also
+// catches an actor value like "Claude Sonnet 5".
+router.get('/change-log', async (req, res) => {
     try {
+        const { actor, area } = req.query;
+        const clauses = [];
+        const params = [];
+        if (actor) { params.push(`%${actor}%`); clauses.push(`actor ILIKE $${params.length}`); }
+        if (area) { params.push(`%${area}%`); clauses.push(`area ILIKE $${params.length}`); }
+        const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
         const result = await pool.query(
             `SELECT id, actor, area, title, details, created_at
              FROM platform_change_log
+             ${where}
              ORDER BY created_at DESC
-             LIMIT 100`
+             LIMIT 300`,
+            params
         );
         res.json(result.rows);
     } catch (err) {

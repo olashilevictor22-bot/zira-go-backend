@@ -415,6 +415,11 @@
     justify-content: center;
     cursor: pointer;
   }
+  .modal-close:hover { background: var(--line); color: var(--text); }
+  .modal-close:focus-visible, button:focus-visible, a:focus-visible, input:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
 
 
   /* ---- Ledger status colours ---- */
@@ -1563,6 +1568,19 @@ function openModal(id) {
   if (el) el.classList.add('active');
   ziraSound.open();
 }
+
+// --- Modal accessibility/UX pass ---------------------------------------
+// Esc closes the open modal; clicking the dimmed backdrop (not the card)
+// closes it too. Same pattern as the student wallet UI, added here so
+// driver-side popups behave the same way.
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  const open = document.querySelector('.modal-overlay.active');
+  if (open) closeModal(open.id);
+});
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('mousedown', (e) => { if (e.target === overlay) closeModal(overlay.id); });
+});
 
 async function submitWithdrawal() {
   const amountInput = document.getElementById('wdAmountInput');
