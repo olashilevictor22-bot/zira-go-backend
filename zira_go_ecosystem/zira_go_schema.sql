@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS trip_charges (
     student_id          BIGINT NOT NULL REFERENCES students(id),
 
     auth_method         TEXT NOT NULL CHECK (auth_method IN ('reg_no_pin', 'one_time_code')),
-    fare_amount         NUMERIC(10,2) NOT NULL,       -- what the student is charged (250 or driver-set)
+    fare_amount         NUMERIC(10,2) NOT NULL CHECK (fare_amount > 0), -- what the student is charged (250 or driver-set)
     platform_fee        NUMERIC(10,2) NOT NULL DEFAULT 10, -- the ₦10 transaction fee, charged to the driver
 
     status              TEXT NOT NULL CHECK (status IN ('success', 'failed_insufficient_funds', 'failed_auth')),

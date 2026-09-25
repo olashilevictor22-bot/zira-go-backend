@@ -4,13 +4,22 @@
 const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
-const { verifyNameMatch, initiateDriverPayout } = require('./zira_go_payment_service');
+const { verifyNameMatch, initiateDriverPayout, verifyFlutterwaveFunding } = require('./zira_go_payment_service');
 const { requireAuth, requireRole } = require('./zira_go_auth_routes');
 
 function generateReceiptNumber() {
     const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const rand = crypto.randomInt(1000, 9999);
     return `ZG-WTH-${dateStr}-${rand}`;
+}
+
+// Same shape as zira_go_funding_routes.js's generateReceiptNumber — kept as a
+// separate copy (rather than exporting/importing across route files) so this
+// webhook can settle funding charges without creating a circular dependency.
+function generateFundingReceiptNumber() {
+    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const rand = crypto.randomInt(1000, 9999);
+    return `ZG-RCP-${dateStr}-${rand}`;
 }
 
 // Defensive duplicate of the self-heal in zira_go_trip_routes.js — this
@@ -252,7 +261,7 @@ router.post('/withdraw', requireAuth, requireRole('driver'), async (req, res) =>
     } catch (err) {
         await client.query('ROLLBACK');
         console.error('[Driver Withdraw Error]', err);
-        res.status(500).json({ error: 'internal_error', message: err.message });
+        res.status(500).json({ error: 'internal_error' });
     } finally {
         client.release();
     }
@@ -260,9 +269,13 @@ router.post('/withdraw', requireAuth, requireRole('driver'), async (req, res) =>
 
 // ------------------------------------------------------------------
 // POST /api/driver/webhooks/flutterwave
-// Flutterwave calls this after a transfer settles. Configure this exact URL
-// in Flutterwave's dashboard and set its secret hash as FLW_WEBHOOK_HASH.
-// The row lock makes duplicate delivery safe and refunds a failed payout once.
+// Flutterwave calls this for two unrelated event families, because a
+// Flutterwave account only allows one webhook URL total:
+//   - transfer.* — a driver payout settling (existing behavior)
+//   - charge.*   — a student wallet-funding payment settling
+// Configure this exact URL in Flutterwave's dashboard and set its secret
+// hash as FLW_WEBHOOK_HASH. The row lock makes duplicate delivery safe and
+// refunds a failed payout / avoids double-crediting a funding charge.
 // ------------------------------------------------------------------
 router.post('/webhooks/flutterwave', async (req, res) => {
     const expectedHash = process.env.FLW_WEBHOOK_HASH;
@@ -288,26 +301,81 @@ router.post('/webhooks/flutterwave', async (req, res) => {
             'SELECT id, driver_id, amount, status FROM driver_withdrawals WHERE reference = $1 FOR UPDATE',
             [reference]
         );
-        if (!result.rows.length) {
+
+        if (result.rows.length) {
+            // ---- Driver payout (transfer.*) settling ----
+            const withdrawal = result.rows[0];
+            if (withdrawal.status !== 'processing' && withdrawal.status !== 'pending') {
+                await client.query('ROLLBACK');
+                return res.status(200).json({ received: true, duplicate: true });
+            }
+
+            if (succeeded) {
+                await client.query("UPDATE driver_withdrawals SET status = 'completed', processed_at = now() WHERE id = $1", [withdrawal.id]);
+                await client.query("UPDATE wallet_transactions SET status = 'success' WHERE gateway_reference = $1", [reference]);
+            } else {
+                const reason = transfer.complete_message || transfer.processor_response || 'Payout failed at provider';
+                await client.query('UPDATE drivers SET wallet_balance = wallet_balance + $1 WHERE id = $2', [withdrawal.amount, withdrawal.driver_id]);
+                await client.query("UPDATE driver_withdrawals SET status = 'rejected', rejection_reason = $1, processed_at = now() WHERE id = $2", [reason, withdrawal.id]);
+                await client.query("UPDATE wallet_transactions SET status = 'failed', description = description || ' (payout refunded)' WHERE gateway_reference = $1", [reference]);
+            }
+            await client.query('COMMIT');
+            return res.status(200).json({ received: true });
+        }
+
+        // ---- Not a payout reference — check wallet-funding charges (charge.*) ----
+        const fundingRes = await client.query(
+            `SELECT id, student_id, amount, fee_amount, status
+             FROM wallet_transactions
+             WHERE gateway_reference = $1 AND gateway = 'flutterwave' AND type = 'funding'
+             FOR UPDATE`,
+            [reference]
+        );
+
+        if (!fundingRes.rows.length) {
             await client.query('ROLLBACK');
             return res.status(200).json({ received: true, ignored: true });
         }
 
-        const withdrawal = result.rows[0];
-        if (withdrawal.status !== 'processing' && withdrawal.status !== 'pending') {
+        const tx = fundingRes.rows[0];
+        if (tx.status !== 'pending') {
             await client.query('ROLLBACK');
             return res.status(200).json({ received: true, duplicate: true });
         }
 
-        if (succeeded) {
-            await client.query("UPDATE driver_withdrawals SET status = 'completed', processed_at = now() WHERE id = $1", [withdrawal.id]);
-            await client.query("UPDATE wallet_transactions SET status = 'success' WHERE gateway_reference = $1", [reference]);
-        } else {
-            const reason = transfer.complete_message || transfer.processor_response || 'Payout failed at provider';
-            await client.query('UPDATE drivers SET wallet_balance = wallet_balance + $1 WHERE id = $2', [withdrawal.amount, withdrawal.driver_id]);
-            await client.query("UPDATE driver_withdrawals SET status = 'rejected', rejection_reason = $1, processed_at = now() WHERE id = $2", [reason, withdrawal.id]);
-            await client.query("UPDATE wallet_transactions SET status = 'failed', description = description || ' (payout refunded)' WHERE gateway_reference = $1", [reference]);
+        if (!succeeded) {
+            // Nothing was ever credited for a pending charge, so a failed/reversed
+            // event just closes the transaction out — no wallet reversal needed.
+            await client.query("UPDATE wallet_transactions SET status = 'failed' WHERE id = $1", [tx.id]);
+            await client.query('COMMIT');
+            return res.status(200).json({ received: true });
         }
+
+        // Don't trust the webhook payload's amount alone — independently confirm
+        // the charge with Flutterwave's verify endpoint, same as the client-driven
+        // /api/wallet/fund/verify path, before crediting anything.
+        const verifyResult = await verifyFlutterwaveFunding(reference);
+        const expectedTotal = Number(tx.amount) + Number(tx.fee_amount);
+        if (!verifyResult.success || Number(verifyResult.amount) !== expectedTotal) {
+            await client.query('ROLLBACK');
+            console.error('[Flutterwave Webhook] funding verify mismatch', reference);
+            return res.status(200).json({ received: true, verification_failed: true });
+        }
+
+        const receiptNumber = generateFundingReceiptNumber();
+        await client.query(
+            `UPDATE students SET wallet_balance = wallet_balance + $1 WHERE id = $2`,
+            [tx.amount, tx.student_id]
+        );
+        await client.query(
+            `UPDATE wallet_transactions
+             SET status = 'success',
+                 receipt_number = $1,
+                 metadata = jsonb_set(COALESCE(metadata, '{}'), '{verifiedAt}', to_jsonb(now()))
+             WHERE id = $2`,
+            [receiptNumber, tx.id]
+        );
+
         await client.query('COMMIT');
         res.status(200).json({ received: true });
     } catch (err) {

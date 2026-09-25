@@ -19,8 +19,44 @@ async function recordPlatformChange({ key, actor = 'Codex', area = 'Platform', t
     );
 }
 
+// Append-only trail of who did what in the admin portal, separate from
+// platform_change_log (which is a public-facing release-notes feed, not an
+// audit log — it's keyed by a human-chosen change_key and de-dupes on it).
+// A failure here is logged but never allowed to fail the admin action itself;
+// losing an audit row is far better than blocking a legitimate operation.
+async function logAdminAction(req, { action, targetType = null, targetId = null, details = null }) {
+    try {
+        await pool.query(
+            `INSERT INTO admin_audit_log (admin_id, admin_email, action, target_type, target_id, details, ip_address)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            [
+                req.auth?.id || null,
+                req.adminEmail || null,
+                action,
+                targetType,
+                targetId === null || targetId === undefined ? null : String(targetId),
+                details ? JSON.stringify(details) : null,
+                req.ip || null
+            ]
+        );
+    } catch (err) {
+        console.error('[Admin Audit Log Error]', err.message);
+    }
+}
+
 // Every portal route is restricted server-side; hiding the link alone is not security.
 router.use(requireAuth, requireRole('admin'));
+// Attach the admin's email once per request so audit rows read as a human
+// identity, not just an opaque admin_id. Never blocks the request if it fails.
+router.use(async (req, res, next) => {
+    try {
+        const a = await pool.query('SELECT email FROM admins WHERE id = $1', [req.auth.id]);
+        req.adminEmail = a.rows[0]?.email || null;
+    } catch (err) {
+        req.adminEmail = null;
+    }
+    next();
+});
 const heroMediaDir = path.join(__dirname, 'uploads', 'hero-media');
 fs.mkdirSync(heroMediaDir, { recursive: true });
 const heroUpload = multer({ storage: multer.diskStorage({ destination: heroMediaDir, filename: (_req, file, cb) => cb(null, `${Date.now()}-${file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_')}`) }), limits: { fileSize: 30 * 1024 * 1024 }, fileFilter: (_req, file, cb) => cb(null, /^(image\/(jpeg|png|webp|gif)|video\/(mp4|webm|quicktime))$/.test(file.mimetype)) });
@@ -146,7 +182,7 @@ router.get('/analytics', async (req, res) => {
         });
     } catch (err) {
         console.error('[Admin Analytics Error]', err);
-        res.status(500).json({ error: 'internal_error', message: err.message });
+        res.status(500).json({ error: 'internal_error' });
     }
 });
 
@@ -286,6 +322,12 @@ router.post('/drivers/:id/toggle-flag', async (req, res) => {
              WHERE id = $2`,
             [nextState, driverId]
         );
+
+        await logAdminAction(req, {
+            action: nextState ? 'driver_flag' : 'driver_unflag',
+            targetType: 'driver',
+            targetId: driverId
+        });
 
         res.json({ success: true, isFlagged: nextState });
     } catch (err) {
@@ -568,6 +610,12 @@ router.post('/content-cards', async (req, res) => {
              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
             [v.section, next.rows[0].n, v.imageUrl, v.badgeText, v.title, v.description, v.buttonText, v.buttonUrl, v.buttonColor, v.accentColor]
         );
+        await logAdminAction(req, {
+            action: 'content_card_create',
+            targetType: 'content_card',
+            targetId: inserted.rows[0].id,
+            details: { section: v.section, title: v.title }
+        });
         res.json({ success: true, card: shapeCard(inserted.rows[0]) });
     } catch (err) {
         res.status(400).json({ error: 'invalid_card', message: err.message });
@@ -587,6 +635,12 @@ router.put('/content-cards/:id', async (req, res) => {
             [id, ...cols.map(k => v[k])]
         );
         if (!updated.rows.length) return res.status(404).json({ error: 'card_not_found' });
+        await logAdminAction(req, {
+            action: 'content_card_update',
+            targetType: 'content_card',
+            targetId: id,
+            details: { fields: cols }
+        });
         res.json({ success: true, card: shapeCard(updated.rows[0]) });
     } catch (err) {
         res.status(400).json({ error: 'invalid_card', message: err.message });
@@ -598,6 +652,7 @@ router.delete('/content-cards/:id', async (req, res) => {
         const id = Number.parseInt(req.params.id, 10);
         const deleted = await pool.query('DELETE FROM content_cards WHERE id = $1 RETURNING id', [id]);
         if (!deleted.rows.length) return res.status(404).json({ error: 'card_not_found' });
+        await logAdminAction(req, { action: 'content_card_delete', targetType: 'content_card', targetId: id });
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: 'internal_error' });
@@ -615,6 +670,12 @@ router.post('/content-cards/reorder', async (req, res) => {
             await client.query('UPDATE content_cards SET sort_order = $1 WHERE id = $2 AND section = $3', [i, Number(ids[i]), section]);
         }
         await client.query('COMMIT');
+        await logAdminAction(req, {
+            action: 'content_card_reorder',
+            targetType: 'content_cards_section',
+            targetId: section,
+            details: { ids }
+        });
         res.json({ success: true });
     } catch (err) {
         await client.query('ROLLBACK').catch(() => {});
@@ -649,7 +710,7 @@ router.get('/ad-applications', async (req, res) => {
         );
         res.json({ applications: rows.rows, plans: AD_PLANS, renewalAmount: AD_RENEWAL_AMOUNT });
     } catch (err) {
-        res.status(500).json({ error: 'internal_error', message: err.message });
+        res.status(500).json({ error: 'internal_error' });
     }
 });
 
@@ -690,11 +751,17 @@ router.post('/ad-applications/:id/approve', async (req, res) => {
             title: 'Student advert approved and published',
             details: `"${approvedApp.title}" by ${approvedApp.business_name} is now live on the Trending-on-Campus banners until ${expiresAt.toDateString()}.`
         });
+        await logAdminAction(req, {
+            action: 'ad_application_approve',
+            targetType: 'ad_application',
+            targetId: id,
+            details: { businessName: approvedApp.business_name, title: approvedApp.title, expiresAt }
+        });
         res.json({ success: true, application: approvedApp });
     } catch (err) {
         await client.query('ROLLBACK').catch(() => {});
         console.error('[Ad Approve Error]', err);
-        res.status(500).json({ error: 'internal_error', message: err.message });
+        res.status(500).json({ error: 'internal_error' });
     } finally { client.release(); }
 });
 
@@ -709,9 +776,15 @@ router.post('/ad-applications/:id/reject', async (req, res) => {
         );
         if (!updated.rows.length) return res.status(400).json({ error: 'invalid_state', message: 'Only a pending application can be rejected.' });
         sendAdRejectedEmail(updated.rows[0], reason).catch(() => {});
+        await logAdminAction(req, {
+            action: 'ad_application_reject',
+            targetType: 'ad_application',
+            targetId: id,
+            details: { reason }
+        });
         res.json({ success: true, application: updated.rows[0] });
     } catch (err) {
-        res.status(500).json({ error: 'internal_error', message: err.message });
+        res.status(500).json({ error: 'internal_error' });
     }
 });
 
@@ -730,7 +803,7 @@ router.post('/ad-applications/:id/simulate-expiry', async (req, res) => {
         const updated = await expireOneApplication(rows[0]);
         res.json({ success: true, application: updated });
     } catch (err) {
-        res.status(500).json({ error: 'internal_error', message: err.message });
+        res.status(500).json({ error: 'internal_error' });
     }
 });
 
@@ -751,11 +824,50 @@ router.post('/ad-applications/:id/deactivate', async (req, res) => {
             [id]
         );
         await client.query('COMMIT');
+        await logAdminAction(req, {
+            action: 'ad_application_deactivate',
+            targetType: 'ad_application',
+            targetId: id,
+            details: { businessName: application.business_name, title: application.title }
+        });
         res.json({ success: true, application: updated.rows[0] });
     } catch (err) {
         await client.query('ROLLBACK').catch(() => {});
-        res.status(500).json({ error: 'internal_error', message: err.message });
+        res.status(500).json({ error: 'internal_error' });
     } finally { client.release(); }
+});
+
+// GET /admin/audit-log?admin=email-or-id&action=driver_flag&targetType=driver&targetId=42
+// Internal record of admin actions (who did what, to what, and when) —
+// distinct from /change-log, which is the public-facing release timeline.
+router.get('/audit-log', async (req, res) => {
+    try {
+        const { admin, action, targetType, targetId } = req.query;
+        const clauses = [];
+        const params = [];
+        if (admin) {
+            params.push(admin);
+            const isId = /^\d+$/.test(admin);
+            clauses.push(isId ? `admin_id = $${params.length}` : `admin_email ILIKE $${params.length}`);
+            if (!isId) params[params.length - 1] = `%${admin}%`;
+        }
+        if (action) { params.push(action); clauses.push(`action = $${params.length}`); }
+        if (targetType) { params.push(targetType); clauses.push(`target_type = $${params.length}`); }
+        if (targetId) { params.push(String(targetId)); clauses.push(`target_id = $${params.length}`); }
+        const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
+        const result = await pool.query(
+            `SELECT id, admin_id, admin_email, action, target_type, target_id, details, ip_address, created_at
+             FROM admin_audit_log
+             ${where}
+             ORDER BY created_at DESC
+             LIMIT 200`,
+            params
+        );
+        res.json({ entries: result.rows });
+    } catch (err) {
+        console.error('[Admin Audit Log Fetch Error]', err);
+        res.status(500).json({ error: 'internal_error' });
+    }
 });
 
 router.get('/change-log', async (_req, res) => {
@@ -781,7 +893,8 @@ router.get('/broadcasts', async (req, res) => {
         const result = await pool.query('SELECT * FROM campus_broadcasts ORDER BY created_at DESC LIMIT 50');
         res.json(result.rows);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('[zira_go_admin_routes]', err);
+        res.status(500).json({ error: 'internal_error' });
     }
 });
 
@@ -801,18 +914,27 @@ router.post('/broadcasts', async (req, res) => {
             const users = await pool.query(`SELECT id FROM ${role === 'student' ? 'students' : 'drivers'}`);
             await Promise.all(users.rows.map(u => notify({ userId: u.id, role, title, body: message, type: 'broadcast', imageUrl: imageUrl || null, email: Boolean(sendEmail) })));
         }
+        await logAdminAction(req, {
+            action: 'broadcast_create',
+            targetType: 'broadcast',
+            targetId: result.rows[0].id,
+            details: { title, target, urgency, sendEmail: Boolean(sendEmail) }
+        });
         res.json({ success: true, broadcast: result.rows[0] });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('[zira_go_admin_routes]', err);
+        res.status(500).json({ error: 'internal_error' });
     }
 });
 
 router.delete('/broadcasts/:id', async (req, res) => {
     try {
         await pool.query('UPDATE campus_broadcasts SET active = false WHERE id = $1', [req.params.id]);
+        await logAdminAction(req, { action: 'broadcast_deactivate', targetType: 'broadcast', targetId: req.params.id });
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('[zira_go_admin_routes]', err);
+        res.status(500).json({ error: 'internal_error' });
     }
 });
 
@@ -824,7 +946,8 @@ router.get('/support/messages', async (req, res) => {
         const result = await pool.query('SELECT * FROM support_tickets ORDER BY created_at DESC LIMIT 100');
         res.json(result.rows);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('[zira_go_admin_routes]', err);
+        res.status(500).json({ error: 'internal_error' });
     }
 });
 
@@ -839,7 +962,8 @@ router.post('/support/reply', async (req, res) => {
         if (updated.rows[0].student_id) await notify({ userId: updated.rows[0].student_id, role: 'student', title: status === 'resolved' ? 'Support request resolved' : 'Reply from Zira Go support', body: reply, type: 'support' });
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('[zira_go_admin_routes]', err);
+        res.status(500).json({ error: 'internal_error' });
     }
 });
 
@@ -863,22 +987,31 @@ router.get('/config', async (req, res) => {
             heroBannerImage: 'landmark_campus_banner.jpg'
         });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('[zira_go_admin_routes]', err);
+        res.status(500).json({ error: 'internal_error' });
     }
 });
 
 router.post('/config', async (req, res) => {
     try {
         const newConfig = req.body;
+        const before = await pool.query("SELECT value FROM platform_config WHERE key = 'app_settings'");
         await pool.query(
             `INSERT INTO platform_config (key, value, updated_at)
              VALUES ('app_settings', $1, now())
              ON CONFLICT (key) DO UPDATE SET value = $1, updated_at = now()`,
             [JSON.stringify(newConfig)]
         );
+        await logAdminAction(req, {
+            action: 'platform_config_update',
+            targetType: 'platform_config',
+            targetId: 'app_settings',
+            details: { before: before.rows[0]?.value || null, after: newConfig }
+        });
         res.json({ success: true, message: 'Platform settings updated successfully!', config: newConfig });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('[zira_go_admin_routes]', err);
+        res.status(500).json({ error: 'internal_error' });
     }
 });
 
@@ -912,7 +1045,8 @@ router.get('/student/:id/ledger', async (req, res) => {
             rides: charges.rows
         });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('[zira_go_admin_routes]', err);
+        res.status(500).json({ error: 'internal_error' });
     }
 });
 
@@ -948,7 +1082,8 @@ router.get('/driver/:id/ledger', async (req, res) => {
             withdrawals: withdrawals.rows
         });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('[zira_go_admin_routes]', err);
+        res.status(500).json({ error: 'internal_error' });
     }
 });
 
@@ -990,10 +1125,17 @@ router.post('/adjust-balance', async (req, res) => {
             ]
         );
         await client.query('COMMIT');
+        await logAdminAction(req, {
+            action: type === 'credit' ? 'wallet_adjust_credit' : 'wallet_adjust_debit',
+            targetType: role,
+            targetId: userId,
+            details: { amount: amt, reason: String(reason).trim(), newBalance: Number(updated.rows[0].wallet_balance), receiptNumber: receipt }
+        });
         res.json({ success: true, receiptNumber: receipt, newBalance: Number(updated.rows[0].wallet_balance) });
     } catch (err) {
         await client.query('ROLLBACK');
-        res.status(500).json({ error: err.message });
+        console.error('[zira_go_admin_routes]', err);
+        res.status(500).json({ error: 'internal_error' });
     } finally {
         client.release();
     }

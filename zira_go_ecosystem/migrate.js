@@ -62,6 +62,30 @@ async function runPinLockoutUpgrade() {
     }
 }
 
+async function runCharterFareGuard() {
+    const client = await pool.connect();
+    try {
+        const sql = fs.readFileSync(path.join(__dirname, '04_charter_fare_guard.sql'), 'utf8');
+        await client.query(sql);
+        console.log('✅ Charter-fare guard constraint applied.');
+    } finally {
+        client.release();
+        await pool.end();
+    }
+}
+
+async function runAdminAuditLog() {
+    const client = await pool.connect();
+    try {
+        const sql = fs.readFileSync(path.join(__dirname, '05_admin_audit_log.sql'), 'utf8');
+        await client.query(sql);
+        console.log('✅ Admin audit log table created.');
+    } finally {
+        client.release();
+        await pool.end();
+    }
+}
+
 async function runMigrations() {
     const client = await pool.connect();
     console.log('🔗 Connected to database.');
@@ -93,4 +117,6 @@ async function runMigrations() {
 if (process.argv.includes('--security-upgrade')) runSecurityUpgrade();
 else if (process.argv.includes('--vehicle-capacity-upgrade')) runVehicleCapacityUpgrade();
 else if (process.argv.includes('--pin-lockout-upgrade')) runPinLockoutUpgrade();
+else if (process.argv.includes('--charter-fare-guard')) runCharterFareGuard();
+else if (process.argv.includes('--admin-audit-log')) runAdminAuditLog();
 else runMigrations();

@@ -88,7 +88,7 @@ router.post('/fund/initialize', requireAuth, requireRole('student'), async (req,
         });
     } catch (err) {
         console.error('[Funding Init Error]', err);
-        res.status(500).json({ error: 'internal_error', message: err.message });
+        res.status(500).json({ error: 'internal_error' });
     }
 });
 
@@ -197,7 +197,106 @@ router.post('/fund/verify', requireAuth, requireRole('student'), async (req, res
     } catch (err) {
         await client.query('ROLLBACK');
         console.error('[Funding Verify Error]', err);
-        res.status(500).json({ error: 'internal_error', message: err.message });
+        res.status(500).json({ error: 'internal_error' });
+    } finally {
+        client.release();
+    }
+});
+
+// ------------------------------------------------------------------
+// POST /api/wallet/webhooks/korapay
+// Passed as this transaction's notification_url when the charge is
+// initialized (see zira_go_payment_service.js), so it fires independently of
+// whatever webhook URL, if any, is configured on the Korapay dashboard.
+// Closes the same gap /fund/verify has on its own: a dropped connection after
+// payment used to leave the student charged but uncredited, with nothing to
+// auto-reconcile it. The row lock makes duplicate delivery safe.
+// ------------------------------------------------------------------
+router.post('/webhooks/korapay', async (req, res) => {
+    const secretKey = process.env.KORAPAY_SECRET_KEY;
+    const receivedSignature = req.get('x-korapay-signature');
+    if (!secretKey || !receivedSignature) {
+        return res.status(401).json({ error: 'invalid_webhook_signature' });
+    }
+
+    const payload = req.body || {};
+    const data = payload.data || {};
+    // Korapay signs only the `data` object, HMAC-SHA256 with the secret key —
+    // re-stringifying the parsed body reproduces the same key order Korapay
+    // sent, since Node preserves string-key insertion order.
+    const expectedSignature = crypto.createHmac('sha256', secretKey).update(JSON.stringify(data)).digest('hex');
+    const signaturesMatch = receivedSignature.length === expectedSignature.length &&
+        crypto.timingSafeEqual(Buffer.from(receivedSignature), Buffer.from(expectedSignature));
+    if (!signaturesMatch) {
+        return res.status(401).json({ error: 'invalid_webhook_signature' });
+    }
+
+    const reference = data.reference;
+    const rawStatus = String(data.status || payload.event || '').toLowerCase();
+    if (!reference) return res.status(400).json({ error: 'missing_reference' });
+
+    const succeeded = /success/.test(rawStatus);
+    const failed = /fail/.test(rawStatus);
+    if (!succeeded && !failed) return res.status(200).json({ received: true, ignored: true });
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        const txRes = await client.query(
+            `SELECT id, student_id, amount, fee_amount, status
+             FROM wallet_transactions
+             WHERE gateway_reference = $1 AND gateway = 'korapay' AND type = 'funding'
+             FOR UPDATE`,
+            [reference]
+        );
+
+        if (!txRes.rows.length) {
+            await client.query('ROLLBACK');
+            return res.status(200).json({ received: true, ignored: true });
+        }
+
+        const tx = txRes.rows[0];
+        if (tx.status !== 'pending') {
+            await client.query('ROLLBACK');
+            return res.status(200).json({ received: true, duplicate: true });
+        }
+
+        if (!succeeded) {
+            await client.query("UPDATE wallet_transactions SET status = 'failed' WHERE id = $1", [tx.id]);
+            await client.query('COMMIT');
+            return res.status(200).json({ received: true });
+        }
+
+        // Don't trust the webhook payload's amount alone — independently confirm
+        // the charge with Korapay's verify endpoint first, same as /fund/verify.
+        const verifyResult = await verifyKorapayFunding(reference);
+        const expectedTotal = Number(tx.amount) + Number(tx.fee_amount);
+        if (!verifyResult.success || Number(verifyResult.amount) !== expectedTotal) {
+            await client.query('ROLLBACK');
+            console.error('[Korapay Webhook] funding verify mismatch', reference);
+            return res.status(200).json({ received: true, verification_failed: true });
+        }
+
+        const receiptNumber = generateReceiptNumber();
+        await client.query(
+            `UPDATE students SET wallet_balance = wallet_balance + $1 WHERE id = $2`,
+            [tx.amount, tx.student_id]
+        );
+        await client.query(
+            `UPDATE wallet_transactions
+             SET status = 'success',
+                 receipt_number = $1,
+                 metadata = jsonb_set(COALESCE(metadata, '{}'), '{verifiedAt}', to_jsonb(now()))
+             WHERE id = $2`,
+            [receiptNumber, tx.id]
+        );
+
+        await client.query('COMMIT');
+        res.status(200).json({ received: true });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('[Korapay Webhook Error]', err);
+        res.status(500).json({ error: 'webhook_processing_failed' });
     } finally {
         client.release();
     }

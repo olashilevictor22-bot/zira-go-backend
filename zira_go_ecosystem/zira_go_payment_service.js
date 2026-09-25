@@ -119,6 +119,10 @@ async function initializeKorapayFunding({ email, amount, reference, customerName
                     },
                     reference,
                     redirect_url: redirectUrl || hostedReturnUrl(reference, 'korapay'),
+                    // Overrides whatever webhook URL (if any) is set on the Korapay
+                    // dashboard for this one transaction, so funding settlement
+                    // doesn't depend on a manual dashboard step being done correctly.
+                    ...(APP_BASE_URL ? { notification_url: `${APP_BASE_URL}/api/wallet/webhooks/korapay` } : {}),
                     merchant_bears_cost: false,
                     channels: ['card', 'bank_transfer'],
                     metadata: {

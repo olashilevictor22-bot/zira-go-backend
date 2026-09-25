@@ -238,7 +238,7 @@ router.post('/register/driver', async (req, res) => {
         return res.status(400).json({ error: 'weak_password', message: 'Password must be at least 8 characters.' });
     }
 
-    const existing = await pool.query('SELECT id FROM drivers WHERE email = $1', [email]);
+    const existing = await pool.query('SELECT id FROM drivers WHERE email = $1', [cleanEmail]);
     if (existing.rows.length) {
         return res.status(409).json({ error: 'already_registered' });
     }
@@ -248,7 +248,7 @@ router.post('/register/driver', async (req, res) => {
     const result = await pool.query(
         `INSERT INTO drivers (email, password_hash, full_name, wallet_balance, trip_close_pin_hash)
          VALUES ($1, $2, $3, 0, $4) RETURNING id`,
-        [email, passwordHash, fullName, closePinHash]
+        [cleanEmail, passwordHash, fullName, closePinHash]
     );
 
     const token = signToken({ id: result.rows[0].id, role: 'driver' });
@@ -268,7 +268,8 @@ router.post('/register/driver', async (req, res) => {
 // ------------------------------------------------------------------
 router.post('/login', async (req, res) => {
     try {
-        const { email, password, role } = req.body;
+        const { password, role } = req.body;
+        const email = (req.body.email || '').trim().toLowerCase();
         if (!['student', 'driver'].includes(role)) {
             return res.status(400).json({ error: 'invalid_role' });
         }
@@ -299,7 +300,7 @@ router.post('/login', async (req, res) => {
         return res.json({ token: signToken({ id, role }), role, id });
     } catch (err) {
         console.error('[Login Error]', err);
-        return res.status(500).json({ error: 'internal_error', message: err.message });
+        return res.status(500).json({ error: 'internal_error' });
     }
 });
 
@@ -310,23 +311,24 @@ router.post('/login', async (req, res) => {
 // ------------------------------------------------------------------
 router.post('/login/admin', async (req, res) => {
     try {
-        const { email, password, telegramOtp } = req.body;
+        const { password, telegramOtp } = req.body;
+        const email = (req.body.email || '').trim().toLowerCase();
         const result = await pool.query('SELECT id, password_hash FROM admins WHERE email = $1', [email]);
         if (!result.rows.length) return res.status(401).json({ error: 'invalid_credentials' });
 
         const valid = await bcrypt.compare(password, result.rows[0].password_hash);
         if (!valid) return res.status(401).json({ error: 'invalid_credentials' });
 
-        const pendingOtp = adminTelegramOtpStore.get(email.trim().toLowerCase());
+        const pendingOtp = adminTelegramOtpStore.get(email);
         if (!pendingOtp || Date.now() > pendingOtp.expiresAt || pendingOtp.code !== String(telegramOtp || '').trim()) {
             return res.status(401).json({ error: 'telegram_otp_required', message: 'Request and enter the Telegram admin login code.' });
         }
-        adminTelegramOtpStore.delete(email.trim().toLowerCase());
+        adminTelegramOtpStore.delete(email);
 
         return res.json({ token: signToken({ id: result.rows[0].id, role: 'admin' }), role: 'admin', id: result.rows[0].id });
     } catch (err) {
         console.error('[Admin Login Error]', err);
-        return res.status(500).json({ error: 'internal_error', message: err.message });
+        return res.status(500).json({ error: 'internal_error' });
     }
 });
 

@@ -42,6 +42,11 @@ const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHea
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 app.use('/api/auth/send-otp', authLimiter);
+// This endpoint runs its own bcrypt.compare against the admin password before
+// sending the Telegram MFA code, so it's a second admin-password-guessing
+// surface — same as /login and /login/admin — and needs the same tight limit,
+// not just the generic 300-req/15-min limiter shared by every /api route.
+app.use('/api/auth/admin/telegram-otp', authLimiter);
 
 // One pool, shared by every route file below via the global `pool` they
 // each reference.
@@ -118,7 +123,8 @@ app.get('/api/broadcasts/active', async (req, res) => {
         const result = await pool.query("SELECT * FROM campus_broadcasts WHERE active = true ORDER BY created_at DESC LIMIT 5");
         res.json(result.rows);
     } catch (e) {
-        res.status(500).json({ error: e.message });
+        console.error('[server]', e);
+        res.status(500).json({ error: 'internal_error' });
     }
 });
 
@@ -139,7 +145,8 @@ app.get('/api/public/content-cards', async (req, res) => {
         }
         res.json({ spotlight, ads });
     } catch (e) {
-        res.status(500).json({ error: e.message });
+        console.error('[server]', e);
+        res.status(500).json({ error: 'internal_error' });
     }
 });
 
@@ -161,7 +168,8 @@ app.get('/api/public/config', async (req, res) => {
             heroBannerImage: 'landmark_campus_banner.jpg'
         });
     } catch (e) {
-        res.status(500).json({ error: e.message });
+        console.error('[server]', e);
+        res.status(500).json({ error: 'internal_error' });
     }
 });
 

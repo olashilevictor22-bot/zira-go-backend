@@ -215,7 +215,7 @@ router.post('/apply', requireAuth, requireRole('student'), async (req, res) => {
         res.json({ success: true, application: { id: application.id, status: application.status, isFreeAd, plan, planDays: PLANS[plan].days } });
     } catch (err) {
         console.error('[Ad Apply Error]', err);
-        res.status(500).json({ error: 'internal_error', message: err.message });
+        res.status(500).json({ error: 'internal_error' });
     }
 });
 
@@ -230,7 +230,7 @@ router.get('/my', requireAuth, requireRole('student'), async (req, res) => {
         );
         res.json({ applications: rows.rows });
     } catch (err) {
-        res.status(500).json({ error: 'internal_error', message: err.message });
+        res.status(500).json({ error: 'internal_error' });
     }
 });
 
@@ -262,7 +262,7 @@ router.post('/:id/renew/initialize', requireAuth, requireRole('student'), async 
         res.json({ success: true, reference, checkoutUrl: result.checkoutUrl, amount: RENEWAL_AMOUNT });
     } catch (err) {
         console.error('[Ad Renew Init Error]', err);
-        res.status(500).json({ error: 'internal_error', message: err.message });
+        res.status(500).json({ error: 'internal_error' });
     }
 });
 
@@ -314,7 +314,7 @@ router.post('/:id/renew/verify', requireAuth, requireRole('student'), async (req
     } catch (err) {
         await client.query('ROLLBACK').catch(() => {});
         console.error('[Ad Renew Verify Error]', err);
-        res.status(500).json({ error: 'internal_error', message: err.message });
+        res.status(500).json({ error: 'internal_error' });
     } finally {
         client.release();
     }

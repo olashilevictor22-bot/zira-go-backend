@@ -23,14 +23,30 @@ const router = express.Router();
 const adminRouter = express.Router();
 const codeHash = value => crypto.createHash('sha256').update(value).digest('hex');
 
+// Escalating lockout on the approval-code check in /confirm below, mirroring
+// the wallet-PIN lockout tiers in zira_go_trip_routes.js. Previously /confirm
+// let a caller retry the six-digit code as many times as they wanted before
+// it expired (15 min = plenty of time to brute-force with no rate limit).
+// CODE_FAIL_LIMIT wrong guesses burns the current code (student must generate
+// a fresh one, which re-sends by email); after MAX_CODE_LOCK_STAGE codes are
+// burned this way, the whole identity-reviewed request is voided and the
+// student must submit a brand new /request (with a fresh ID + selfie video).
+const CODE_FAIL_LIMIT = 5;
+const MAX_CODE_LOCK_STAGE = 3;
+
 (async () => {
   await pool.query(`CREATE TABLE IF NOT EXISTS pin_change_requests (
     id BIGSERIAL PRIMARY KEY, student_id BIGINT NOT NULL REFERENCES students(id),
     document_path TEXT NOT NULL, selfie_video_path TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending',
     review_note TEXT, reviewed_by BIGINT REFERENCES admins(id), reviewed_at TIMESTAMPTZ,
     approval_code_hash TEXT, approval_code_expires_at TIMESTAMPTZ, used_at TIMESTAMPTZ,
+    code_fail_count INTEGER NOT NULL DEFAULT 0, code_lock_stage INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`);
+  // Self-heal for databases that already have this table from before the
+  // lockout columns existed — IF NOT EXISTS makes this harmless to re-run.
+  await pool.query(`ALTER TABLE pin_change_requests ADD COLUMN IF NOT EXISTS code_fail_count INTEGER NOT NULL DEFAULT 0`);
+  await pool.query(`ALTER TABLE pin_change_requests ADD COLUMN IF NOT EXISTS code_lock_stage INTEGER NOT NULL DEFAULT 0`);
 })().catch(err => console.error('[PIN review table]', err.message));
 
 router.post('/request', requireAuth, requireRole('student'), upload.fields([{ name: 'identityDocument', maxCount: 1 }, { name: 'selfieVideo', maxCount: 1 }]), async (req, res) => {
@@ -41,7 +57,7 @@ router.post('/request', requireAuth, requireRole('student'), upload.fields([{ na
     if (active.rows.length) return res.status(409).json({ message: 'You already have a PIN-change request under review.' });
     const created = await pool.query(`INSERT INTO pin_change_requests (student_id, document_path, selfie_video_path) VALUES ($1,$2,$3) RETURNING id, status, created_at`, [req.auth.id, identityDocument.path, selfieVideo.path]);
     res.status(201).json({ success: true, request: created.rows[0] });
-  } catch (err) { res.status(400).json({ message: err.message || 'Could not submit the request.' }); }
+  } catch (err) { console.error('[PIN change request]', err); res.status(400).json({ message: 'Could not submit the request.' }); }
 });
 
 router.get('/status', requireAuth, requireRole('student'), async (req, res) => {
@@ -57,11 +73,55 @@ router.post('/confirm', requireAuth, requireRole('student'), async (req, res) =>
     await client.query('BEGIN');
     const result = await client.query(`SELECT * FROM pin_change_requests WHERE id=$1 AND student_id=$2 FOR UPDATE`, [requestId, req.auth.id]);
     const request = result.rows[0];
-    if (!request || request.status !== 'approved' || request.used_at || new Date(request.approval_code_expires_at) < new Date() || codeHash(code || '') !== request.approval_code_hash) { await client.query('ROLLBACK'); return res.status(400).json({ message: 'That approval code is invalid or expired.' }); }
-    await client.query('UPDATE students SET pin_hash=$1 WHERE id=$2', [await bcrypt.hash(newPin, 12), req.auth.id]);
-    await client.query(`UPDATE pin_change_requests SET status='completed', used_at=now() WHERE id=$1`, [request.id]);
+    if (!request || request.status !== 'approved' || request.used_at || !request.approval_code_hash || new Date(request.approval_code_expires_at) < new Date()) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ message: 'That approval code is invalid or expired.' });
+    }
+
+    const codeValid = codeHash(code || '') === request.approval_code_hash;
+    if (codeValid) {
+      await client.query('UPDATE students SET pin_hash=$1 WHERE id=$2', [await bcrypt.hash(newPin, 12), req.auth.id]);
+      await client.query(`UPDATE pin_change_requests SET status='completed', used_at=now() WHERE id=$1`, [request.id]);
+      await client.query('COMMIT');
+      return res.json({ success: true, message: 'Your wallet PIN has been changed.' });
+    }
+
+    // Wrong code — count against this specific generated code.
+    const newFailCount = request.code_fail_count + 1;
+    if (newFailCount < CODE_FAIL_LIMIT) {
+      await client.query(`UPDATE pin_change_requests SET code_fail_count=$1 WHERE id=$2`, [newFailCount, request.id]);
+      await client.query('COMMIT');
+      return res.status(401).json({ message: 'Incorrect approval code.', attemptsRemaining: CODE_FAIL_LIMIT - newFailCount });
+    }
+
+    // This code is burned. Either hand back a clean slate for a fresh code,
+    // or — if too many codes have already been burned — void the whole
+    // identity-reviewed request so a stolen session can't just keep grinding.
+    const newStage = request.code_lock_stage + 1;
+    if (newStage >= MAX_CODE_LOCK_STAGE) {
+      await client.query(
+        `UPDATE pin_change_requests
+         SET status='rejected', review_note=$1, reviewed_at=now(),
+             approval_code_hash=NULL, approval_code_expires_at=NULL, code_fail_count=0, code_lock_stage=$2
+         WHERE id=$3`,
+        ['Too many incorrect approval codes entered. Submit a new PIN-change request.', newStage, request.id]
+      );
+      await client.query('COMMIT');
+      return res.status(423).json({
+        error: 'pin_change_locked',
+        message: 'Too many incorrect codes. This request has been closed for security — please submit a new PIN-change request.'
+      });
+    }
+
+    await client.query(
+      `UPDATE pin_change_requests SET approval_code_hash=NULL, approval_code_expires_at=NULL, code_fail_count=0, code_lock_stage=$1 WHERE id=$2`,
+      [newStage, request.id]
+    );
     await client.query('COMMIT');
-    res.json({ success: true, message: 'Your wallet PIN has been changed.' });
+    return res.status(423).json({
+      error: 'code_locked',
+      message: 'Too many incorrect codes. Generate a new approval code to try again.'
+    });
   } catch (err) { await client.query('ROLLBACK'); res.status(500).json({ message: 'Could not change PIN.' }); } finally { client.release(); }
 });
 

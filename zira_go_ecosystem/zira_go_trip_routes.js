@@ -18,6 +18,19 @@ const { notify } = require('./zira_go_notification_routes');
 const CODE_GUESS_FLAG_THRESHOLD = 5;
 const TRANSACTION_FEE = 10;
 
+// Charter fares are driver-entered (not the fixed ₦250 Complete Ride fare), so they
+// need their own bounds check. Wallet columns are NUMERIC(10,2), i.e. kobo precision —
+// reject anything that isn't a finite, positive number with at most 2 decimal places,
+// and cap it well above any real single-passenger charter fare so a typo or a forged
+// request body can't be used to drain/credit a wallet by an arbitrary amount.
+const MAX_CHARTER_FARE = 50000;
+function isValidCharterFare(v) {
+    if (typeof v !== 'number' || !Number.isFinite(v)) return false;
+    if (v <= 0 || v > MAX_CHARTER_FARE) return false;
+    const roundedToKobo = Math.round(v * 100) / 100;
+    return Math.abs(v - roundedToKobo) < 1e-9; // reject sub-kobo fractions
+}
+
 // Escalating wallet-PIN lockout. Index = pin_lock_stage (0 = normal).
 // Stage 0 -> 4 fails locks for 10 min and advances to stage 1.
 // Stage 1 -> 3 more fails locks for 30 min and advances to stage 2.
@@ -31,6 +44,16 @@ const PIN_LOCKOUT_TIERS = [
 (async () => {
     try { await pool.query('ALTER TABLE drivers ADD COLUMN IF NOT EXISTS trip_close_pin_hash TEXT'); }
     catch (err) { console.warn('[Driver close PIN schema]', err.message); }
+})();
+
+// Lockout state for the trip-close PIN check below — only used within this
+// file, so a single self-heal here is enough (unlike trip_close_pin_hash
+// itself, which three files read/write with no guaranteed load order).
+(async () => {
+    try {
+        await pool.query('ALTER TABLE drivers ADD COLUMN IF NOT EXISTS close_pin_fail_count INTEGER NOT NULL DEFAULT 0');
+        await pool.query('ALTER TABLE drivers ADD COLUMN IF NOT EXISTS close_pin_locked_until TIMESTAMPTZ');
+    } catch (err) { console.warn('[Driver close PIN lockout schema]', err.message); }
 })();
 
 // `redeemed_at` is read/written by the code-history endpoint and by code
@@ -229,6 +252,9 @@ router.post('/start', requireAuth, requireRole('driver'), async (req, res) => {
     if (!Number.isInteger(seatCapacity) || seatCapacity < 1 || seatCapacity > 60) {
         return res.status(400).json({ error: 'invalid_seat_capacity', message: 'Choose a vehicle capacity between 1 and 60.' });
     }
+    if (mode === 'charter' && charterFare !== undefined && charterFare !== null && !isValidCharterFare(Number(charterFare))) {
+        return res.status(400).json({ error: 'invalid_fare_amount', message: `Enter a fare between ₦1 and ₦${MAX_CHARTER_FARE}.` });
+    }
     const existing = await pool.query(
         `SELECT id FROM trip_sessions WHERE driver_id=$1 AND mode=$2 AND status='open' AND created_at::date=CURRENT_DATE LIMIT 1`,
         [driverId, mode]
@@ -282,7 +308,14 @@ router.post('/:id/charge/reg-no', requireAuth, requireRole('driver'), async (req
         if (!session.rows.length || session.rows[0].status !== 'open') {
             return res.status(400).json({ error: 'trip_session_not_open' });
         }
-        if (session.rows[0].mode === 'complete_ride') fareAmount = 250;
+        if (session.rows[0].mode === 'complete_ride') {
+            fareAmount = 250;
+        } else {
+            fareAmount = Number(fareAmount);
+            if (!isValidCharterFare(fareAmount)) {
+                return res.status(400).json({ error: 'invalid_fare_amount', message: `Enter a fare between ₦1 and ₦${MAX_CHARTER_FARE}.` });
+            }
+        }
 
         const formattedRegNo = normalizeLmuRegistrationNumber(regNo);
         if (!formattedRegNo) {
@@ -386,7 +419,14 @@ router.post('/:id/charge/code', requireAuth, requireRole('driver'), async (req, 
         if (!session.rows.length || session.rows[0].status !== 'open') {
             return res.status(400).json({ error: 'trip_session_not_open' });
         }
-        if (session.rows[0].mode === 'complete_ride') fareAmount = 250;
+        if (session.rows[0].mode === 'complete_ride') {
+            fareAmount = 250;
+        } else {
+            fareAmount = Number(fareAmount);
+            if (!isValidCharterFare(fareAmount)) {
+                return res.status(400).json({ error: 'invalid_fare_amount', message: `Enter a fare between ₦1 and ₦${MAX_CHARTER_FARE}.` });
+            }
+        }
 
         const codeHash = hashCode(code);
         const codeRow = await pool.query(
@@ -575,11 +615,46 @@ async function executeCharge({ tripSessionId, studentId, fareAmount, authMethod,
 // ------------------------------------------------------------------
 // POST /api/trips/:id/close
 // ------------------------------------------------------------------
+const CLOSE_PIN_FAIL_LIMIT = 5;
+const CLOSE_PIN_LOCK_MINUTES = 15;
+
 router.post('/:id/close', requireAuth, requireRole('driver'), async (req, res) => {
     const { pin } = req.body || {};
-    const driver = await pool.query('SELECT trip_close_pin_hash FROM drivers WHERE id=$1', [req.auth.id]);
-    if (!driver.rows[0]?.trip_close_pin_hash) return res.status(409).json({ error: 'close_pin_not_set', message: 'Set your 4-digit trip-close PIN in Driver Settings first.' });
-    if (!await bcrypt.compare(String(pin || ''), driver.rows[0].trip_close_pin_hash)) return res.status(401).json({ error: 'invalid_close_pin', message: 'Incorrect trip-close PIN.' });
+    const driver = await pool.query(
+        'SELECT trip_close_pin_hash, close_pin_fail_count, close_pin_locked_until FROM drivers WHERE id=$1',
+        [req.auth.id]
+    );
+    const driverRow = driver.rows[0];
+    if (!driverRow?.trip_close_pin_hash) return res.status(409).json({ error: 'close_pin_not_set', message: 'Set your 4-digit trip-close PIN in Driver Settings first.' });
+
+    if (driverRow.close_pin_locked_until && new Date(driverRow.close_pin_locked_until) > new Date()) {
+        return res.status(423).json({
+            error: 'close_pin_locked',
+            lockedUntil: driverRow.close_pin_locked_until,
+            message: `Too many incorrect attempts. Your trip-close PIN is locked until ${new Date(driverRow.close_pin_locked_until).toLocaleTimeString()}.`
+        });
+    }
+
+    const pinValid = await bcrypt.compare(String(pin || ''), driverRow.trip_close_pin_hash);
+    if (!pinValid) {
+        const newFailCount = driverRow.close_pin_fail_count + 1;
+        if (newFailCount >= CLOSE_PIN_FAIL_LIMIT) {
+            const lockedUntil = new Date(Date.now() + CLOSE_PIN_LOCK_MINUTES * 60 * 1000);
+            await pool.query('UPDATE drivers SET close_pin_fail_count = 0, close_pin_locked_until = $1 WHERE id = $2', [lockedUntil, req.auth.id]);
+            return res.status(423).json({
+                error: 'close_pin_locked',
+                lockedUntil,
+                message: `Too many incorrect attempts. Your trip-close PIN is locked for ${CLOSE_PIN_LOCK_MINUTES} minutes.`
+            });
+        }
+        await pool.query('UPDATE drivers SET close_pin_fail_count = $1 WHERE id = $2', [newFailCount, req.auth.id]);
+        return res.status(401).json({ error: 'invalid_close_pin', message: 'Incorrect trip-close PIN.', attemptsRemaining: CLOSE_PIN_FAIL_LIMIT - newFailCount });
+    }
+
+    if (driverRow.close_pin_fail_count > 0 || driverRow.close_pin_locked_until) {
+        await pool.query('UPDATE drivers SET close_pin_fail_count = 0, close_pin_locked_until = NULL WHERE id = $1', [req.auth.id]);
+    }
+
     const current = await pool.query(`SELECT mode,seats_filled,seat_capacity FROM trip_sessions WHERE id=$1 AND driver_id=$2 AND status='open'`, [req.params.id, req.auth.id]);
     if (!current.rows.length) return res.status(404).json({ error: 'trip_not_found_or_closed' });
     await pool.query(`UPDATE trip_sessions SET status = 'closed', closed_at = now() WHERE id = $1 AND driver_id=$2`, [req.params.id, req.auth.id]);
@@ -589,7 +664,10 @@ router.post('/:id/close', requireAuth, requireRole('driver'), async (req, res) =
 router.post('/close-pin', requireAuth, requireRole('driver'), async (req, res) => {
     const pin = String(req.body?.pin || '');
     if (!/^\d{4}$/.test(pin)) return res.status(400).json({ message: 'Trip-close PIN must be four digits.' });
-    await pool.query('UPDATE drivers SET trip_close_pin_hash=$1 WHERE id=$2', [await bcrypt.hash(pin, 12), req.auth.id]);
+    await pool.query(
+        'UPDATE drivers SET trip_close_pin_hash=$1, close_pin_fail_count=0, close_pin_locked_until=NULL WHERE id=$2',
+        [await bcrypt.hash(pin, 12), req.auth.id]
+    );
     res.json({ success: true });
 });
 
