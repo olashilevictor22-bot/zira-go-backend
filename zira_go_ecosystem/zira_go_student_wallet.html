@@ -731,14 +731,13 @@
     overflow-x: auto;
     overflow-y: hidden;
     border-radius: 18px;
-    scroll-snap-type: x proximity;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     cursor: grab;
     user-select: none;
   }
   .spotlight-marquee::-webkit-scrollbar { display: none; }
-  .spotlight-marquee.dragging { cursor: grabbing; scroll-snap-type: none; }
+  .spotlight-marquee.dragging { cursor: grabbing; }
   .spotlight-marquee::before,
   .spotlight-marquee::after {
     content: '';
@@ -769,7 +768,6 @@
     min-height: 145px;
     width: 260px;
     flex: 0 0 260px;
-    scroll-snap-align: start;
   }
   .spotlight-card:hover {
     transform: translateY(-2px);
