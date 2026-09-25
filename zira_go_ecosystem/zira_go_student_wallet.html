@@ -726,10 +726,37 @@
     color: var(--text);
   }
 
+  .spotlight-marquee {
+    position: relative;
+    overflow: hidden;
+    border-radius: 18px;
+  }
+  .spotlight-marquee::before,
+  .spotlight-marquee::after {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 30px;
+    z-index: 3;
+    pointer-events: none;
+  }
+  .spotlight-marquee::before { left: 0; background: linear-gradient(90deg, var(--bg) 0%, transparent 100%); }
+  .spotlight-marquee::after { right: 0; background: linear-gradient(270deg, var(--bg) 0%, transparent 100%); }
   .spotlight-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    display: flex;
     gap: 14px;
+    width: max-content;
+    animation: spotlightDrift 42s linear infinite;
+  }
+  .spotlight-grid.spotlight-grid--static { animation: none; width: 100%; }
+  .spotlight-marquee:hover .spotlight-grid,
+  .spotlight-grid.paused { animation-play-state: paused; }
+  @keyframes spotlightDrift {
+    from { transform: translateX(-50%); }
+    to { transform: translateX(0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .spotlight-grid { animation: none !important; }
   }
   .spotlight-card {
     background: var(--panel);
@@ -743,6 +770,8 @@
     position: relative;
     transition: all 0.22s;
     min-height: 145px;
+    width: 260px;
+    flex: 0 0 260px;
   }
   .spotlight-card:hover {
     transform: translateY(-2px);
@@ -1365,16 +1394,10 @@
     .tpb-actions { width: 100%; }
     .tpb-actions button { flex: 1; text-align: center; }
 
-    .spotlight-grid {
-      display: flex;
-      overflow-x: auto;
-      scroll-snap-type: x mandatory;
-      padding-bottom: 4px;
-    }
     .spotlight-card {
-      min-width: 260px;
+      width: 230px;
+      flex: 0 0 230px;
       min-height: 175px;
-      scroll-snap-align: start;
     }
 
     .hero-banner {
@@ -1440,6 +1463,7 @@
     <!-- Right Actions: Only 2 Clean Controls (Theme + Profile) -->
     <div class="top-right-actions">
       <button type="button" class="btn-icon-pill notification-bell" onclick="openNotifications()" title="Notifications">🔔<span id="notificationBadge" class="notification-count" hidden>0</span></button>
+      <button type="button" class="btn-icon-pill" id="soundToggleBtn" onclick="toggleSound()" title="Mute / Unmute Sounds"><span id="soundIcon">🔊</span></button>
       <button type="button" class="btn-icon-pill" onclick="toggleTheme()" title="Switch Light / Dark Theme">
         <span id="themeIcon">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
@@ -1586,7 +1610,9 @@
           <span style="font-size:12.5px;color:var(--text-dim);font-weight:600">Landmark Hub</span>
         </div>
 
-        <div class="spotlight-grid" id="spotlightGrid"></div>
+        <div class="spotlight-marquee">
+          <div class="spotlight-grid" id="spotlightGrid"></div>
+        </div>
       </section>
 
       <!-- 5. TRENDING ON CAMPUS: SINGLE MOVING CAROUSEL BANNER (NO FOOD) -->
@@ -2340,6 +2366,56 @@
      APPLICATION LOGIC & SCRIPTS
      ======================================================================= -->
 <script>
+// ------------------------------------------------------------------
+// Zira Sound — tiny synthesized UI sound effects (Web Audio API, no audio
+// files to host or load). Mute state persists in localStorage; the audio
+// context is created/resumed lazily on the first tap per browser autoplay
+// rules. Safe no-op in browsers without Web Audio support.
+// ------------------------------------------------------------------
+const ziraSound = (() => {
+  let ctx = null;
+  let enabled = localStorage.getItem('zira_sound_enabled') !== 'false';
+  function getCtx() {
+    if (!ctx) { try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) { return null; } }
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+    return ctx;
+  }
+  function tone(freq, duration, { type = 'sine', gain = 0.08, delay = 0, glideTo = null } = {}) {
+    if (!enabled) return;
+    const c = getCtx();
+    if (!c) return;
+    const t0 = c.currentTime + delay;
+    const osc = c.createOscillator();
+    const g = c.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t0);
+    if (glideTo) osc.frequency.exponentialRampToValueAtTime(glideTo, t0 + duration);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(gain, t0 + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+    osc.connect(g); g.connect(c.destination);
+    osc.start(t0); osc.stop(t0 + duration + 0.02);
+  }
+  return {
+    isEnabled: () => enabled,
+    setEnabled(v) { enabled = v; localStorage.setItem('zira_sound_enabled', v ? 'true' : 'false'); },
+    unlock() { getCtx(); },
+    tap()     { tone(720, 0.06, { type: 'sine', gain: 0.05 }); },
+    open()    { tone(500, 0.09, { type: 'sine', gain: 0.06, glideTo: 720 }); },
+    close()   { tone(600, 0.08, { type: 'sine', gain: 0.05, glideTo: 380 }); },
+    success() { tone(660, 0.09, { type: 'sine', gain: 0.07 }); tone(880, 0.12, { type: 'sine', gain: 0.07, delay: 0.09 }); },
+    error()   { tone(300, 0.14, { type: 'square', gain: 0.045 }); tone(220, 0.16, { type: 'square', gain: 0.04, delay: 0.09 }); },
+    notify()  { tone(820, 0.07, { type: 'sine', gain: 0.05 }); }
+  };
+})();
+// Any real control gets a soft tap sound without wiring every handler by hand.
+document.addEventListener('click', e => {
+  const el = e.target.closest('button, .nav-item, .quick-action, .action-card, .carousel-arrow-btn, .carousel-dot, a[role="button"], .tab-btn-pill');
+  if (!el || el.disabled) return;
+  ziraSound.tap();
+}, true);
+document.addEventListener('pointerdown', () => ziraSound.unlock(), { once: true });
+
 const ADMIN_PREVIEW = new URLSearchParams(window.location.search).get('adminPreview') === 'student';
 let STUDENT_REG_NO = ADMIN_PREVIEW ? 'LMU/23/01030' : (localStorage.getItem('zira_reg_no') || '—');
 let STUDENT_NAME = ADMIN_PREVIEW ? 'Student Preview' : (localStorage.getItem('zira_name') || 'Student');
@@ -2366,8 +2442,16 @@ if (ADMIN_PREVIEW) {
 // ------------------------------------------------------------------
 // Modal Helpers
 // ------------------------------------------------------------------
-function openModal(id) { document.getElementById(id).classList.add('active'); }
-function closeModal(id) { document.getElementById(id).classList.remove('active'); if (id === 'modalChangePin') stopSelfieCamera(); }
+function openModal(id) { document.getElementById(id).classList.add('active'); ziraSound.open(); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); if (id === 'modalChangePin') stopSelfieCamera(); ziraSound.close(); }
+function toggleSound() {
+  const next = !ziraSound.isEnabled();
+  ziraSound.setEnabled(next);
+  const icon = document.getElementById('soundIcon');
+  if (icon) icon.textContent = next ? '🔊' : '🔇';
+  if (next) ziraSound.tap();
+}
+(function initSoundIcon() { const icon = document.getElementById('soundIcon'); if (icon) icon.textContent = ziraSound.isEnabled() ? '🔊' : '🔇'; })();
 function openFundModal() { openModal('modalFund'); }
 function openErrandModal() { openModal('modalErrand'); }
 function openHistoryModal() { renderFullTx(); openModal('modalHistory'); }
@@ -2410,6 +2494,11 @@ function showToast(msg) {
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2800);
+  // Toasts don't carry an explicit type, so pick a sound from the wording —
+  // covers the vast majority of success/error toasts without touching every call site.
+  if (/could not|couldn.t|failed|error|invalid|not allowed|denied|expired|not granted|do not match|please attach/i.test(msg)) ziraSound.error();
+  else if (/success|successfully|submitted|changed|created|added|updated|sent|confirmed|approved/i.test(msg)) ziraSound.success();
+  else ziraSound.notify();
 }
 
 function updateBalanceDisplay() {
@@ -3424,9 +3513,11 @@ function ccLoadImageColor(url, applyFn) {
 function renderSpotlightCards(cards) {
   const grid = document.getElementById('spotlightGrid');
   if (!grid) return;
-  if (!cards || !cards.length) { grid.closest('section').style.display = 'none'; return; }
-  grid.innerHTML = cards.map((c, i) => `
-    <div class="spotlight-card" data-cc-i="${i}" style="--cc-accent:#6D28D9">
+  const section = grid.closest('section');
+  if (!cards || !cards.length) { if (section) section.style.display = 'none'; return; }
+  if (section) section.style.display = '';
+  const cardHtml = c => `
+    <div class="spotlight-card" style="--cc-accent:#6D28D9">
       <div class="spotlight-body">
         <div>
           ${c.badgeText ? `<span class="spotlight-badge" data-cc-badge style="background:#EDE9FE;color:#6D28D9">${ccEsc(c.badgeText)}</span>` : ''}
@@ -3435,9 +3526,15 @@ function renderSpotlightCards(cards) {
         </div>
         <button type="button" class="spotlight-btn" data-cc-btn style="background:#6D28D9;color:#FFFFFF">${ccEsc(c.buttonText)}</button>
       </div>
-    </div>`).join('');
+    </div>`;
+  // A single card has nothing to loop into, so it just sits still; two or more
+  // get a duplicated, doubled-up track so the drift can loop seamlessly.
+  const loop = cards.length > 1;
+  const sequence = loop ? cards.concat(cards) : cards;
+  grid.innerHTML = sequence.map(cardHtml).join('');
+  grid.classList.toggle('spotlight-grid--static', !loop);
   grid.querySelectorAll('.spotlight-card').forEach((el, i) => {
-    const c = cards[i];
+    const c = sequence[i];
     el.querySelector('[data-cc-btn]').addEventListener('click', () => ccHandleClick(c.buttonUrl));
     if (c.accentColor && c.accentColor !== 'auto') {
       el.querySelector('[data-cc-btn]').style.background = c.accentColor;
@@ -3449,6 +3546,18 @@ function renderSpotlightCards(cards) {
       });
     }
   });
+  if (loop) {
+    // Keep the drift speed constant (not "faster with more cards") by basing
+    // the animation duration on the actual track width once it's laid out.
+    requestAnimationFrame(() => {
+      const halfWidth = grid.scrollWidth / 2;
+      const SLOW_PX_PER_SEC = 26;
+      const duration = Math.min(90, Math.max(22, halfWidth / SLOW_PX_PER_SEC));
+      grid.style.animationDuration = `${duration}s`;
+    });
+  } else {
+    grid.style.animationDuration = '';
+  }
 }
 
 function renderAdSlides(cards) {

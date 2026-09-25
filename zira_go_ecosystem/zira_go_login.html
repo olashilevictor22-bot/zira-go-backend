@@ -269,6 +269,54 @@
 <div class="terms-modal" id="termsModal" role="dialog" aria-modal="true" aria-labelledby="termsTitle"><div class="terms-card"><h2 id="termsTitle">Zira Go Terms &amp; Conditions</h2><p>Zira Go is for verified Landmark University campus users. Keep your login, transaction PIN and ride codes private. Payments, ride charges and payout requests may be reviewed for safety and fraud prevention.</p><p>Only submit identity documents that belong to you. Misuse of another person’s account, ride code or wallet can lead to account restriction and referral to university authorities.</p><p>By continuing, you consent to the processing of necessary account, payment and support information to provide campus transport services.</p><button type="button" class="primary" onclick="closeTerms()">I understand</button></div></div>
 
 <script>
+  // ------------------------------------------------------------------
+  // Zira Sound — tiny synthesized UI sound effects (Web Audio API, no audio
+  // files to host). Mute state persists in localStorage; the audio context is
+  // created/resumed lazily on the first tap per browser autoplay rules.
+  // ------------------------------------------------------------------
+  const ziraSound = (() => {
+    let ctx = null;
+    let enabled = localStorage.getItem('zira_sound_enabled') !== 'false';
+    function getCtx() {
+      if (!ctx) { try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) { return null; } }
+      if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+      return ctx;
+    }
+    function tone(freq, duration, { type = 'sine', gain = 0.08, delay = 0, glideTo = null } = {}) {
+      if (!enabled) return;
+      const c = getCtx();
+      if (!c) return;
+      const t0 = c.currentTime + delay;
+      const osc = c.createOscillator();
+      const g = c.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, t0);
+      if (glideTo) osc.frequency.exponentialRampToValueAtTime(glideTo, t0 + duration);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(gain, t0 + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+      osc.connect(g); g.connect(c.destination);
+      osc.start(t0); osc.stop(t0 + duration + 0.02);
+    }
+    return {
+      isEnabled: () => enabled,
+      setEnabled(v) { enabled = v; localStorage.setItem('zira_sound_enabled', v ? 'true' : 'false'); },
+      unlock() { getCtx(); },
+      tap()     { tone(720, 0.06, { type: 'sine', gain: 0.05 }); },
+      open()    { tone(500, 0.09, { type: 'sine', gain: 0.06, glideTo: 720 }); },
+      close()   { tone(600, 0.08, { type: 'sine', gain: 0.05, glideTo: 380 }); },
+      success() { tone(660, 0.09, { type: 'sine', gain: 0.07 }); tone(880, 0.12, { type: 'sine', gain: 0.07, delay: 0.09 }); },
+      error()   { tone(300, 0.14, { type: 'square', gain: 0.045 }); tone(220, 0.16, { type: 'square', gain: 0.04, delay: 0.09 }); },
+      notify()  { tone(820, 0.07, { type: 'sine', gain: 0.05 }); }
+    };
+  })();
+  document.addEventListener('click', e => {
+    const el = e.target.closest('button, a[role="button"]');
+    if (!el || el.disabled) return;
+    ziraSound.tap();
+  }, true);
+  document.addEventListener('pointerdown', () => ziraSound.unlock(), { once: true });
+
   // Point this at your deployed API. Left relative so it works once the login
   // page is served from the same origin as the backend.
   const API_BASE = '/api/auth';
@@ -403,6 +451,7 @@
   }
 
   function showError(msg) {
+    ziraSound.error();
     const box = document.getElementById('errorBox');
     box.textContent = msg;
     box.classList.add('show');
@@ -471,6 +520,7 @@
         return;
       }
 
+      ziraSound.success();
       localStorage.setItem('zira_token', data.token);
       localStorage.setItem('zira_role', data.role);
       localStorage.setItem('zira_id', String(data.id));
@@ -507,8 +557,8 @@
       default: return 'Something went wrong. Please try again.';
     }
   }
-  function openTerms(event) { event.preventDefault(); document.getElementById('termsModal').classList.add('active'); }
-  function closeTerms() { document.getElementById('termsModal').classList.remove('active'); }
+  function openTerms(event) { event.preventDefault(); document.getElementById('termsModal').classList.add('active'); ziraSound.open(); }
+  function closeTerms() { document.getElementById('termsModal').classList.remove('active'); ziraSound.close(); }
 
   // If specific role requested, lock to that role and hide switcher
   const urlParams = new URLSearchParams(window.location.search);

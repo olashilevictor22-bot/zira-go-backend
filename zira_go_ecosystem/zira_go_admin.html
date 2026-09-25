@@ -999,9 +999,61 @@
 </div></div>
 
 <script>
+  // ------------------------------------------------------------------
+  // Zira Sound — tiny synthesized UI sound effects (Web Audio API, no audio
+  // files to host). Mute state persists in localStorage; the audio context
+  // is created/resumed lazily on the first tap per browser autoplay rules.
+  // ------------------------------------------------------------------
+  const ziraSound = (() => {
+    let ctx = null;
+    let enabled = localStorage.getItem('zira_sound_enabled') !== 'false';
+    function getCtx() {
+      if (!ctx) { try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) { return null; } }
+      if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+      return ctx;
+    }
+    function tone(freq, duration, { type = 'sine', gain = 0.08, delay = 0, glideTo = null } = {}) {
+      if (!enabled) return;
+      const c = getCtx();
+      if (!c) return;
+      const t0 = c.currentTime + delay;
+      const osc = c.createOscillator();
+      const g = c.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, t0);
+      if (glideTo) osc.frequency.exponentialRampToValueAtTime(glideTo, t0 + duration);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(gain, t0 + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+      osc.connect(g); g.connect(c.destination);
+      osc.start(t0); osc.stop(t0 + duration + 0.02);
+    }
+    return {
+      isEnabled: () => enabled,
+      setEnabled(v) { enabled = v; localStorage.setItem('zira_sound_enabled', v ? 'true' : 'false'); },
+      unlock() { getCtx(); },
+      tap()     { tone(720, 0.06, { type: 'sine', gain: 0.05 }); },
+      open()    { tone(500, 0.09, { type: 'sine', gain: 0.06, glideTo: 720 }); },
+      close()   { tone(600, 0.08, { type: 'sine', gain: 0.05, glideTo: 380 }); },
+      success() { tone(660, 0.09, { type: 'sine', gain: 0.07 }); tone(880, 0.12, { type: 'sine', gain: 0.07, delay: 0.09 }); },
+      error()   { tone(300, 0.14, { type: 'square', gain: 0.045 }); tone(220, 0.16, { type: 'square', gain: 0.04, delay: 0.09 }); },
+      notify()  { tone(820, 0.07, { type: 'sine', gain: 0.05 }); }
+    };
+  })();
+  document.addEventListener('click', e => {
+    const el = e.target.closest('button, .tab-pill, .sup-pill, a[role="button"]');
+    if (!el || el.disabled) return;
+    ziraSound.tap();
+  }, true);
+  document.addEventListener('pointerdown', () => ziraSound.unlock(), { once: true });
+
   const API_BASE = '/api';
   const ADMIN_TOKEN = localStorage.getItem('zira_admin_token') || localStorage.getItem('zira_token') || '';
-  function adminToast(message) { const old=document.getElementById('ziraAdminToast'); old?.remove(); const el=document.createElement('div'); el.id='ziraAdminToast'; el.textContent=String(message); Object.assign(el.style,{position:'fixed',zIndex:'99999',right:'24px',bottom:'24px',maxWidth:'360px',padding:'13px 16px',borderRadius:'14px',background:'#24104f',color:'#fff',fontSize:'13px',fontWeight:'700',boxShadow:'0 14px 32px rgba(18,8,48,.28)'});document.body.appendChild(el);setTimeout(()=>el.remove(),4200); }
+  function adminToast(message) { const old=document.getElementById('ziraAdminToast'); old?.remove(); const el=document.createElement('div'); el.id='ziraAdminToast'; el.textContent=String(message); Object.assign(el.style,{position:'fixed',zIndex:'99999',right:'24px',bottom:'24px',maxWidth:'360px',padding:'13px 16px',borderRadius:'14px',background:'#24104f',color:'#fff',fontSize:'13px',fontWeight:'700',boxShadow:'0 14px 32px rgba(18,8,48,.28)'});document.body.appendChild(el);setTimeout(()=>el.remove(),4200);
+    if (/could not|couldn.t|failed|error|invalid|denied|expired/i.test(message)) ziraSound.error();
+    else if (/success|successfully|submitted|changed|created|added|updated|sent|confirmed|approved|deleted/i.test(message)) ziraSound.success();
+    else ziraSound.notify();
+  }
   window.alert = adminToast;
   const nativeFetch = window.fetch.bind(window);
   window.fetch = (input, init = {}) => {
@@ -1016,7 +1068,7 @@
     if(heroInput){const card=heroInput.parentElement?.parentElement;const panel=card?.closest('.panel-card');if(panel){panel.id='experienceSettings';card.classList.add('hero-card');document.getElementById('configHeroTitle')?.parentElement?.parentElement?.classList.add('hero-grid');heroInput.parentElement?.classList.add('hero-upload-row');const schedule=document.getElementById('configScheduledHeroUrl')?.parentElement;schedule?.classList.add('schedule-grid');const start=document.getElementById('configHeroStartHour'),end=document.getElementById('configHeroEndHour');[start,end].forEach(input=>{if(input){input.type='time';input.step='3600';}});start?.setAttribute('aria-label','Scheduled hero start time');end?.setAttribute('aria-label','Scheduled hero end time');}}
     loadAnalytics();
   }
-  function closeModal(id) { document.getElementById(id)?.classList.remove('active'); }
+  function closeModal(id) { document.getElementById(id)?.classList.remove('active'); ziraSound.close(); }
 
   function switchTab(tab) {
     document.querySelectorAll('.tab-btn').forEach((b, i) => {
@@ -1634,6 +1686,7 @@
         }
       }
       document.getElementById('modalContentCard')?.classList.add('active');
+      ziraSound.open();
     }
 
     function onColorModeChange() {
