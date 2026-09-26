@@ -302,6 +302,21 @@ router.post('/:id/renew/verify', requireAuth, requireRole('student'), async (req
             [newExpiry, id]
         );
 
+        // Record the ad renewal in wallet_transactions for financial ledger and revenue tracking
+        const receipt = `ZG-ADR-${Date.now()}-${String(id).padStart(4, '0')}`;
+        await client.query(
+            `INSERT INTO wallet_transactions
+                (student_id, type, amount, fee_amount, status, receipt_number, gateway, description, metadata)
+             VALUES ($1, 'ad_renewal', $2, $2, 'success', $3, 'Korapay Gateway', $4, $5)`,
+            [
+                application.student_id,
+                RENEWAL_AMOUNT,
+                receipt,
+                `Advert Renewal: ${application.business_name} (${application.title})`,
+                JSON.stringify({ adId: id, reference, days: application.plan_days })
+            ]
+        );
+
         // Bring the banner back on the student home screen.
         if (application.content_card_id) {
             await client.query('UPDATE content_cards SET active = true, updated_at = now() WHERE id = $1', [application.content_card_id]);
@@ -310,10 +325,74 @@ router.post('/:id/renew/verify', requireAuth, requireRole('student'), async (req
 
         const renewedApp = updated.rows[0];
         alertAdminsOfRenewal(renewedApp).catch(() => {});
-        res.json({ success: true, expiresAt: renewedApp.expires_at });
+        res.json({ success: true, expiresAt: renewedApp.expires_at, receipt });
     } catch (err) {
         await client.query('ROLLBACK').catch(() => {});
         console.error('[Ad Renew Verify Error]', err);
+        res.status(500).json({ error: 'internal_error' });
+    } finally {
+        client.release();
+    }
+});
+
+// POST /api/ads/:id/renew/wallet — Renew using student wallet balance
+router.post('/:id/renew/wallet', requireAuth, requireRole('student'), async (req, res) => {
+    const client = await pool.connect();
+    try {
+        const id = Number(req.params.id);
+        await client.query('BEGIN');
+        const appRes = await client.query('SELECT * FROM ad_applications WHERE id = $1 AND student_id = $2 FOR UPDATE', [id, req.auth.id]);
+        if (!appRes.rows.length) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'not_found' }); }
+        const application = appRes.rows[0];
+
+        if (!['expired', 'expired_pending_renewal'].includes(application.status)) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({ error: 'not_renewable', message: 'This advert is not currently awaiting renewal.' });
+        }
+
+        const studentRes = await client.query('SELECT wallet_balance FROM students WHERE id = $1 FOR UPDATE', [req.auth.id]);
+        const currentBal = Number(studentRes.rows[0]?.wallet_balance || 0);
+        if (currentBal < RENEWAL_AMOUNT) {
+            await client.query('ROLLBACK');
+            return res.status(422).json({ error: 'insufficient_balance', message: `Insufficient wallet balance. You need ₦${RENEWAL_AMOUNT.toLocaleString()} to renew.` });
+        }
+
+        // Debit student wallet
+        await client.query('UPDATE students SET wallet_balance = wallet_balance - $1 WHERE id = $2', [RENEWAL_AMOUNT, req.auth.id]);
+
+        const receipt = `ZG-ADR-W-${Date.now()}-${String(id).padStart(4, '0')}`;
+        await client.query(
+            `INSERT INTO wallet_transactions
+                (student_id, type, amount, fee_amount, status, receipt_number, gateway, description, metadata)
+             VALUES ($1, 'ad_renewal', $2, $2, 'success', $3, 'Student Wallet', $4, $5)`,
+            [
+                req.auth.id,
+                RENEWAL_AMOUNT,
+                receipt,
+                `Advert Renewal: ${application.business_name} (${application.title})`,
+                JSON.stringify({ adId: id, method: 'wallet_balance', days: application.plan_days })
+            ]
+        );
+
+        const newExpiry = new Date(Date.now() + application.plan_days * 24 * 60 * 60 * 1000);
+        const updated = await client.query(
+            `UPDATE ad_applications
+             SET status = 'live', renewed_at = now(), expires_at = $1, expiry_notice_sent_at = NULL, updated_at = now()
+             WHERE id = $2 RETURNING *`,
+            [newExpiry, id]
+        );
+
+        if (application.content_card_id) {
+            await client.query('UPDATE content_cards SET active = true, updated_at = now() WHERE id = $1', [application.content_card_id]);
+        }
+
+        await client.query('COMMIT');
+        const renewedApp = updated.rows[0];
+        alertAdminsOfRenewal(renewedApp).catch(() => {});
+        res.json({ success: true, expiresAt: renewedApp.expires_at, receipt });
+    } catch (err) {
+        await client.query('ROLLBACK').catch(() => {});
+        console.error('[Ad Wallet Renew Error]', err);
         res.status(500).json({ error: 'internal_error' });
     } finally {
         client.release();

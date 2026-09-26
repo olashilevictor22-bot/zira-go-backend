@@ -906,33 +906,57 @@
       </div>
     </div>
 
-    <!-- Financial Matrix 8 KPI Cards -->
+    <!-- Financial Matrix 12 Granular KPI Cards -->
     <div class="kpi-grid" style="margin-top:16px">
       <!-- 1. Total Funding Inflow -->
       <div class="kpi-card">
         <div class="kpi-top">
-          <span class="kpi-label">Total Student Funding History</span>
+          <span class="kpi-label">Total Student Funding Done</span>
           <div class="kpi-icon-wrap emerald">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
           </div>
         </div>
         <div class="kpi-value num" id="finTotalFunded">₦0</div>
-        <div class="kpi-subtext" id="finFundCount">0 Korapay & Monnify deposits</div>
+        <div class="kpi-subtext" id="finFundCount">0 total deposits processed</div>
       </div>
 
-      <!-- 2. Active Participants -->
+      <!-- 2. Funding Margin (Convenience Fees Made) -->
+      <div class="kpi-card" style="border-left:3.5px solid #10B981">
+        <div class="kpi-top">
+          <span class="kpi-label">Total Made From Funding</span>
+          <div class="kpi-icon-wrap emerald">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+        </div>
+        <div class="kpi-value num" style="color:#10B981" id="finFundingFeeRevenue">₦0</div>
+        <div class="kpi-subtext">₦100 convenience margin per deposit</div>
+      </div>
+
+      <!-- 3. Student Wallet Balances -->
       <div class="kpi-card">
         <div class="kpi-top">
-          <span class="kpi-label">Active Participants</span>
+          <span class="kpi-label">Student Total Wallet Balances</span>
           <div class="kpi-icon-wrap violet">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
           </div>
         </div>
-        <div class="kpi-value num" id="finParticipants">0</div>
-        <div class="kpi-subtext" id="finParticipantsSplit">0 Students · 0 Drivers</div>
+        <div class="kpi-value num" id="finStudentLiabilities">₦0</div>
+        <div class="kpi-subtext" id="finStudentCount">Across 0 registered students</div>
       </div>
 
-      <!-- 3. Settled Driver Payouts -->
+      <!-- 4. Driver Wallet Balances -->
+      <div class="kpi-card">
+        <div class="kpi-top">
+          <span class="kpi-label">Driver Total Wallet Balances</span>
+          <div class="kpi-icon-wrap amber">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+          </div>
+        </div>
+        <div class="kpi-value num" id="finDriverBalances">₦0</div>
+        <div class="kpi-subtext" id="finDriverCount">Across 0 active drivers</div>
+      </div>
+
+      <!-- 5. Settled Driver Payouts -->
       <div class="kpi-card">
         <div class="kpi-top">
           <span class="kpi-label">Rider / Driver Settled Payouts</span>
@@ -944,7 +968,7 @@
         <div class="kpi-subtext" id="finSettledCount">0 completed bank disbursements</div>
       </div>
 
-      <!-- 4. Pending Driver Payouts -->
+      <!-- 6. Pending Driver Payouts -->
       <div class="kpi-card" style="border-left:3.5px solid var(--warning)">
         <div class="kpi-top">
           <span class="kpi-label">Pending Payouts Queue</span>
@@ -956,7 +980,7 @@
         <div class="kpi-subtext" id="finPendingCount">0 awaiting settlement dispatch</div>
       </div>
 
-      <!-- 5. Failed Transactions -->
+      <!-- 7. Failed Transactions -->
       <div class="kpi-card" style="border-left:3.5px solid var(--danger)">
         <div class="kpi-top">
           <span class="kpi-label">Failed Transactions</span>
@@ -968,19 +992,19 @@
         <div class="kpi-subtext" id="finFailedCount">0 failed / cancelled payments</div>
       </div>
 
-      <!-- 6. Ads Marketplace Revenue -->
-      <div class="kpi-card">
+      <!-- 8. Campus Ads Marketplace Revenue -->
+      <div class="kpi-card" style="border-left:3.5px solid #8B5CF6">
         <div class="kpi-top">
           <span class="kpi-label">Campus Ads Revenue</span>
           <div class="kpi-icon-wrap violet">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
           </div>
         </div>
-        <div class="kpi-value num" id="finAdRevenue">₦0</div>
+        <div class="kpi-value num" style="color:#8B5CF6" id="finAdRevenue">₦0</div>
         <div class="kpi-subtext" id="finActiveAds">0 active brand adverts</div>
       </div>
 
-      <!-- 7. Ads Pending Renewal -->
+      <!-- 9. Ads Pending Renewal -->
       <div class="kpi-card" style="border-left:3.5px solid var(--accent)">
         <div class="kpi-top">
           <span class="kpi-label">Ads Pending Renewal</span>
@@ -989,19 +1013,74 @@
           </div>
         </div>
         <div class="kpi-value num" id="finPendingRenewals">0</div>
-        <div class="kpi-subtext">Expiring adverts awaiting ₦1,000 top-up</div>
+        <div class="kpi-subtext">Expiring adverts awaiting ₦1,000 renewal</div>
       </div>
 
-      <!-- 8. Ride Fares Volume -->
+      <!-- 10. Total Transit Gross Fares -->
       <div class="kpi-card">
         <div class="kpi-top">
-          <span class="kpi-label">Total Transit Gross Fares</span>
+          <span class="kpi-label">Transit Gross Fares</span>
           <div class="kpi-icon-wrap emerald">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="14" rx="2"/></svg>
           </div>
         </div>
         <div class="kpi-value num" id="finTripGross">₦0</div>
         <div class="kpi-subtext" id="finTripSub">0 total passenger trips completed</div>
+      </div>
+
+      <!-- 11. Ride Commission Revenue -->
+      <div class="kpi-card">
+        <div class="kpi-top">
+          <span class="kpi-label">Ride Commission Fees</span>
+          <div class="kpi-icon-wrap emerald">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+        </div>
+        <div class="kpi-value num" id="finTripFeeRevenue">₦0</div>
+        <div class="kpi-subtext">₦10 platform fee per transit fare</div>
+      </div>
+
+      <!-- 12. Active Live Brand Adverts -->
+      <div class="kpi-card">
+        <div class="kpi-top">
+          <span class="kpi-label">Active Campus Adverts</span>
+          <div class="kpi-icon-wrap violet">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          </div>
+        </div>
+        <div class="kpi-value num" id="finLiveAdsCount">0</div>
+        <div class="kpi-subtext">Live on student home banners</div>
+      </div>
+    </div>
+
+    <!-- Zibo AI Financial Intelligence & Treasury Analysis Panel -->
+    <div class="panel-card" data-panel-id="finZiboInsights" style="margin-top:16px;background:linear-gradient(135deg, rgba(30,11,54,0.05) 0%, rgba(76,29,149,0.04) 100%);border:1.5px solid #DDD6FE;">
+      <div class="panel-header" style="border-bottom:1px solid #E9D5FF;padding:14px 18px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg, #1E0B36, #4C1D95);display:flex;align-items:center;justify-content:center;color:#C084FC;box-shadow:0 3px 8px rgba(76,29,149,0.25)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+          <div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <h3 class="panel-title" style="margin:0;font-size:15px;color:#1E0B36;font-weight:800">Zibo AI • Financial & Treasury Intelligence</h3>
+              <span id="ziboHealthBadge" style="padding:3px 10px;background:#EDE9FE;color:#6D28D9;border:1px solid #DDD6FE;border-radius:999px;font-size:11px;font-weight:700">Optimal Treasury</span>
+              <span id="ziboSolvencyBadge" style="padding:3px 10px;background:#ECFDF5;color:#059669;border:1px solid #A7F3D0;border-radius:999px;font-size:11px;font-weight:700">100% Reserve Ratio</span>
+            </div>
+            <div style="font-size:11.5px;color:#6B21A8;margin-top:2px">Real-time AI telemetry of cash flow velocity, student/driver float reserves, and revenue streams</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button type="button" class="btn-sm" onclick="fetchZiboFinancialInsights()" id="btnRefreshFinInsights" style="background:#6D28D9;color:#FFFFFF;border:none;padding:6px 14px;border-radius:8px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 3px 8px rgba(109,40,217,0.25)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+            <span>Refresh Zibo Insights</span>
+          </button>
+        </div>
+      </div>
+      <div style="padding:18px 20px" id="ziboInsightsContent">
+        <div style="display:flex;align-items:center;justify-content:center;padding:24px;color:var(--text-dim);font-size:13px">
+          <svg class="spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:8px"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+          Analyzing live platform ledger and solvency health...
+        </div>
       </div>
     </div>
 
@@ -1852,30 +1931,38 @@
       if (elRev) elRev.textContent = `₦${(kpi.platformRevenue || 0).toLocaleString()}`;
       if (elFloat) elFloat.textContent = `₦${(kpi.totalFloat || 0).toLocaleString()}`;
 
-      // 8 Matrix KPI Cards
+      // 12 Granular Matrix KPI Cards
       const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
       setTxt('finTotalFunded', `₦${(kpi.totalFunded || 0).toLocaleString()}`);
-      setTxt('finFundCount', `${kpi.fundingTransactions || 0} Korapay & Flutterwave deposits`);
+      setTxt('finFundCount', `${(kpi.fundingTransactions || 0).toLocaleString()} student deposits completed`);
 
-      setTxt('finParticipants', ((kpi.studentCount || 0) + (kpi.driverCount || 0)).toLocaleString());
-      setTxt('finParticipantsSplit', `${(kpi.studentCount || 0).toLocaleString()} Students · ${(kpi.driverCount || 0).toLocaleString()} Drivers`);
+      setTxt('finFundingFeeRevenue', `₦${(kpi.fundingFeeRevenue || 0).toLocaleString()}`);
+
+      setTxt('finStudentLiabilities', `₦${(kpi.studentLiabilities || 0).toLocaleString()}`);
+      setTxt('finStudentCount', `Across ${(kpi.studentCount || 0).toLocaleString()} registered students`);
+
+      setTxt('finDriverBalances', `₦${(kpi.driverBalances || 0).toLocaleString()}`);
+      setTxt('finDriverCount', `Across ${(kpi.driverCount || 0).toLocaleString()} active drivers`);
 
       setTxt('finSettledPayouts', `₦${(kpi.totalWithdrawn || 0).toLocaleString()}`);
-      setTxt('finSettledCount', `${kpi.withdrawalCount || 0} completed bank disbursements`);
+      setTxt('finSettledCount', `${(kpi.withdrawalCount || 0).toLocaleString()} completed bank disbursements`);
 
       setTxt('finPendingPayouts', `₦${(kpi.pendingPayoutAmount || 0).toLocaleString()}`);
-      setTxt('finPendingCount', `${kpi.pendingPayoutCount || 0} awaiting settlement dispatch`);
+      setTxt('finPendingCount', `${(kpi.pendingPayoutCount || 0).toLocaleString()} awaiting settlement dispatch`);
 
       setTxt('finFailedAmount', `₦${(kpi.failedTxAmount || 0).toLocaleString()}`);
-      setTxt('finFailedCount', `${kpi.failedTxCount || 0} failed / cancelled payments`);
+      setTxt('finFailedCount', `${(kpi.failedTxCount || 0).toLocaleString()} failed / cancelled payments`);
 
       setTxt('finAdRevenue', `₦${(kpi.adRevenue || 0).toLocaleString()}`);
-      setTxt('finActiveAds', `${kpi.activeAdsCount || 0} active brand adverts`);
+      setTxt('finActiveAds', `${(kpi.activeAdsCount || 0).toLocaleString()} active brand adverts`);
 
       setTxt('finPendingRenewals', (kpi.adsPendingRenewal || 0).toLocaleString());
 
       setTxt('finTripGross', `₦${(kpi.totalTripRevenue || 0).toLocaleString()}`);
       setTxt('finTripSub', `${(kpi.totalTrips || 0).toLocaleString()} total passenger trips completed`);
+
+      setTxt('finTripFeeRevenue', `₦${(kpi.tripFeeRevenue || 0).toLocaleString()}`);
+      setTxt('finLiveAdsCount', (kpi.activeAdsCount || 0).toLocaleString());
 
       // Render Visual Interactive Charts
       renderLiquidityChart(kpi.dailyTrends || []);
@@ -1884,8 +1971,94 @@
       // Render Universal Financial Audit Ledger
       allFinancialTx = data.recentTransactions || [];
       renderFinancialTx();
+
+      // Trigger Zibo Financial Insights
+      fetchZiboFinancialInsights();
     } catch (err) {
       console.error('Error loading financial overview:', err);
+    }
+  }
+
+  async function fetchZiboFinancialInsights() {
+    const btn = document.getElementById('btnRefreshFinInsights');
+    const container = document.getElementById('ziboInsightsContent');
+    const healthBadge = document.getElementById('ziboHealthBadge');
+    const solvencyBadge = document.getElementById('ziboSolvencyBadge');
+    if (btn) btn.disabled = true;
+    if (container) {
+      container.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:center;padding:24px;color:var(--text-dim);font-size:13px">
+          <svg class="spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:8px"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+          Generating Zibo AI financial intelligence synthesis...
+        </div>`;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/admin/financial-insights`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.message || 'Failed to generate insights');
+      
+      const ins = data.insights || {};
+      if (healthBadge) healthBadge.textContent = ins.healthStatus || 'Optimal Treasury';
+      if (solvencyBadge) solvencyBadge.textContent = ins.solvencyRatio || '100% Reserve Ratio';
+
+      const highlightsHtml = (ins.keyHighlights || []).map(h => {
+        let text = esc(h);
+        text = text.replace(/\*\*([^*]+)\*\*/g, '<strong style="color:#1E0B36;font-weight:800;">$1</strong>');
+        return `
+          <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
+            <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#7C3AED;margin-top:7px;flex-shrink:0;"></span>
+            <div style="font-size:13px;line-height:1.6;color:var(--text);flex:1;">${text}</div>
+          </div>`;
+      }).join('');
+
+      const recsHtml = (ins.recommendations || []).map(r => {
+        let text = esc(r);
+        text = text.replace(/\*\*([^*]+)\*\*/g, '<strong style="color:#065F46;font-weight:800;">$1</strong>');
+        return `
+          <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
+            <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#10B981;margin-top:7px;flex-shrink:0;"></span>
+            <div style="font-size:13px;line-height:1.6;color:var(--text);flex:1;">${text}</div>
+          </div>`;
+      }).join('');
+
+      if (container) {
+        container.innerHTML = `
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <!-- Executive Briefing -->
+            <div style="background:var(--panel-alt);border:1px solid var(--line);border-radius:12px;padding:14px 18px">
+              <div style="font-size:11px;font-weight:800;color:#6D28D9;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Executive Treasury Synthesis</div>
+              <div style="font-size:13.5px;line-height:1.65;color:var(--text);font-weight:500">${esc(ins.executiveSummary || '')}</div>
+            </div>
+
+            <!-- Dual Column: Analytical Highlights vs Action Directives -->
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(320px, 1fr));gap:14px">
+              <div style="background:var(--panel-alt);border:1px solid var(--line);border-radius:12px;padding:14px 18px">
+                <div style="font-size:11px;font-weight:800;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px">Key Financial Highlights</div>
+                ${highlightsHtml || '<div style="color:var(--text-dim);font-size:12px">No highlights available.</div>'}
+              </div>
+
+              <div style="background:rgba(16,185,129,0.05);border:1px solid rgba(16,185,129,0.25);border-radius:12px;padding:14px 18px">
+                <div style="font-size:11px;font-weight:800;color:#059669;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px">Operational Directives & Risk Controls</div>
+                ${recsHtml || '<div style="color:var(--text-dim);font-size:12px">All treasury systems operating optimally.</div>'}
+              </div>
+            </div>
+          </div>`;
+      }
+    } catch (e) {
+      console.error('[Zibo Financial Insights Fetch Error]', e);
+      if (container) {
+        container.innerHTML = `
+          <div style="padding:16px;text-align:center;color:var(--danger);font-size:13px">
+            Could not fetch Zibo Financial Insights: ${esc(e.message || 'Network error')}
+            <div style="margin-top:8px"><button type="button" class="btn-sm" onclick="fetchZiboFinancialInsights()" style="background:var(--accent);color:#fff;border:none;padding:5px 12px;border-radius:6px;cursor:pointer">Try Again</button></div>
+          </div>`;
+      }
+    } finally {
+      if (btn) btn.disabled = false;
     }
   }
 
@@ -2338,7 +2511,8 @@
           <td>${a.expires_at ? new Date(a.expires_at).toLocaleDateString() : '—'}</td>
           <td style="display:flex;gap:6px;flex-wrap:wrap">
             ${a.image_url ? `<a class="btn-sm" href="${a.image_url}" target="_blank" rel="noopener">Image</a>` : ''}
-            ${['pending','rejected','expired','expired_pending_renewal'].includes(a.status) ? `<button class="btn-sm primary" onclick="approveAdApplication(${a.id})">Approve</button>` : ''}
+            ${['pending','rejected'].includes(a.status) ? `<button class="btn-sm primary" onclick="approveAdApplication(${a.id})">Approve</button>` : ''}
+            ${['expired','expired_pending_renewal'].includes(a.status) ? `<button class="btn-sm success" style="background:#10B981;color:#fff;border:none" onclick="renewAdApplicationAdmin(${a.id})">Renew / Relist</button>` : ''}
             ${a.status === 'pending' ? `<button class="btn-sm danger" onclick="rejectAdApplication(${a.id})">Reject</button>` : ''}
             ${a.status === 'live' ? `<button class="btn-sm" onclick="simulateAdExpiry(${a.id})">Simulate expiry</button>` : ''}
             ${a.status === 'live' ? `<button class="btn-sm danger" onclick="deactivateAdApplication(${a.id})">Take down</button>` : ''}
@@ -2349,6 +2523,18 @@
     } catch (e) {
       tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--danger);padding:18px">Could not load ad applications.</td></tr>';
     }
+  }
+
+  async function renewAdApplicationAdmin(id) {
+    if (!confirm('Renew and relist this advert for another cycle (₦1,000 revenue recorded in ledger)?')) return;
+    try {
+      const res = await fetch(`${API_BASE}/admin/ad-applications/${id}/renew`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Could not renew this application.');
+      showAdminNotice('Advert successfully renewed and relisted live on campus banners.');
+      loadAdApplications();
+      loadFinancialOverview();
+    } catch (e) { showAdminNotice(e.message, true); }
   }
   async function approveAdApplication(id) {
     try {
@@ -2932,6 +3118,47 @@
     }
   }
 
+  function formatMarkdownToPreviewHtml(text) {
+    if (!text) return '<span style="color:#94A3B8">No summary message provided.</span>';
+    const lines = String(text).split('\n');
+    const rendered = [];
+    let inList = false;
+
+    for (let line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) {
+        if (inList) { rendered.push('</div>'); inList = false; }
+        rendered.push('<div style="height:10px;"></div>');
+        continue;
+      }
+
+      const bulletMatch = trimmed.match(/^(?:•|\-|\*|\d+\.)\s+(.+)$/);
+      if (bulletMatch) {
+        let content = esc(bulletMatch[1]);
+        content = content.replace(/\*\*([^*]+)\*\*/g, '<strong style="color:#0F172A;font-weight:800;">$1</strong>');
+        content = content.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+        content = content.replace(/`([^`]+)`/g, '<code style="background:#EDE9FE;padding:2px 5px;border-radius:4px;font-family:monospace;color:#6D28D9;">$1</code>');
+
+        if (!inList) { rendered.push('<div style="margin:10px 0 12px 0;">'); inList = true; }
+        rendered.push(`
+          <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
+            <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#7C3AED;margin-top:7px;flex-shrink:0;"></span>
+            <div style="font-size:13.5px;line-height:1.6;color:#334155;flex:1;">${content}</div>
+          </div>
+        `);
+      } else {
+        if (inList) { rendered.push('</div>'); inList = false; }
+        let content = esc(trimmed);
+        content = content.replace(/\*\*([^*]+)\*\*/g, '<strong style="color:#0F172A;font-weight:800;">$1</strong>');
+        content = content.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+        content = content.replace(/`([^`]+)`/g, '<code style="background:#EDE9FE;padding:2px 5px;border-radius:4px;font-family:monospace;color:#6D28D9;">$1</code>');
+        rendered.push(`<p style="margin:0 0 10px 0;font-size:13.5px;line-height:1.6;color:#334155;">${content}</p>`);
+      }
+    }
+    if (inList) rendered.push('</div>');
+    return rendered.join('\n');
+  }
+
   function updatePublishPreview() {
     const title = (document.getElementById('pubBroadcastTitle')?.value || '').trim();
     const body = (document.getElementById('pubBroadcastMessage')?.value || '').trim();
@@ -2944,7 +3171,7 @@
     const vidEl = document.getElementById('previewEmailVideo');
 
     if (previewTitle) previewTitle.textContent = title || 'System Update: Enhanced Transit Engine & Performance Upgrades on Zira Go';
-    if (previewBody) previewBody.textContent = body || 'No summary message provided.';
+    if (previewBody) previewBody.innerHTML = formatMarkdownToPreviewHtml(body);
 
     if (mediaContainer && imgEl && vidEl) {
       if (mediaUrl) {

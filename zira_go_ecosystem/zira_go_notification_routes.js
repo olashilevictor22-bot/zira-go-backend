@@ -92,12 +92,53 @@ function getLogoAttachment() {
   return { src: publicUrl, publicUrl, attachment: null };
 }
 
+function formatMarkdownForEmail(text) {
+  if (!text) return '';
+  const lines = String(text).split('\n');
+  const rendered = [];
+  let inList = false;
+
+  for (let line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      if (inList) { rendered.push('</div>'); inList = false; }
+      rendered.push('<div style="height:12px;"></div>');
+      continue;
+    }
+
+    const bulletMatch = trimmed.match(/^(?:•|\-|\*|\d+\.)\s+(.+)$/);
+    if (bulletMatch) {
+      let content = bulletMatch[1].replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      content = content.replace(/\*\*([^*]+)\*\*/g, '<strong style="color:#0F172A;font-weight:700;">$1</strong>');
+      content = content.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+      content = content.replace(/`([^`]+)`/g, '<code style="background:#EDE9FE;padding:2px 6px;border-radius:4px;font-family:monospace;font-size:90%;color:#6D28D9;">$1</code>');
+
+      if (!inList) { rendered.push('<div style="margin:14px 0 16px 0;">'); inList = true; }
+      rendered.push(`
+        <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;">
+          <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#7C3AED;margin-top:7px;flex-shrink:0;"></span>
+          <div style="font-size:14px;line-height:1.6;color:#334155;flex:1;">${content}</div>
+        </div>
+      `);
+    } else {
+      if (inList) { rendered.push('</div>'); inList = false; }
+      let content = trimmed.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      content = content.replace(/\*\*([^*]+)\*\*/g, '<strong style="color:#0F172A;font-weight:700;">$1</strong>');
+      content = content.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+      content = content.replace(/`([^`]+)`/g, '<code style="background:#EDE9FE;padding:2px 6px;border-radius:4px;font-family:monospace;font-size:90%;color:#6D28D9;">$1</code>');
+      rendered.push(`<p style="margin:0 0 12px 0;font-size:14px;line-height:1.6;color:#334155;">${content}</p>`);
+    }
+  }
+  if (inList) rendered.push('</div>');
+  return rendered.join('\n');
+}
+
 // The actual send, once we already have an address in hand — factored out so
 // notifyRole() below (which already has every recipient's email from its one
 // bulk lookup) doesn't re-run a SELECT per user just to get what it already has.
 function sendNotificationEmailTo(email, { title, body, imageUrl, actionUrl = null, actionText = null }) {
   const safeTitle = String(title || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  const safeBody = String(body || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const formattedBodyHtml = formatMarkdownForEmail(body);
   
   const logoInfo = getLogoAttachment();
   const mediaInfo = resolveMediaAttachment(imageUrl);
@@ -193,8 +234,8 @@ function sendNotificationEmailTo(email, { title, body, imageUrl, actionUrl = nul
                 <td class="body-cell" style="padding:30px 28px 26px 28px;">
                   <h1 class="title-heading" style="margin:0 0 16px 0;font-size:20px;font-weight:800;color:#0F172A;line-height:1.35;letter-spacing:-0.015em;">${safeTitle}</h1>
                   ${mediaBlock}
-                  <div style="font-size:14.5px;line-height:1.65;color:#334155;white-space:pre-line;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-${safeBody}
+                  <div style="font-size:14.5px;line-height:1.65;color:#334155;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+${formattedBodyHtml}
                   </div>
                   ${actionBlock}
                 </td>

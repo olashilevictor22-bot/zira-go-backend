@@ -10,7 +10,7 @@ const { requireAuth, requireRole } = require('./zira_go_auth_routes');
 const { notify, notifyRole } = require('./zira_go_notification_routes');
 const { expireOneApplication } = require('./zira_go_ads_routes');
 const { openStream, addAdminStream, removeAdminStream, emitToAdmins } = require('./zira_go_realtime');
-const { generateReleaseSummary } = require('./zira_go_gemini_service');
+const { generateReleaseSummary, generateFinancialInsights } = require('./zira_go_gemini_service');
 
 async function recordPlatformChange({ key, actor = 'Codex', area = 'Platform', title, details }) {
     const result = await pool.query(
@@ -128,11 +128,15 @@ router.get('/analytics', async (req, res) => {
 
         // 3c. Ads Marketplace Revenue & Pending Renewal count
         const adStatsRes = await pool.query(
-            `SELECT COALESCE(COUNT(*) FILTER (WHERE status = 'active'), 0) AS active_ads_count,
-                    COALESCE(COUNT(*) FILTER (WHERE status IN ('expired', 'expired_pending_renewal')), 0) AS ads_pending_renewal,
-                    COALESCE(SUM(CASE WHEN payment_status = 'paid' THEN 1000 ELSE 0 END), 0) AS total_ad_revenue
+            `SELECT COALESCE(COUNT(*) FILTER (WHERE status = 'live'), 0) AS active_ads_count,
+                    COALESCE(COUNT(*) FILTER (WHERE status = 'expired_pending_renewal'), 0) AS ads_pending_renewal,
+                    COALESCE(COUNT(*) FILTER (WHERE status = 'expired'), 0) AS ads_expired_count,
+                    COALESCE(SUM(CASE WHEN renewed_at IS NOT NULL OR is_free_ad = false THEN renewal_amount ELSE 0 END), 0) AS total_ad_revenue
              FROM ad_applications`
-        ).catch(() => ({ rows: [{ active_ads_count: 0, ads_pending_renewal: 0, total_ad_revenue: 0 }] }));
+        ).catch((err) => {
+            console.warn('[Ad Stats Query Warning]', err.message);
+            return { rows: [{ active_ads_count: 0, ads_pending_renewal: 0, ads_expired_count: 0, total_ad_revenue: 0 }] };
+        });
 
         // 4. Student & Driver Balances and counts
         const studentStats = await pool.query(
@@ -1111,6 +1115,56 @@ router.post('/ad-applications/:id/deactivate', async (req, res) => {
     } finally { client.release(); }
 });
 
+router.post('/ad-applications/:id/renew', async (req, res) => {
+    const client = await pool.connect();
+    try {
+        const id = Number(req.params.id);
+        await client.query('BEGIN');
+        const appRes = await client.query('SELECT * FROM ad_applications WHERE id = $1 FOR UPDATE', [id]);
+        if (!appRes.rows.length) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'not_found' }); }
+        const application = appRes.rows[0];
+
+        const newExpiry = new Date(Date.now() + (application.plan_days || 7) * 24 * 60 * 60 * 1000);
+        const updated = await client.query(
+            `UPDATE ad_applications
+             SET status = 'live', renewed_at = now(), expires_at = $1, expiry_notice_sent_at = NULL, updated_at = now()
+             WHERE id = $2 RETURNING *`,
+            [newExpiry, id]
+        );
+
+        if (application.content_card_id) {
+            await client.query('UPDATE content_cards SET active = true, updated_at = now() WHERE id = $1', [application.content_card_id]);
+        }
+
+        const receipt = `ZG-ADR-ADM-${Date.now()}-${String(id).padStart(4, '0')}`;
+        await client.query(
+            `INSERT INTO wallet_transactions
+                (student_id, type, amount, fee_amount, status, receipt_number, gateway, description, metadata)
+             VALUES ($1, 'ad_renewal', $2, $2, 'success', $3, 'Admin Console', $4, $5)`,
+            [
+                application.student_id,
+                AD_RENEWAL_AMOUNT,
+                receipt,
+                `Admin Advert Renewal: ${application.business_name} (${application.title})`,
+                JSON.stringify({ adId: id, renewedByAdmin: req.auth.id, days: application.plan_days })
+            ]
+        );
+
+        await client.query('COMMIT');
+        await logAdminAction(req, {
+            action: 'ad_application_renew',
+            targetType: 'ad_application',
+            targetId: id,
+            details: { businessName: application.business_name, title: application.title, newExpiry }
+        });
+        res.json({ success: true, application: updated.rows[0], receipt });
+    } catch (err) {
+        await client.query('ROLLBACK').catch(() => {});
+        console.error('[Admin Ad Renew Error]', err);
+        res.status(500).json({ error: 'internal_error' });
+    } finally { client.release(); }
+});
+
 // GET /admin/audit-log?admin=email-or-id&action=driver_flag&targetType=driver&targetId=42
 // Internal record of admin actions (who did what, to what, and when) —
 // distinct from /change-log, which is the public-facing release timeline.
@@ -1226,6 +1280,61 @@ router.post('/summarize-release', async (req, res) => {
     } catch (e) {
         console.error('[Summarize Release Error]', e);
         res.status(500).json({ error: 'summarization_failed', message: e.message });
+    }
+});
+
+// POST /admin/financial-insights — Zibo AI Financial Intelligence & Treasury Analysis
+router.post('/financial-insights', async (req, res) => {
+    try {
+        const { apiKey } = req.body || {};
+
+        const feeRes = await pool.query(`SELECT COALESCE(SUM(platform_fee), 0) AS total_platform_fees FROM trip_charges WHERE status = 'success'`);
+        const fundingFeeRes = await pool.query(`SELECT COALESCE(SUM(fee_amount), 0) AS total_funding_fees FROM wallet_transactions WHERE type = 'funding' AND status = 'success'`);
+        const fundRes = await pool.query(`SELECT COALESCE(SUM(amount), 0) AS total_funded, COUNT(*) AS total_fund_count FROM wallet_transactions WHERE type = 'funding' AND status = 'success'`);
+        const wthRes = await pool.query(`SELECT COALESCE(SUM(amount) FILTER (WHERE status = 'completed'), 0) AS total_withdrawn, COUNT(*) FILTER (WHERE status = 'completed') AS total_withdrawals_count, COALESCE(SUM(amount) FILTER (WHERE status IN ('pending', 'processing')), 0) AS pending_payout_amount, COUNT(*) FILTER (WHERE status IN ('pending', 'processing')) AS pending_payout_count FROM driver_withdrawals`);
+        const failedTxRes = await pool.query(`SELECT COALESCE(SUM(amount), 0) AS failed_amount, COUNT(*) AS failed_count FROM wallet_transactions WHERE status IN ('failed', 'cancelled')`).catch(() => ({ rows: [{ failed_amount: 0, failed_count: 0 }] }));
+        const adStatsRes = await pool.query(`SELECT COALESCE(COUNT(*) FILTER (WHERE status = 'live'), 0) AS active_ads_count, COALESCE(COUNT(*) FILTER (WHERE status = 'expired_pending_renewal'), 0) AS ads_pending_renewal, COALESCE(SUM(CASE WHEN renewed_at IS NOT NULL OR is_free_ad = false THEN renewal_amount ELSE 0 END), 0) AS total_ad_revenue FROM ad_applications`).catch(() => ({ rows: [{ active_ads_count: 0, ads_pending_renewal: 0, total_ad_revenue: 0 }] }));
+        const studentStats = await pool.query(`SELECT COUNT(*) AS student_count, COALESCE(SUM(wallet_balance), 0) AS student_liabilities FROM students`);
+        const driverStats = await pool.query(`SELECT COUNT(*) AS driver_count, COALESCE(SUM(wallet_balance), 0) AS driver_balances FROM drivers`);
+        const tripsRes = await pool.query(`SELECT COUNT(*) AS total_trips, COALESCE(SUM(total_collected), 0) AS total_trip_revenue FROM trip_sessions`);
+
+        const totalPlatformFees = Number(feeRes.rows[0].total_platform_fees) + Number(fundingFeeRes.rows[0].total_funding_fees);
+        const totalAdRevenue = Number(adStatsRes.rows[0].total_ad_revenue) || 0;
+        const totalFunded = Number(fundRes.rows[0].total_funded);
+        const totalWithdrawn = Number(wthRes.rows[0].total_withdrawn);
+        const totalTripRevenue = Number(tripsRes.rows[0].total_trip_revenue);
+        const totalGMV = totalFunded + totalTripRevenue + totalAdRevenue;
+
+        const kpi = {
+            platformRevenue: totalPlatformFees + totalAdRevenue,
+            tripFeeRevenue: Number(feeRes.rows[0].total_platform_fees),
+            fundingFeeRevenue: Number(fundingFeeRes.rows[0].total_funding_fees),
+            adRevenue: totalAdRevenue,
+            activeAdsCount: Number(adStatsRes.rows[0].active_ads_count),
+            adsPendingRenewal: Number(adStatsRes.rows[0].ads_pending_renewal),
+            totalFunded,
+            fundingTransactions: Number(fundRes.rows[0].total_fund_count),
+            totalWithdrawn,
+            withdrawalCount: Number(wthRes.rows[0].total_withdrawals_count),
+            pendingPayoutAmount: Number(wthRes.rows[0].pending_payout_amount) || 0,
+            pendingPayoutCount: Number(wthRes.rows[0].pending_payout_count) || 0,
+            failedTxAmount: Number(failedTxRes.rows[0].failed_amount) || 0,
+            failedTxCount: Number(failedTxRes.rows[0].failed_count) || 0,
+            totalGMV,
+            studentCount: Number(studentStats.rows[0].student_count),
+            studentLiabilities: Number(studentStats.rows[0].student_liabilities),
+            driverCount: Number(driverStats.rows[0].driver_count),
+            driverBalances: Number(driverStats.rows[0].driver_balances),
+            totalFloat: Number(studentStats.rows[0].student_liabilities) + Number(driverStats.rows[0].driver_balances),
+            totalTrips: Number(tripsRes.rows[0].total_trips),
+            totalTripRevenue
+        };
+
+        const insights = await generateFinancialInsights({ kpi, apiKey });
+        res.json({ success: true, insights, kpi });
+    } catch (e) {
+        console.error('[Financial Insights Error]', e);
+        res.status(500).json({ error: 'insights_generation_failed', message: e.message });
     }
 });
 
