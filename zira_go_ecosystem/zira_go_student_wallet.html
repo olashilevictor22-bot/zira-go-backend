@@ -411,22 +411,30 @@
   }
 
   /* =========================================================================
-     HOME PAGE BOTTOM COLOR GRADIENT AURA & END-OF-FEED BADGE
+     HOME PAGE BOTTOM COLOR GRADIENT AURA & END-OF-FEED BADGE (OVERSCROLL REVEAL)
      ========================================================================= */
   .page-end-glow-wrap {
+    position: absolute;
+    top: 100%;
+    left: 16px;
+    right: 16px;
+    max-width: 980px;
+    margin: 8px auto 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     text-align: center;
-    padding: 26px 16px 18px;
-    position: relative;
-    margin-top: 6px;
+    padding: 18px 16px 20px;
     overflow: hidden;
     border-radius: 20px;
-    background: linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--accent) 7%, transparent) 55%, color-mix(in srgb, var(--accent) 18%, transparent) 100%);
-    border-bottom: 2px solid color-mix(in srgb, var(--accent) 35%, transparent);
-    box-shadow: 0 10px 30px -10px color-mix(in srgb, var(--accent) 25%, transparent);
+    background: linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--accent) 9%, transparent) 50%, color-mix(in srgb, var(--accent) 22%, transparent) 100%);
+    border-bottom: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
+    box-shadow: 0 10px 30px -10px color-mix(in srgb, var(--accent) 35%, transparent);
+    opacity: 0;
+    transform: translateY(-10px) scale(0.92);
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
   }
   .page-end-gradient-glow {
     position: absolute;
@@ -684,6 +692,7 @@
      MAIN DASHBOARD CONTENT
      ========================================================================= */
   main {
+    position: relative;
     padding: 20px 24px 28px;
     max-width: 980px;
     width: 100%;
@@ -2543,32 +2552,32 @@
 
     <!-- Group 4: Support & Desk -->
     <div class="profile-menu-group">
-      <div class="profile-group-label">Helpdesk & Policies</div>
-      <a href="https://wa.me/2348000000000?text=Hi%20ZiraPay,%20I%20need%20student%20support%20for%20Landmark%20campus%20transit." target="_blank" class="profile-menu-item">
+      <div class="profile-group-label">Helpdesk & Support</div>
+      <a href="https://wa.me/2348062021448?text=Hi%20ZiraPay,%20I%20need%20student%20support%20for%20Landmark%20campus%20transit." target="_blank" class="profile-menu-item">
         <div class="pmi-left">
           <div class="pmi-icon-box" style="background:rgba(37,211,102,0.12);color:#25D366">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
           </div>
           <div>
-            <div class="pmi-title">Transport Desk on WhatsApp</div>
-            <div class="pmi-desc">Live official support & lost item inquiries</div>
+            <div class="pmi-title">WhatsApp Live Desk</div>
+            <div class="pmi-desc">Chat +234 806 202 1448 • Fast student help</div>
           </div>
         </div>
         <span class="pmi-arrow">↗</span>
       </a>
 
-      <div class="profile-menu-item" onclick="closeModal('modalProfileInfo'); openTelegramModal();">
+      <a href="https://t.me/+2348062021448" target="_blank" class="profile-menu-item" style="text-decoration:none">
         <div class="pmi-left">
           <div class="pmi-icon-box" style="background:rgba(109,40,217,0.1);color:var(--accent)">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
           </div>
           <div>
-            <div class="pmi-title">Telegram Bot (@Zirago_bot)</div>
-            <div class="pmi-desc">Generate codes & check ledger via bot</div>
+            <div class="pmi-title">Telegram Support Desk</div>
+            <div class="pmi-desc">Chat +234 806 202 1448 on Telegram</div>
           </div>
         </div>
-        <span class="pmi-arrow">›</span>
-      </div>
+        <span class="pmi-arrow">↗</span>
+      </a>
     </div>
 
     <!-- Sign out -->
@@ -2602,14 +2611,27 @@
     </div>
 
     <div class="profile-menu-group" style="margin-top:4px">
-      <a href="https://wa.me/2348000000000?text=Hi%20ZiraPay,%20I%20need%20student%20support%20for%20Landmark%20campus%20transit." target="_blank" class="profile-menu-item" style="text-decoration:none">
+      <a href="https://wa.me/2348062021448?text=Hi%20ZiraPay,%20I%20need%20student%20support%20for%20Landmark%20campus%20transit." target="_blank" class="profile-menu-item" style="text-decoration:none">
         <div class="pmi-left">
           <div class="pmi-icon-box" style="background:rgba(37,211,102,0.12);color:#25D366">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
           </div>
           <div>
             <div class="pmi-title">WhatsApp Live Desk</div>
-            <div class="pmi-desc">Fast official help, fare issues & lost items</div>
+            <div class="pmi-desc">+234 806 202 1448 • Fast official help & queries</div>
+          </div>
+        </div>
+        <span class="pmi-arrow">↗</span>
+      </a>
+
+      <a href="https://t.me/+2348062021448" target="_blank" class="profile-menu-item" style="text-decoration:none">
+        <div class="pmi-left">
+          <div class="pmi-icon-box" style="background:rgba(109,40,217,0.1);color:var(--accent)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </div>
+          <div>
+            <div class="pmi-title">Telegram Support Desk</div>
+            <div class="pmi-desc">+234 806 202 1448 • Chat directly on Telegram</div>
           </div>
         </div>
         <span class="pmi-arrow">↗</span>
@@ -2617,12 +2639,12 @@
 
       <div class="profile-menu-item" onclick="closeModal('modalContactSupport'); openTelegramModal();">
         <div class="pmi-left">
-          <div class="pmi-icon-box" style="background:rgba(109,40,217,0.1);color:var(--accent)">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          <div class="pmi-icon-box" style="background:rgba(109,40,217,0.06);color:var(--accent)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 0 1 10 10c0 5.523-4.477 10-10 10a10 10 0 0 1-10-10A10 10 0 0 1 12 2z"/><path d="m9 12 2 2 4-4"/></svg>
           </div>
           <div>
             <div class="pmi-title">Telegram Bot (@Zirago_bot)</div>
-            <div class="pmi-desc">Instant ride pass codes & wallet checks</div>
+            <div class="pmi-desc">Instant ride pass codes & balance check</div>
           </div>
         </div>
         <span class="pmi-arrow">›</span>
@@ -4954,10 +4976,18 @@ window.addEventListener('load', () => {
       } else {
         target.style.transform = `translateY(${px}px)`;
       }
-      if (isMain && pageGlow && px < 0) {
-        const glowIntensity = Math.min(1.4, 0.6 + Math.abs(px) / 35);
-        pageGlow.style.filter = `drop-shadow(0 0 ${Math.abs(px) * 0.8}px var(--accent))`;
-        pageGlow.style.transform = `scale(${1 + Math.abs(px) * 0.0015})`;
+      if (isMain && pageGlow) {
+        if (px < 0) {
+          const absPx = Math.abs(px);
+          const pullProgress = Math.min(1, absPx / 25);
+          pageGlow.style.transition = 'none';
+          pageGlow.style.opacity = String(pullProgress);
+          pageGlow.style.transform = `translateY(0px) scale(${0.92 + pullProgress * 0.08})`;
+          pageGlow.style.filter = `drop-shadow(0 0 ${absPx * 0.8}px var(--accent))`;
+        } else {
+          pageGlow.style.opacity = '0';
+          pageGlow.style.transform = 'translateY(-10px) scale(0.92)';
+        }
       }
     }
 
@@ -4966,9 +4996,10 @@ window.addEventListener('load', () => {
       target.style.transition = 'transform 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
       target.style.transform = 'translate(0px, 0px)';
       if (isMain && pageGlow) {
-        pageGlow.style.transition = 'filter 0.4s ease, transform 0.4s ease';
+        pageGlow.style.transition = 'opacity 0.35s ease, transform 0.35s ease, filter 0.35s ease';
+        pageGlow.style.opacity = '0';
+        pageGlow.style.transform = 'translateY(-10px) scale(0.92)';
         pageGlow.style.filter = '';
-        pageGlow.style.transform = '';
       }
     }
 
@@ -5021,7 +5052,7 @@ window.addEventListener('load', () => {
   const mainScroller = document.getElementById('main-content');
   if (mainScroller) {
     const mainEl = mainScroller.querySelector(':scope > main');
-    attachRubberBand(mainScroller, { target: mainEl, maxStretch: 65, resistance: 0.42, isMain: true });
+    attachRubberBand(mainScroller, { target: mainEl, maxStretch: 75, resistance: 0.42, isMain: true });
   }
 
   // Universal binder for modals, lists, and horizontal carousels
