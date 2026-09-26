@@ -138,10 +138,42 @@
   .consent-item + .consent-item { margin-top:10px; }
   .consent-item input { width:17px; height:17px; min-width:17px; margin:0; accent-color:var(--accent); }
   .inline-link { color:var(--accent); font-weight:700; text-decoration:none; }
+  .forgot-pw-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    border: none; background: color-mix(in srgb, var(--accent) 10%, transparent);
+    color: var(--accent); font: 700 12.5px 'Inter', sans-serif;
+    padding: 7px 12px; border-radius: 999px; cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .forgot-pw-btn:hover { background: color-mix(in srgb, var(--accent) 18%, transparent); }
   .terms-modal { position:fixed; inset:0; z-index:50; display:none; align-items:center; justify-content:center; padding:18px; background:rgba(15,23,42,.55); backdrop-filter:blur(4px); }
   .terms-modal.active { display:flex; }
   .terms-card { width:min(100%,440px); max-height:80vh; overflow:auto; padding:22px; border-radius:20px; color:var(--text); background:var(--panel); box-shadow:var(--card-shadow); }
   .terms-card h2 { margin:0 0 10px; font-size:18px; } .terms-card p { font-size:12.5px; line-height:1.55; color:var(--text-dim); }
+
+  /* Forgot-password modal */
+  .fp-card { width:min(100%,440px); max-height:88vh; overflow:auto; border-radius:22px; color:var(--text); background:var(--panel); box-shadow:var(--card-shadow); padding:0; }
+  .fp-head { display:flex; align-items:center; gap:12px; padding:22px 22px 16px; border-bottom:1px solid var(--line); background:linear-gradient(135deg, color-mix(in srgb, var(--accent) 12%, transparent), transparent); }
+  .fp-icon { width:40px; height:40px; border-radius:13px; background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#fff; display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 6px 16px rgba(124,58,237,.3); }
+  .fp-head h2 { margin:0; font-size:17px; flex:1; }
+  .fp-close { width:30px; height:30px; border-radius:50%; border:1px solid var(--line); background:var(--panel-alt); color:var(--text-dim); cursor:pointer; flex-shrink:0; font-size:13px; display:flex; align-items:center; justify-content:center; transition:all 0.15s; }
+  .fp-close:hover { border-color:var(--danger); color:var(--danger); }
+  .fp-body { padding:20px 22px 24px; }
+  .fp-body p.form-subheading { font-size:13px; }
+  .fp-body label { display:block; font-size:12px; font-weight:700; color:var(--text-dim); margin:14px 0 7px; }
+  .fp-body label:first-of-type { margin-top:0; }
+  .fp-role-toggle { display:flex; gap:4px; padding:4px; border:1px solid var(--line); border-radius:12px; background:var(--panel-alt); margin-bottom:4px; }
+  .fp-role-pill { position:relative; flex:1; text-align:center; padding:9px 8px; border-radius:9px; font-size:13px; font-weight:700; color:var(--text-dim); cursor:pointer; transition:all .15s; }
+  .fp-role-pill input { position:absolute; opacity:0; pointer-events:none; }
+  .fp-role-pill:has(input:checked) { background:linear-gradient(100deg,var(--accent),var(--accent-2)); color:#fff; box-shadow:0 3px 10px rgba(124,58,237,.25); }
+  .fp-actions { display:flex; gap:10px; margin-top:18px; }
+  .fp-actions .primary { margin-top:0; flex:1.4; }
+  .fp-btn-cancel { flex:1; padding:13px; border-radius:14px; border:1.5px solid var(--line); background:var(--panel-alt); color:var(--text); font-weight:700; font-size:14px; cursor:pointer; transition:all .15s; }
+  .fp-btn-cancel:hover { border-color:var(--text-dim); }
+  .fp-success-icon { width:56px; height:56px; border-radius:50%; background:rgba(5,150,105,0.12); color:var(--success); display:flex; align-items:center; justify-content:center; margin:0 auto 16px; border:1.5px solid rgba(5,150,105,0.3); }
+  @media (max-width: 430px) {
+    .fp-head { padding:18px 18px 14px; } .fp-body { padding:16px 18px 20px; }
+  }
   /* Tablet Safari otherwise renders the phone-sized form in the middle of a
      large canvas. Give iPad users a comfortable, touch-friendly layout. */
   @media (min-width: 600px) and (max-width: 1024px) {
@@ -239,7 +271,12 @@
       <label>Password</label>
           <input type="password" id="password" required autocomplete="current-password" minlength="8" placeholder="Create a password">
       <div class="hint" id="pwHint" style="display:none">At least 8 characters.</div>
-      <div id="forgotLink" style="text-align:right;margin:-6px 0 10px"><a href="#" class="inline-link" onclick="openForgotPassword(event)">Forgot password?</a></div>
+      <div id="forgotLink" style="text-align:right;margin:-4px 0 12px">
+        <button type="button" class="forgot-pw-btn" onclick="openForgotPassword(event)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          Forgot password?
+        </button>
+      </div>
 
       <div id="fieldPinOnly" style="display:none">
         <label>4-digit transaction PIN</label>
@@ -269,27 +306,36 @@
 </div>
 <div class="terms-modal" id="termsModal" role="dialog" aria-modal="true" aria-labelledby="termsTitle"><div class="terms-card"><h2 id="termsTitle">Zira Go Terms &amp; Conditions</h2><p>Zira Go is for verified Landmark University campus users. Keep your login, transaction PIN and ride codes private. Payments, ride charges and payout requests may be reviewed for safety and fraud prevention.</p><p>Only submit identity documents that belong to you. Misuse of another person’s account, ride code or wallet can lead to account restriction and referral to university authorities.</p><p>By continuing, you consent to the processing of necessary account, payment and support information to provide campus transport services.</p><button type="button" class="primary" onclick="closeTerms()">I understand</button></div></div>
 <div class="terms-modal" id="forgotPasswordModal" role="dialog" aria-modal="true" aria-labelledby="forgotTitle">
-  <div class="terms-card">
-    <h2 id="forgotTitle">Reset your password</h2>
-    <div id="forgotStep1">
-      <p>Tell us which account this is and where to send the reset link.</p>
-      <label style="margin-top:10px">I'm a</label>
-      <div style="display:flex;gap:14px;margin-bottom:6px;font-size:13px">
-        <label class="consent-item" style="align-items:center"><input type="radio" name="forgotRole" value="student" checked style="width:auto"> Student</label>
-        <label class="consent-item" style="align-items:center"><input type="radio" name="forgotRole" value="driver" style="width:auto"> Driver</label>
+  <div class="fp-card">
+    <div class="fp-head">
+      <div class="fp-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
       </div>
-      <label>Email address</label>
-      <input type="email" id="forgotEmail" placeholder="you@example.com">
-      <div class="error-box" id="forgotError" style="margin-top:8px"></div>
-      <div style="display:flex;gap:10px;margin-top:16px">
-        <button type="button" onclick="closeForgotPassword()" style="flex:1;padding:13px;border-radius:12px;border:1.5px solid var(--line);background:var(--panel-alt);color:var(--text);font-weight:700;cursor:pointer">Cancel</button>
-        <button type="button" class="primary" id="btnForgotSubmit" onclick="submitForgotPassword()" style="flex:1;margin-top:0">Send reset link</button>
-      </div>
+      <h2 id="forgotTitle">Reset your password</h2>
+      <button type="button" class="fp-close" onclick="closeForgotPassword()" aria-label="Close">✕</button>
     </div>
-    <div id="forgotStep2" style="display:none">
-      <p>If that email has a Zira Go account, a password reset link is on its way — it works once and expires in 30 minutes.</p>
-      <div id="forgotDevLink" style="display:none;font-size:12.5px;color:var(--text-dim);margin-bottom:12px"></div>
-      <button type="button" class="primary" onclick="closeForgotPassword()" style="margin-top:0">Done</button>
+    <div class="fp-body">
+      <div id="forgotStep1">
+        <p class="form-subheading" style="margin:0 0 16px">Tell us which account this is and where to send the reset link.</p>
+        <label>I'm a</label>
+        <div class="fp-role-toggle">
+          <label class="fp-role-pill"><input type="radio" name="forgotRole" value="student" checked>Student</label>
+          <label class="fp-role-pill"><input type="radio" name="forgotRole" value="driver">Driver</label>
+        </div>
+        <label>Email address</label>
+        <input type="email" id="forgotEmail" placeholder="you@example.com">
+        <div class="error-box" id="forgotError" style="margin-top:10px"></div>
+        <div class="fp-actions">
+          <button type="button" class="fp-btn-cancel" onclick="closeForgotPassword()">Cancel</button>
+          <button type="button" class="primary" id="btnForgotSubmit" onclick="submitForgotPassword()">Send reset link</button>
+        </div>
+      </div>
+      <div id="forgotStep2" style="display:none">
+        <div class="fp-success-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+        <p style="text-align:center;margin:0 0 4px">If that email has a Zira Go account, a password reset link is on its way — it works once and expires in 30 minutes.</p>
+        <div id="forgotDevLink" style="display:none;font-size:12.5px;color:var(--text-dim);margin:12px 0;text-align:center"></div>
+        <button type="button" class="primary" onclick="closeForgotPassword()" style="margin-top:14px">Done</button>
+      </div>
     </div>
   </div>
 </div>

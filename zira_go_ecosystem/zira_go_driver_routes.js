@@ -6,6 +6,7 @@ const router = express.Router();
 const crypto = require('crypto');
 const { verifyNameMatch, initiateDriverPayout, verifyFlutterwaveFunding } = require('./zira_go_payment_service');
 const { requireAuth, requireRole } = require('./zira_go_auth_routes');
+const { notify } = require('./zira_go_notification_routes');
 
 function generateReceiptNumber() {
     const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
@@ -333,6 +334,20 @@ router.post('/webhooks/flutterwave', async (req, res) => {
                 await client.query("UPDATE wallet_transactions SET status = 'failed', description = description || ' (payout refunded)' WHERE gateway_reference = $1", [reference]);
             }
             await client.query('COMMIT');
+
+            // The driver isn't waiting on this request (it's a background
+            // gateway callback) — push it live so their balance/ledger
+            // update without needing a manual refresh.
+            notify({
+                userId: withdrawal.driver_id,
+                role: 'driver',
+                title: succeeded ? 'Withdrawal completed' : 'Withdrawal refunded',
+                body: succeeded
+                    ? `Your ₦${Number(withdrawal.amount).toLocaleString()} withdrawal has been paid out.`
+                    : `Your ₦${Number(withdrawal.amount).toLocaleString()} withdrawal could not be completed and has been refunded to your wallet.`,
+                type: 'wallet'
+            }).catch(err => console.warn('[Withdraw Webhook Notify]', err.message));
+
             return res.status(200).json({ received: true });
         }
 

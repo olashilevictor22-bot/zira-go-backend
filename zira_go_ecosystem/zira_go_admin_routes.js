@@ -391,6 +391,18 @@ router.post('/drivers/:id/toggle-flag', async (req, res) => {
             targetId: driverId
         });
 
+        // Push this live so the driver's own panel updates immediately
+        // (blocks/unblocks charging) instead of waiting on a manual refresh.
+        notify({
+            userId: driverId,
+            role: 'driver',
+            title: nextState ? 'Account paused for review' : 'Account restored',
+            body: nextState
+                ? 'We noticed unusual one-time code attempts on this account. Charging is switched off until our team looks into it with you.'
+                : 'Your account has been reviewed and restored — you can resume taking trips.',
+            type: 'system'
+        }).catch(err => console.warn('[Toggle Flag Notify]', err.message));
+
         res.json({ success: true, isFlagged: nextState });
     } catch (err) {
         console.error('[Toggle Flag Error]', err);
