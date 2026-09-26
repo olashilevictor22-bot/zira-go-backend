@@ -572,4 +572,4 @@ router.post('/reset-password', async (req, res) => {
     }
 });
 
-module.exports = { router, requireAuth, requireRole, normalizeLmuRegistrationNumber };
+module.exports = { router, requireAuth, requireRole, normalizeLmuRegistrationNumber, signToken, JWT_SECRET };

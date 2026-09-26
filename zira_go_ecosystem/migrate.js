@@ -98,6 +98,18 @@ async function runDriverApprovalAndPasswordReset() {
     }
 }
 
+async function runWebauthnUpgrade() {
+    const client = await pool.connect();
+    try {
+        const sql = fs.readFileSync(path.join(__dirname, '07_webauthn_credentials.sql'), 'utf8');
+        await client.query(sql);
+        console.log('✅ WebAuthn (Face ID / fingerprint) credentials table created.');
+    } finally {
+        client.release();
+        await pool.end();
+    }
+}
+
 async function runMigrations() {
     const client = await pool.connect();
     console.log('🔗 Connected to database.');
@@ -132,4 +144,5 @@ else if (process.argv.includes('--pin-lockout-upgrade')) runPinLockoutUpgrade();
 else if (process.argv.includes('--charter-fare-guard')) runCharterFareGuard();
 else if (process.argv.includes('--admin-audit-log')) runAdminAuditLog();
 else if (process.argv.includes('--driver-approval-upgrade')) runDriverApprovalAndPasswordReset();
+else if (process.argv.includes('--webauthn-upgrade')) runWebauthnUpgrade();
 else runMigrations();

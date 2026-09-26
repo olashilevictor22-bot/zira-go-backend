@@ -126,6 +126,11 @@
     box-shadow: 0 8px 24px rgba(124, 58, 237, 0.35);
   }
   button.primary:disabled { opacity: 0.6; cursor: default; }
+  button.secondary {
+    width: 100%; padding: 13px; border: 1px solid var(--line); border-radius: 14px;
+    background: var(--panel-alt); color: var(--text); font-weight: 700; font-size: 14px; cursor: pointer;
+  }
+  button.secondary:disabled { opacity: 0.6; cursor: default; }
 
   .error-box { background: rgba(239, 68, 68, 0.12); border: 1px solid var(--danger); color: var(--danger);
     border-radius: 12px; padding: 12px 14px; font-size: 13.5px; margin-top: 16px; display: none; }
@@ -298,6 +303,7 @@
       <div class="error-box" id="errorBox"></div>
       <button class="primary" id="submitBtn" type="submit">Sign in</button>
     </form>
+    <button type="button" class="secondary" id="btnFaceIdLogin" style="display:none;width:100%;margin-top:10px" onclick="loginWithFaceId()">Sign in with Face ID / Fingerprint</button>
   </div>
 
   <div class="foot-note">
@@ -340,6 +346,7 @@
   </div>
 </div>
 
+<script src="https://unpkg.com/@simplewebauthn/browser@14.0.0/dist/bundle/index.umd.min.js"></script>
 <script>
   // ------------------------------------------------------------------
   // Zira Sound — tiny synthesized UI sound effects (Web Audio API, no audio
@@ -439,6 +446,8 @@
     document.getElementById('boxOtpVerify').style.display = isRegister ? 'block' : 'none';
     document.getElementById('consentBox').style.display = isRegister ? 'block' : 'none';
     document.getElementById('formHeading').textContent = isRegister ? `Create your ${role === 'driver' ? 'driver' : 'student'} account` : `Welcome back${role === 'driver' ? ', driver' : ''}`;
+    const faceIdBtn = document.getElementById('btnFaceIdLogin');
+    if (faceIdBtn) faceIdBtn.style.display = (!isRegister && role === 'student' && window.SimpleWebAuthnBrowser) ? 'block' : 'none';
   }
 
   async function sendEmailOtp() {
@@ -594,30 +603,82 @@
       }
 
       ziraSound.success();
-      localStorage.setItem('zira_token', data.token);
-      localStorage.setItem('zira_role', data.role);
-      localStorage.setItem('zira_id', String(data.id));
-      if (data.fullName) localStorage.setItem('zira_name', data.fullName);
-      if (data.regNo) localStorage.setItem('zira_reg_no', data.regNo);
-
-      let dest;
-      if (data.role === 'student') {
-        dest = 'zira_go_student_wallet.html';
-      } else if (data.role === 'driver') {
-        dest = 'zira_go_driver_panel.html';
-      } else {
-        dest = 'zira_go_admin.html';
-      }
-
-      if (data.flagged) {
-        window.location.href = `${dest}?flagged=1`;
-      } else if (data.pendingApproval) {
-        window.location.href = `${dest}?pending=1`;
-      } else {
-        window.location.href = dest;
-      }
+      completeLogin(data);
     } catch (err) {
       showError("Couldn't reach the server. Check your connection and try again.");
+      btn.disabled = false;
+    }
+  }
+
+  function completeLogin(data) {
+    localStorage.setItem('zira_token', data.token);
+    localStorage.setItem('zira_role', data.role);
+    localStorage.setItem('zira_id', String(data.id));
+    if (data.fullName) localStorage.setItem('zira_name', data.fullName);
+    if (data.regNo) localStorage.setItem('zira_reg_no', data.regNo);
+
+    let dest;
+    if (data.role === 'student') {
+      dest = 'zira_go_student_wallet.html';
+    } else if (data.role === 'driver') {
+      dest = 'zira_go_driver_panel.html';
+    } else {
+      dest = 'zira_go_admin.html';
+    }
+
+    if (data.flagged) {
+      window.location.href = `${dest}?flagged=1`;
+    } else if (data.pendingApproval) {
+      window.location.href = `${dest}?pending=1`;
+    } else {
+      window.location.href = dest;
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // Sign in with Face ID / fingerprint — a real, server-verified WebAuthn
+  // passkey login. No email/password needed: the browser lets the person
+  // pick from whichever passkey it has stored for this site (the student
+  // must have enabled this once already, from their wallet's profile page).
+  // ------------------------------------------------------------------
+  async function loginWithFaceId() {
+    const btn = document.getElementById('btnFaceIdLogin');
+    hideError();
+    if (!window.SimpleWebAuthnBrowser) {
+      showError('Face ID / fingerprint sign-in is not available in this browser.');
+      return;
+    }
+    let available = false;
+    try { available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable(); } catch (_) {}
+    if (!available) {
+      showError('No Face ID, Touch ID or fingerprint sensor was found on this device.');
+      return;
+    }
+    btn.disabled = true;
+    try {
+      const optRes = await fetch('/api/webauthn/login-options', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+      const optData = await optRes.json();
+      if (!optRes.ok) throw new Error('unavailable');
+
+      const assertion = await window.SimpleWebAuthnBrowser.startAuthentication({ optionsJSON: optData.options });
+
+      const verifyRes = await fetch('/api/webauthn/login-verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestId: optData.requestId, response: assertion })
+      });
+      const data = await verifyRes.json();
+      if (!verifyRes.ok || !data.token) {
+        showError(data.message || 'Face ID / fingerprint sign-in failed. Use your email and password instead.');
+        btn.disabled = false;
+        return;
+      }
+      ziraSound.success();
+      completeLogin(data);
+    } catch (e) {
+      if (e && e.name !== 'NotAllowedError') {
+        showError('Could not complete Face ID / fingerprint sign-in. Use your email and password instead.');
+      }
       btn.disabled = false;
     }
   }

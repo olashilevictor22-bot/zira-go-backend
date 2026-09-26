@@ -10,6 +10,7 @@
      valid admin session is present. -->
 <script src="zira_go_auth_guard.js"></script>
 <script src="zira_go_privacy_shield.js"></script>
+<script src="https://unpkg.com/@simplewebauthn/browser@14.0.0/dist/bundle/index.umd.min.js"></script>
 <script>ZiraGuard.protect('student', { previewParam: 'adminPreview', previewAllow: 'student' });</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
@@ -335,6 +336,73 @@
     opacity: 0;
     transform: scale(1.04);
     pointer-events: none;
+  }
+
+  /* =========================================================================
+     BIOMETRIC / FACE ID QUICK-UNLOCK LOCK SCREEN
+     ========================================================================= */
+  #bio-lock-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    background: radial-gradient(circle at 50% 38%, #F3EEFF 0%, #EDE9FE 45%, #F8F9FD 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.35s ease, transform 0.35s ease;
+  }
+  [data-theme="dark"] #bio-lock-screen {
+    background: radial-gradient(circle at 50% 38%, #2A1359 0%, #170A33 50%, #0D061A 100%);
+  }
+  #bio-lock-screen.hidden {
+    opacity: 0;
+    transform: scale(1.04);
+    pointer-events: none;
+    visibility: hidden;
+  }
+  .bio-lock-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 24px;
+    max-width: 320px;
+  }
+  .bio-lock-icon {
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent);
+    margin-bottom: 18px;
+    box-shadow: 0 8px 24px rgba(109,40,217,0.18);
+  }
+  .bio-lock-title { font: 800 18px 'Sora', sans-serif; color: var(--text); margin-bottom: 4px; }
+  .bio-lock-sub { font-size: 13px; color: var(--text-dim); margin-bottom: 22px; }
+  .bio-lock-status { min-height: 18px; font-size: 12px; color: var(--warning, #D97706); margin-bottom: 10px; }
+  .bio-lock-btn {
+    width: 100%;
+    padding: 13px 18px;
+    border-radius: 14px;
+    border: none;
+    background: var(--accent);
+    color: #fff;
+    font: 700 14px 'Inter', sans-serif;
+    cursor: pointer;
+    margin-bottom: 10px;
+  }
+  .bio-lock-btn:disabled { opacity: 0.6; cursor: default; }
+  .bio-lock-fallback {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 12.5px;
+    text-decoration: underline;
+    cursor: pointer;
   }
   .splash-center {
     display: flex;
@@ -1574,6 +1642,30 @@
   </div>
 </div>
 
+<!-- =======================================================================
+     BIOMETRIC / FACE ID QUICK-UNLOCK LOCK SCREEN
+     ======================================================================= -->
+<div id="bio-lock-screen" class="hidden">
+  <div class="bio-lock-center">
+    <div class="bio-lock-icon">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+        <path d="M12 3a9 9 0 0 0-9 9v3a2 2 0 0 0 2 2h1"></path>
+        <path d="M12 3a9 9 0 0 1 9 9v3a2 2 0 0 1-2 2h-1"></path>
+        <path d="M8 21h8"></path>
+        <path d="M9 9a3 3 0 0 1 6 0v3a3 3 0 0 1-1 2.24"></path>
+        <path d="M9 12v1a3 3 0 0 0 1.5 2.6"></path>
+        <path d="M7 10.5V12a5 5 0 0 0 2.7 4.44"></path>
+        <path d="M17 10.5V12a5 5 0 0 1-1.1 3.13"></path>
+      </svg>
+    </div>
+    <div class="bio-lock-title">Welcome back, <span id="bioLockName">Student</span></div>
+    <div class="bio-lock-sub">Use Face ID / fingerprint to unlock your Zira Go wallet.</div>
+    <div class="bio-lock-status" id="bioLockStatus"></div>
+    <button type="button" class="bio-lock-btn" id="bioUnlockBtn" onclick="unlockWithBiometric()">Unlock with Face ID / Fingerprint</button>
+    <button type="button" class="bio-lock-fallback" onclick="signOutFromLock()">Sign in a different way</button>
+  </div>
+</div>
+
 <div id="app-layout">
 
   <!-- =======================================================================
@@ -2142,10 +2234,10 @@
           </div>
           <div>
             <div class="pmi-title">Biometric / FaceID Quick Unlock</div>
-            <div class="pmi-desc" id="bioStatusLabel">Active on this device</div>
+            <div class="pmi-desc" id="bioStatusLabel">Disabled</div>
           </div>
         </div>
-        <span class="pmi-arrow" style="font-size:12px;font-weight:700;color:var(--success)">ON</span>
+        <span class="pmi-arrow" id="bioStatusArrow" style="font-size:12px;font-weight:700;color:var(--text-dim)">OFF</span>
       </div>
     </div>
 
@@ -3318,12 +3410,122 @@ function submitErrand() {
 // ------------------------------------------------------------------
 // 4B. Profile Security, Advert Placement & Bus Transit Logic
 // ------------------------------------------------------------------
-let biometricsActive = true;
-function toggleBiometrics() {
-  biometricsActive = !biometricsActive;
+// --- Biometric / FaceID quick unlock (real, server-verified WebAuthn passkey) ---
+// Registration/verification is done by the backend (zira_go_webauthn_routes.js);
+// this only stores the resulting credential ID locally so the wallet can show
+// a quick "unlock with Face ID" gate on reopen, and so it knows which
+// credential to revoke server-side if the toggle is turned off.
+const BIO_CRED_KEY = `zira_bio_cred_${STUDENT_REG_NO || 'device'}`;
+const BIO_ENABLED_KEY = `zira_bio_enabled_${STUDENT_REG_NO || 'device'}`;
+let biometricsActive = localStorage.getItem(BIO_ENABLED_KEY) === 'true' && !!localStorage.getItem(BIO_CRED_KEY);
+
+function bioWebauthnSupported() {
+  return !!(window.SimpleWebAuthnBrowser && window.PublicKeyCredential);
+}
+function refreshBioLabel() {
   const lbl = document.getElementById('bioStatusLabel');
+  const arrow = document.getElementById('bioStatusArrow');
   if (lbl) lbl.textContent = biometricsActive ? 'Active on this device' : 'Disabled';
-  showToast(biometricsActive ? 'Biometric / FaceID quick unlock enabled' : 'Biometric unlock disabled');
+  if (arrow) {
+    arrow.textContent = biometricsActive ? 'ON' : 'OFF';
+    arrow.style.color = biometricsActive ? 'var(--success)' : 'var(--text-dim)';
+  }
+}
+async function toggleBiometrics() {
+  if (ADMIN_PREVIEW) return;
+  if (!biometricsActive) {
+    if (!window.isSecureContext || !bioWebauthnSupported()) {
+      showToast('Face ID / fingerprint unlock isn\'t supported in this browser.');
+      return;
+    }
+    let available = false;
+    try { available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable(); } catch (_) {}
+    if (!available) {
+      showToast('No Face ID, Touch ID or fingerprint sensor was found on this device.');
+      return;
+    }
+    try {
+      const optRes = await fetch('/api/webauthn/register-options', { method: 'POST', headers: studentHeaders });
+      const optData = await optRes.json();
+      if (!optRes.ok) throw new Error(optData.message || 'setup_failed');
+
+      const attResp = await window.SimpleWebAuthnBrowser.startRegistration({ optionsJSON: optData.options });
+
+      const verifyRes = await fetch('/api/webauthn/register-verify', {
+        method: 'POST',
+        headers: { ...studentHeaders, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ response: attResp, nickname: navigator.platform || 'This device' })
+      });
+      const verifyData = await verifyRes.json();
+      if (!verifyRes.ok || !verifyData.success) throw new Error(verifyData.message || 'setup_failed');
+
+      localStorage.setItem(BIO_CRED_KEY, verifyData.credentialId);
+      localStorage.setItem(BIO_ENABLED_KEY, 'true');
+      biometricsActive = true;
+      showToast('Biometric / FaceID quick unlock enabled');
+    } catch (e) {
+      biometricsActive = false;
+      showToast(e && e.name === 'NotAllowedError' ? 'Setup was cancelled.' : 'Could not set up Face ID / fingerprint on this device.');
+    }
+  } else {
+    const credId = localStorage.getItem(BIO_CRED_KEY);
+    try {
+      if (credId) await fetch(`/api/webauthn/credentials/${encodeURIComponent(credId)}`, { method: 'DELETE', headers: studentHeaders });
+    } catch (_) { /* best-effort revoke; local disable still proceeds */ }
+    localStorage.removeItem(BIO_CRED_KEY);
+    localStorage.setItem(BIO_ENABLED_KEY, 'false');
+    biometricsActive = false;
+    showToast('Biometric unlock disabled');
+  }
+  refreshBioLabel();
+}
+async function unlockWithBiometric() {
+  const btn = document.getElementById('bioUnlockBtn');
+  const statusEl = document.getElementById('bioLockStatus');
+  if (btn) btn.disabled = true;
+  if (statusEl) statusEl.textContent = '';
+  try {
+    const optRes = await fetch('/api/webauthn/login-options', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+    const optData = await optRes.json();
+    if (!optRes.ok) throw new Error('unavailable');
+
+    const assertion = await window.SimpleWebAuthnBrowser.startAuthentication({ optionsJSON: optData.options });
+
+    const verifyRes = await fetch('/api/webauthn/login-verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requestId: optData.requestId, response: assertion })
+    });
+    const verifyData = await verifyRes.json();
+    if (!verifyRes.ok || !verifyData.token) throw new Error('failed');
+
+    // Refresh the session token too, since this was a real server-verified
+    // sign-in, not just a local gate.
+    localStorage.setItem('zira_token', verifyData.token);
+    hideBioLock();
+  } catch (e) {
+    if (statusEl) statusEl.textContent = 'Face ID / fingerprint not recognized — try again.';
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+function hideBioLock() {
+  const el = document.getElementById('bio-lock-screen');
+  if (el) el.classList.add('hidden');
+}
+function signOutFromLock() {
+  localStorage.removeItem('zira_token');
+  window.location.href = 'zira_go_login.html?role=student';
+}
+function initBioLock() {
+  refreshBioLabel();
+  if (ADMIN_PREVIEW) return;
+  if (!biometricsActive || !localStorage.getItem(BIO_CRED_KEY) || !bioWebauthnSupported()) return;
+  const el = document.getElementById('bio-lock-screen');
+  if (!el) return;
+  const nameEl = document.getElementById('bioLockName');
+  if (nameEl) nameEl.textContent = STUDENT_NAME || 'Student';
+  el.classList.remove('hidden');
 }
 
 function submitChangePin() {
@@ -3882,6 +4084,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (hReg) hReg.textContent = STUDENT_REG_NO;
   const bReg = document.getElementById('regNoDisplay');
   if (bReg) bReg.textContent = STUDENT_REG_NO;
+  initBioLock();
   loadStudentProfile();
   applyAdminModuleOverrides();
   updateBalanceDisplay();

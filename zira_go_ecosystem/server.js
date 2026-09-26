@@ -55,6 +55,8 @@ app.use('/api/auth/reset-password', authLimiter);
 // surface — same as /login and /login/admin — and needs the same tight limit,
 // not just the generic 300-req/15-min limiter shared by every /api route.
 app.use('/api/auth/admin/telegram-otp', authLimiter);
+app.use('/api/webauthn/login-options', authLimiter);
+app.use('/api/webauthn/login-verify', authLimiter);
 
 // One pool, shared by every route file below via the global `pool` they
 // each reference.
@@ -77,8 +79,10 @@ const { router: pinRouter, adminRouter: adminPinRouter } = require('./zira_go_pi
 const notificationRouter = require('./zira_go_notification_routes');
 const { userRouter: supportChatRouter, adminRouter: supportChatAdminRouter } = require('./zira_go_support_chat_routes');
 const adsRouter = require('./zira_go_ads_routes');
+const webauthnRouter = require('./zira_go_webauthn_routes');
 
 app.use('/api/auth', authRouter);
+app.use('/api/webauthn', webauthnRouter);
 app.use('/api/bank', bankRouter);
 app.use('/api/admin/bank', bankAdminRouter);
 app.use('/api/admin/support-chat', supportChatAdminRouter);
