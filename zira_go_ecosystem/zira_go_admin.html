@@ -593,7 +593,7 @@
     </button>
     <button class="tab-btn" data-tab="finances" onclick="switchTab('finances')">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-      💰 Financial Overview
+      Financial Overview
     </button>
     <button class="tab-btn" data-tab="students" onclick="switchTab('students')">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
@@ -607,10 +607,22 @@
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
       Bank Reviews
     </button>
-    <button class="tab-btn" data-tab="operations" onclick="switchTab('operations')">Operations desk</button>
-    <button class="tab-btn" data-tab="support" onclick="switchTab('support')">💬 Live support <span class="tab-badge" id="supTabBadge" hidden></span></button>
-    <button class="tab-btn" data-tab="content" onclick="switchTab('content')">🖼️ Spotlight & Ads</button>
-    <button class="tab-btn" data-tab="adApplications" onclick="switchTab('adApplications')">📢 Ad Applications <span class="tab-badge" id="adAppTabBadge" hidden></span></button>
+    <button class="tab-btn" data-tab="operations" onclick="switchTab('operations')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Operations Desk
+    </button>
+    <button class="tab-btn" data-tab="support" onclick="switchTab('support')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      Live Support <span class="tab-badge" id="supTabBadge" hidden></span>
+    </button>
+    <button class="tab-btn" data-tab="content" onclick="switchTab('content')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      Spotlight & Ads
+    </button>
+    <button class="tab-btn" data-tab="adApplications" onclick="switchTab('adApplications')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="13" y2="13"/></svg>
+      Ad Applications <span class="tab-badge" id="adAppTabBadge" hidden></span>
+    </button>
   </div>
 
   <!-- TAB 1: EXECUTIVE ANALYTICS -->
@@ -674,7 +686,7 @@
         <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 18px;background:var(--panel-alt);border-radius:14px;border:1px solid var(--line)">
           <div>
             <div style="font-weight:700;font-size:13.5px;display:flex;align-items:center;gap:8px">
-              <span>🍔</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8zM6 1v3M10 1v3M14 1v3"/></svg>
               <span>Campus Food & Kitchens Module</span>
             </div>
             <div style="font-size:11.5px;color:var(--text-dim);margin-top:2px">When OFF, all food buttons and cravings sections are hidden from student apps.</div>
@@ -689,7 +701,7 @@
         <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 18px;background:var(--panel-alt);border-radius:14px;border:1px solid var(--line)">
           <div>
             <div style="font-weight:700;font-size:13.5px;display:flex;align-items:center;gap:8px">
-              <span>📦</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
               <span>Student Errand Runners & Dispatch</span>
             </div>
             <div style="font-size:11.5px;color:var(--text-dim);margin-top:2px">Allow students to dispatch peer runners for laundry, packages, and parcels.</div>
@@ -704,7 +716,7 @@
         <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 18px;background:var(--panel-alt);border-radius:14px;border:1px solid var(--line)">
           <div>
             <div style="font-weight:700;font-size:13.5px;display:flex;align-items:center;gap:8px">
-              <span>🚌</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="14" rx="2"/><circle cx="7.5" cy="14.5" r="1.5"/><circle cx="16.5" cy="14.5" r="1.5"/></svg>
               <span>Vacation & Interstate Bus Charters</span>
             </div>
             <div style="font-size:11.5px;color:var(--text-dim);margin-top:2px">Enable students to view, filter and book organized buses leaving campus.</div>
@@ -719,7 +731,7 @@
         <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 18px;background:var(--panel-alt);border-radius:14px;border:1px solid var(--line)">
           <div>
             <div style="font-weight:700;font-size:13.5px;display:flex;align-items:center;gap:8px">
-              <span>✨</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
               <span>Student Brand Advertising & Spotlight</span>
             </div>
             <div style="font-size:11.5px;color:var(--text-dim);margin-top:2px">Control display of student brand ads, product offers, and campus announcements.</div>
@@ -734,7 +746,7 @@
         <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 18px;background:var(--panel-alt);border-radius:14px;border:1px solid var(--line)">
           <div>
             <div style="font-weight:700;font-size:13.5px;display:flex;align-items:center;gap:8px">
-              <span>🎓</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
               <span>New Student Registrations</span>
             </div>
             <div style="font-size:11.5px;color:var(--text-dim);margin-top:2px">Allow new students to register accounts using their Landmark matric numbers.</div>
@@ -802,7 +814,7 @@
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px">
         <div>
           <div style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:rgba(255,255,255,0.12);border-radius:999px;font-size:11px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:#DDD6FE;margin-bottom:8px">
-            <span>🏛️</span>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 21h18M3 10h18M5 10v11M19 10v11M9 10v11M15 10v11M12 3l9 7H3z"/></svg>
             <span>Campus Treasury & Settlement Engine</span>
           </div>
           <h2 style="margin:0;font-size:24px;font-weight:800;color:#FFFFFF;letter-spacing:-0.02em">Executive Financial Intelligence</h2>
@@ -810,7 +822,10 @@
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <button class="btn-sm" onclick="loadFinancialOverview()" style="background:rgba(255,255,255,0.15);color:#FFFFFF;border:1px solid rgba(255,255,255,0.25);cursor:pointer;padding:7px 14px;border-radius:8px;font-weight:700">↻ Refresh Treasury</button>
-          <button class="btn-sm" onclick="exportFinancialsCSV()" style="background:#10B981;color:#FFFFFF;border:none;cursor:pointer;padding:7px 14px;border-radius:8px;font-weight:700">📥 Export CSV Report</button>
+          <button class="btn-sm" onclick="exportFinancialsCSV()" style="background:#10B981;color:#FFFFFF;border:none;cursor:pointer;padding:7px 14px;border-radius:8px;font-weight:700;display:inline-flex;align-items:center;gap:6px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Export CSV Report</span>
+          </button>
         </div>
       </div>
 
@@ -1181,23 +1196,137 @@
   </div>
 
   <div class="tab-pane" id="paneOperations">
+    <!-- Broadcast Section with Picture / Video Support -->
     <div class="panel-card" style="border-top:3px solid var(--accent)">
-      <div class="panel-header"><div><h3 class="panel-title">Campus broadcast</h3><div style="font-size:12px;color:var(--text-dim)">Shows as a dismissible pop-up, stays in the notification bell, and can be emailed.</div></div></div>
-      <input class="search-input" id="broadcastTitle" placeholder="Notice title" style="max-width:none;margin-bottom:10px">
-      <textarea id="broadcastMessage" rows="4" placeholder="Write the message students and drivers should see" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--panel-alt);color:var(--text);font:inherit"></textarea>
-      <input class="search-input" id="broadcastImageUrl" placeholder="Optional banner / picture URL" style="max-width:none;margin-top:10px">
-      <div style="display:flex;gap:10px;margin-top:10px;align-items:center;flex-wrap:wrap"><select id="broadcastTarget" class="search-input" style="width:auto"><option value="all">Everyone</option><option value="students">Students</option><option value="drivers">Drivers</option></select><select id="broadcastUrgency" class="search-input" style="width:auto"><option value="info">Information</option><option value="important">Important</option><option value="urgent">Urgent</option></select><label style="font-size:12px;display:flex;align-items:center;gap:6px"><input id="broadcastSendEmail" type="checkbox" checked> Send by email</label><button class="btn-sm primary" onclick="sendBroadcast()">Publish broadcast</button></div>
+      <div class="panel-header">
+        <div>
+          <h3 class="panel-title">Campus Broadcast Engine</h3>
+          <div style="font-size:12px;color:var(--text-dim)">Dispatch real-time announcements with picture or video attachments to student & driver terminals and emails.</div>
+        </div>
+      </div>
+      <input class="search-input" id="broadcastTitle" placeholder="Notice Title / Announcement Heading" style="max-width:none;margin-bottom:10px">
+      <textarea id="broadcastMessage" rows="4" placeholder="Compose message for campus students and shuttle drivers" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--panel-alt);color:var(--text);font:inherit;font-size:13px"></textarea>
+      
+      <!-- Broadcast Media Attachment Bar -->
+      <div style="margin-top:10px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--panel-alt)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <label style="font-size:12px;font-weight:700">Attach Picture or Video (Optional)</label>
+          <span style="font-size:11px;color:var(--text-dim)">Supported: JPG, PNG, WEBP, MP4, WEBM</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <label class="btn-sm" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span>Upload Media</span>
+            <input id="broadcastMediaUpload" type="file" accept="image/*,video/mp4,video/webm" hidden onchange="uploadBroadcastMediaFile(this)">
+          </label>
+          <input class="search-input" id="broadcastImageUrl" placeholder="or paste direct picture / video URL" style="flex:1;min-width:220px;max-width:none" oninput="previewBroadcastMedia()">
+        </div>
+        <!-- Live Preview Container for Broadcast Form -->
+        <div id="broadcastMediaPreviewBox" style="display:none;margin-top:10px;border-radius:10px;overflow:hidden;border:1px solid var(--line);max-height:220px;background:#000">
+          <img id="broadcastImgPreview" style="display:none;width:100%;max-height:220px;object-fit:cover" alt="Broadcast Image Preview">
+          <video id="broadcastVideoPreview" controls muted loop style="display:none;width:100%;max-height:220px;object-fit:contain"></video>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:12px;align-items:center;flex-wrap:wrap">
+        <select id="broadcastTarget" class="search-input" style="width:auto">
+          <option value="all">Everyone (Students & Drivers)</option>
+          <option value="students">Students Only</option>
+          <option value="drivers">Drivers Only</option>
+        </select>
+        <select id="broadcastUrgency" class="search-input" style="width:auto">
+          <option value="info">Standard Notice</option>
+          <option value="important">Important Update</option>
+          <option value="urgent">Urgent Operational Alert</option>
+        </select>
+        <label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer">
+          <input id="broadcastSendEmail" type="checkbox" checked> Send Branded Email
+        </label>
+        <button class="btn-sm primary" onclick="sendBroadcast()" style="display:inline-flex;align-items:center;gap:6px;padding:8px 18px;font-weight:700">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          <span>Publish Broadcast</span>
+        </button>
+      </div>
       <div id="broadcastList" style="margin-top:16px;display:grid;gap:8px"></div>
     </div>
-    <div class="panel-card" style="border-top:3px solid #2563eb"><div class="panel-header"><div><h3 class="panel-title">Experience settings</h3><div style="font-size:12px;color:var(--text-dim)">Set the fixed ride price, payment provider, and the student home hero in one place.</div></div></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px"><label style="font-size:12px;font-weight:700">Ride fare (₦)<input class="search-input" id="configFare" type="number" min="0" style="max-width:none;margin-top:6px" placeholder="250"></label><label style="font-size:12px;font-weight:700">Platform fee (₦)<input class="search-input" id="configFee" type="number" min="0" style="max-width:none;margin-top:6px" placeholder="10"></label><label style="font-size:12px;font-weight:700">Payment provider<select id="configGateway" class="search-input" style="max-width:none;margin-top:6px"><option value="korapay">Korapay</option><option value="flutterwave">Flutterwave</option></select></label></div><div style="margin-top:18px;padding:15px;border-radius:14px;background:var(--panel-alt);border:1px solid var(--line)"><b style="font-size:13px">Student home hero</b><div style="font-size:12px;color:var(--text-dim);margin:4px 0 10px">Upload an image or video, or use a direct URL. A scheduled asset replaces the default only during its chosen hours.</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px"><label style="font-size:12px">Headline<input class="search-input" id="configHeroTitle" style="max-width:none;margin-top:5px" placeholder="Campus Life, Made Easier."></label><label style="font-size:12px">Default media type<select id="configHeroMediaType" class="search-input" style="max-width:none;margin-top:5px"><option value="image">Image</option><option value="video">Video</option></select></label></div><div style="display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap"><input class="search-input" id="configHeroImage" placeholder="Default image or video URL" style="flex:1;min-width:220px;max-width:none"><label class="btn-sm" style="cursor:pointer">Upload image/video<input id="configHeroUpload" type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime" hidden onchange="uploadHeroMedia(this)"></label></div><div style="display:grid;grid-template-columns:1fr 130px 130px;gap:10px;margin-top:10px"><input class="search-input" id="configScheduledHeroUrl" placeholder="Optional scheduled image/video URL" style="max-width:none"><input class="search-input" id="configHeroStartHour" type="number" min="0" max="23" placeholder="Start hour"><input class="search-input" id="configHeroEndHour" type="number" min="0" max="23" placeholder="End hour"></div></div><button class="btn-sm primary" style="margin-top:14px" onclick="saveConfig()">Save experience settings</button><span id="operationsNotice" style="margin-left:10px;font-size:12px;color:var(--text-dim)"></span></div>
-    <div class="panel-card" style="border-top:3px solid #f59e0b"><div class="panel-header"><div><h3 class="panel-title">PIN identity reviews</h3><div style="font-size:12px;color:var(--text-dim)">Review the ID and selfie video before granting a secure approval code.</div></div></div><div id="pinReviewList" style="display:grid;gap:9px">Loading requests…</div></div>
+
+    <!-- Experience Settings with Video Background Selector -->
+    <div class="panel-card" style="border-top:3px solid #2563eb">
+      <div class="panel-header">
+        <div>
+          <h3 class="panel-title">Experience & Background Settings</h3>
+          <div style="font-size:12px;color:var(--text-dim)">Configure base fare rates, payment gateways, and customize hero background image or video.</div>
+        </div>
+      </div>
+      
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px">
+        <label style="font-size:12px;font-weight:700">Ride fare (₦)<input class="search-input" id="configFare" type="number" min="0" style="max-width:none;margin-top:6px" placeholder="250"></label>
+        <label style="font-size:12px;font-weight:700">Platform fee (₦)<input class="search-input" id="configFee" type="number" min="0" style="max-width:none;margin-top:6px" placeholder="10"></label>
+        <label style="font-size:12px;font-weight:700">Payment provider<select id="configGateway" class="search-input" style="max-width:none;margin-top:6px"><option value="korapay">Korapay</option><option value="flutterwave">Flutterwave</option></select></label>
+      </div>
+
+      <div style="margin-top:18px;padding:15px;border-radius:14px;background:var(--panel-alt);border:1px solid var(--line)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <b style="font-size:13px">Student Home Hero & Background Customizer</b>
+          <span class="badge" style="font-size:11px">Dynamic Backgrounds</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-dim);margin:0 0 12px">Upload an image or video (MP4/WebM), or paste a direct URL. You can choose any video background you want.</div>
+        
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px">
+          <label style="font-size:12px;font-weight:700">Headline<input class="search-input" id="configHeroTitle" style="max-width:none;margin-top:5px" placeholder="Campus Life, Made Easier."></label>
+          <label style="font-size:12px;font-weight:700">Background Media Type
+            <select id="configHeroMediaType" class="search-input" style="max-width:none;margin-top:5px" onchange="previewHeroConfigMedia()">
+              <option value="image">Image (JPG / PNG / WEBP)</option>
+              <option value="video">Video Background (MP4 / WEBM)</option>
+            </select>
+          </label>
+        </div>
+
+        <div style="display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap">
+          <input class="search-input" id="configHeroImage" placeholder="Default image or video URL" style="flex:1;min-width:220px;max-width:none" oninput="previewHeroConfigMedia()">
+          <label class="btn-sm" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span>Upload Image / Video</span>
+            <input id="configHeroUpload" type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime" hidden onchange="uploadHeroMedia(this)">
+          </label>
+        </div>
+
+        <!-- Live Hero Preview Player in Experience Settings -->
+        <div id="heroMediaPreviewBox" style="display:none;margin-top:10px;border-radius:10px;overflow:hidden;border:1px solid var(--line);max-height:180px;background:#000">
+          <img id="heroImgPreview" style="display:none;width:100%;max-height:180px;object-fit:cover" alt="Hero Image">
+          <video id="heroVideoPreview" autoplay muted loop playsinline controls style="display:none;width:100%;max-height:180px;object-fit:cover"></video>
+        </div>
+
+        <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
+          <div style="font-size:11.5px;font-weight:700;color:var(--text-dim);margin-bottom:6px">Scheduled Time-Based Asset Override (Optional)</div>
+          <div style="display:grid;grid-template-columns:1fr 130px 130px;gap:10px">
+            <input class="search-input" id="configScheduledHeroUrl" placeholder="Scheduled image or video URL" style="max-width:none">
+            <input class="search-input" id="configHeroStartHour" type="number" min="0" max="23" placeholder="Start hour (0-23)">
+            <input class="search-input" id="configHeroEndHour" type="number" min="0" max="23" placeholder="End hour (0-23)">
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:12px;margin-top:14px">
+        <button class="btn-sm primary" onclick="saveConfig()" style="font-weight:700;padding:8px 20px">Save Experience Settings</button>
+        <span id="operationsNotice" style="font-size:12px;color:var(--text-dim)"></span>
+      </div>
+    </div>
+
+    <!-- PIN Identity Reviews -->
+    <div class="panel-card" style="border-top:3px solid #f59e0b">
+      <div class="panel-header"><div><h3 class="panel-title">PIN Identity Reviews</h3><div style="font-size:12px;color:var(--text-dim)">Review student ID credentials and verification recordings before issuing single-use reset authorizations.</div></div></div>
+      <div id="pinReviewList" style="display:grid;gap:9px">Loading requests…</div>
+    </div>
+
+    <!-- Platform Change Timeline -->
     <div class="panel-card" style="border-top:3px solid #7c3aed">
       <div class="panel-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
         <div>
-          <h3 class="panel-title">Platform change timeline</h3>
-          <div style="font-size:12px;color:var(--text-dim)">A permanent record of Victor, Anti gravity, and Claude engineering platform updates — filter by who made a change or which area it touched.</div>
+          <h3 class="panel-title">Platform Change Timeline</h3>
+          <div style="font-size:12px;color:var(--text-dim)">A permanent record of Victor, Anti gravity, and Claude engineering updates — filter by contributor or operational area.</div>
         </div>
-        <button type="button" class="btn-sm primary" onclick="openPublishTimelineModal()" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;font-weight:700">
+        <button type="button" class="btn-sm primary" onclick="openPublishTimelineModal()" style="display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:8px;font-weight:700">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
           <span>Publish & Broadcast Summary</span>
         </button>
@@ -1231,13 +1360,13 @@
           <div style="flex:1;min-width:0"><h4 id="supHeadName"></h4><div class="sup-sub" id="supHeadSub"></div></div>
           <button class="btn-sm" id="supStatusBtn" onclick="Sup.toggleStatus()">Mark resolved</button>
         </div>
-        <div class="sup-body" id="supBody"><div class="sup-placeholder">💬<br>Select a conversation to start chatting.</div></div>
+        <div class="sup-body" id="supBody"><div class="sup-placeholder"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><br>Select a conversation to start chatting.</div></div>
         <div class="sup-typing" id="supTyping"></div>
         <div class="sup-quick" id="supQuick" hidden>
-          <button onclick="Sup.quick('Hi! Thanks for reaching out to Zira Go support. How can I help?')">Greeting</button>
-          <button onclick="Sup.quick('Please give me a moment while I check this for you.')">Checking</button>
-          <button onclick="Sup.quick('Could you share your registration number and the time of the transaction?')">Ask details</button>
-          <button onclick="Sup.quick('This has been sorted out. Is there anything else I can help you with?')">Sorted</button>
+          <button onclick="Sup.quick('Hello. Thank you for contacting Zira Go support. How may we assist you today?')">Greeting</button>
+          <button onclick="Sup.quick('Please hold on while we review this record for you.')">Checking</button>
+          <button onclick="Sup.quick('Please provide your Landmark matric/registration number and the transaction time.')">Ask details</button>
+          <button onclick="Sup.quick('This transaction has been resolved. Is there any further assistance needed?')">Resolved</button>
         </div>
         <div class="sup-compose" id="supCompose" hidden>
           <textarea id="supInput" rows="1" placeholder="Write a reply… (Enter to send, Shift+Enter for a new line)" maxlength="2000" oninput="Sup.onInput(this)" onkeydown="Sup.onKey(event)"></textarea>
@@ -1258,7 +1387,7 @@
     </div>
     <div class="panel-card" style="border-top:3px solid #0EA5E9">
       <div class="panel-header">
-        <div><h3 class="panel-title">Trending on Campus (ad banners)</h3><div style="font-size:12px;color:var(--text-dim)">The rotating banner carousel at the bottom of the student home screen.</div></div>
+        <div><h3 class="panel-title">Trending on Campus (Ad Banners)</h3><div style="font-size:12px;color:var(--text-dim)">The rotating banner carousel at the bottom of the student home screen.</div></div>
         <button class="btn-sm primary" onclick="CC.openForm('ad_banner')">+ Add banner</button>
       </div>
       <div id="ccList_ad_banner" style="display:grid;gap:10px"><div class="cc-empty">Loading…</div></div>
@@ -1269,7 +1398,7 @@
   <div class="tab-pane" id="paneAdApplications">
     <div class="panel-card" style="border-top:3px solid #6D28D9">
       <div class="panel-header">
-        <div><h3 class="panel-title">Student advert applications</h3><div style="font-size:12px;color:var(--text-dim)">Every student's first advert is free. Approving publishes it straight to the Trending-on-Campus banners; it auto-expires and emails the student a ₦1,000 Korapay renewal link.</div></div>
+        <div><h3 class="panel-title">Student Advert Applications</h3><div style="font-size:12px;color:var(--text-dim)">Every student's first advert is free. Approving publishes it straight to the Trending-on-Campus banners; it auto-expires and emails the student a ₦1,000 Korapay renewal link.</div></div>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
         <select id="adAppStatus" class="search-input" style="max-width:190px" onchange="loadAdApplications()">
@@ -1331,15 +1460,15 @@
 
 <!-- PUBLISH TIMELINE BROADCAST MODAL -->
 <div class="modal-overlay" id="modalPublishUpdate">
-  <div class="modal-card" style="max-width:680px;max-height:90vh;overflow-y:auto">
+  <div class="modal-card" style="max-width:700px;max-height:90vh;overflow-y:auto">
     <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:14px">
       <div style="display:flex;align-items:center;gap:10px">
-        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg, #7C3AED, #6D28D9);color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:16px">
-          🚀
+        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg, #1E1035, #4C1D95);color:#FFFFFF;display:flex;align-items:center;justify-content:center">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </div>
         <div>
-          <h3 style="margin:0;font-size:18px;font-weight:800">Publish Platform Update</h3>
-          <p style="margin:2px 0 0;font-size:12px;color:var(--text-dim)">Broadcast system enhancements to students and drivers via in-app popups & email</p>
+          <h3 style="margin:0;font-size:18px;font-weight:800">Publish Platform Release Summary</h3>
+          <p style="margin:2px 0 0;font-size:12px;color:var(--text-dim)">Broadcast verified system updates to campus students and drivers via in-app pop-up & branded email</p>
         </div>
       </div>
       <button class="modal-close" onclick="closeModal('modalPublishUpdate')">✕</button>
@@ -1371,53 +1500,80 @@
     <!-- Edit Broadcast Subject & Summary -->
     <div style="margin-bottom:14px">
       <label style="font-size:12px;font-weight:700">Broadcast Title / Email Subject</label>
-      <input class="search-input" id="pubBroadcastTitle" style="max-width:none;margin-top:5px" value="🚀 New Upgrades & Features on Zira Go!" oninput="updatePublishPreview()">
+      <input class="search-input" id="pubBroadcastTitle" style="max-width:none;margin-top:5px" value="System Update: Enhanced Transit Engine & Performance Upgrades on Zira Go" oninput="updatePublishPreview()">
+    </div>
+
+    <!-- Optional Media Attachment in Publish Modal -->
+    <div style="margin-bottom:14px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--panel-alt)">
+      <label style="font-size:12px;font-weight:700">Optional Banner Picture / Video URL</label>
+      <div style="display:flex;gap:10px;margin-top:6px">
+        <input class="search-input" id="pubBroadcastImageUrl" placeholder="Paste image or video URL (optional)" style="flex:1;max-width:none" oninput="updatePublishPreview()">
+        <label class="btn-sm" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <span>Upload</span>
+          <input id="pubBroadcastMediaUpload" type="file" accept="image/*,video/mp4,video/webm" hidden onchange="uploadPubMediaFile(this)">
+        </label>
+      </div>
     </div>
 
     <div style="margin-bottom:14px">
-      <label style="font-size:12px;font-weight:700">Summary Message Body</label>
-      <textarea id="pubBroadcastMessage" rows="5" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--panel-alt);color:var(--text);font:inherit;font-size:12.5px" oninput="updatePublishPreview()">We've rolled out major upgrades to make campus transit and wallet management smoother than ever!
+      <label style="font-size:12px;font-weight:700">Executive Summary Body</label>
+      <textarea id="pubBroadcastMessage" rows="5" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--panel-alt);color:var(--text);font:inherit;font-size:12.5px" oninput="updatePublishPreview()">We have deployed key system enhancements across the campus transit infrastructure:
 
-✨ What's New:
-• Instant Biometric Fast-Unlock — Sign in smoothly with Face ID & Fingerprint without duplicate lock gates.
-• Universal Elastic Spring Scroll — Enjoy fluid rubber-band page and modal interactions with glowing end aura.
-• 24/7 Campus Live Desk — Instant support on WhatsApp (+234 806 202 1448) and Telegram.
-• Student & Driver Experience Polish — Modernized theme settings, clear transaction ledgers, and real-time ride tracking.</textarea>
+• Biometric Authentication — Streamlined Face ID and Fingerprint unlock with zero redundant verification gates.
+• Universal Inertial Navigation — Fluid rubber-band elastic bounce mechanics across pages and transaction lists.
+• Executive Treasury & Audit Ledger — Real-time transaction accounting, settlement streams, and verified driver payouts.
+• 24/7 Operations Desk — Direct live support via WhatsApp (+234 806 202 1448) and Telegram Bot.</textarea>
     </div>
 
-    <!-- Live Preview Box -->
+    <!-- Live Preview Box (Authentic Corporate Design) -->
     <div style="border:1px solid var(--line);border-radius:14px;background:var(--panel-alt);padding:14px;margin-bottom:16px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <span style="font-size:11.5px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:0.04em">✉ Live Email & In-App Preview</span>
+        <span style="font-size:11.5px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:0.04em;display:inline-flex;align-items:center;gap:6px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          <span>Live Email & In-App Preview</span>
+        </span>
         <span class="badge success" style="font-size:10px">Ready to Dispatch</span>
       </div>
 
       <!-- Mock Email Card -->
-      <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:12px;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,0.05)">
-        <div style="background:linear-gradient(135deg, #1E1035, #4C1D95);padding:16px 20px;color:#FFFFFF">
-          <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-weight:800;font-size:16px;letter-spacing:-0.02em">Zira <span style="color:#FBBF24">GO!</span></span>
-            <span style="font-size:11px;background:rgba(255,255,255,0.15);padding:2px 8px;border-radius:999px;color:#DDD6FE">Landmark University</span>
+      <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:14px;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,0.05)">
+        <div style="background:linear-gradient(135deg, #1E1035, #3B1676);padding:18px 22px;color:#FFFFFF">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <span style="font-weight:800;font-size:18px;letter-spacing:-0.02em">Zira <span style="color:#FBBF24">GO!</span></span>
+              <div style="font-size:10.5px;color:#DDD6FE;letter-spacing:0.06em;text-transform:uppercase;margin-top:2px">Landmark University Campus Transit</div>
+            </div>
+            <span style="font-size:11px;background:rgba(255,255,255,0.15);padding:3px 10px;border-radius:999px;color:#FFFFFF;font-weight:700">Official Notice</span>
           </div>
-          <div id="previewEmailTitle" style="font-weight:700;font-size:15px;margin-top:8px">🚀 New Upgrades & Features on Zira Go!</div>
+          <div id="previewEmailTitle" style="font-weight:800;font-size:16px;margin-top:12px;color:#FFFFFF;line-height:1.35">System Update: Enhanced Transit Engine & Performance Upgrades on Zira Go</div>
         </div>
-        <div style="padding:16px 20px;color:#0F172A;font-size:12.5px;line-height:1.6;white-space:pre-wrap" id="previewEmailBody">We've rolled out major upgrades to make campus transit and wallet management smoother than ever!
 
-✨ What's New:
-• Instant Biometric Fast-Unlock — Sign in smoothly with Face ID & Fingerprint without duplicate lock gates.
-• Universal Elastic Spring Scroll — Enjoy fluid rubber-band page and modal interactions with glowing end aura.
-• 24/7 Campus Live Desk — Instant support on WhatsApp (+234 806 202 1448) and Telegram.
-• Student & Driver Experience Polish — Modernized theme settings, clear transaction ledgers, and real-time ride tracking.</div>
-        <div style="padding:12px 20px;background:#F8F9FD;border-top:1px solid #E2E8F0;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#64748B">
-          <span>Sent from Zira Go Operations Desk • Victor & Engineering</span>
-          <span style="color:var(--accent);font-weight:700">Official Campus Transit</span>
+        <div id="previewEmailMediaContainer" style="display:none;background:#000;border-bottom:1px solid #E2E8F0">
+          <img id="previewEmailImg" style="display:none;width:100%;max-height:220px;object-fit:cover" alt="Banner Preview">
+          <video id="previewEmailVideo" controls muted loop style="display:none;width:100%;max-height:220px;object-fit:contain"></video>
+        </div>
+
+        <div style="padding:20px 22px;color:#0F172A;font-size:13px;line-height:1.65;white-space:pre-wrap" id="previewEmailBody">We have deployed key system enhancements across the campus transit infrastructure:
+
+• Biometric Authentication — Streamlined Face ID and Fingerprint unlock with zero redundant verification gates.
+• Universal Inertial Navigation — Fluid rubber-band elastic bounce mechanics across pages and transaction lists.
+• Executive Treasury & Audit Ledger — Real-time transaction accounting, settlement streams, and verified driver payouts.
+• 24/7 Operations Desk — Direct live support via WhatsApp (+234 806 202 1448) and Telegram Bot.</div>
+        
+        <div style="padding:12px 22px;background:#F8FAFC;border-top:1px solid #E2E8F0;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#64748B">
+          <span>Operations Desk • Victor, Anti gravity & Claude Engineering</span>
+          <span style="color:#6D28D9;font-weight:700">Confidential Transit Record</span>
         </div>
       </div>
     </div>
 
     <div style="display:flex;gap:10px;justify-content:flex-end">
       <button class="btn-sm" onclick="closeModal('modalPublishUpdate')" style="padding:8px 18px">Cancel</button>
-      <button class="btn-sm primary" id="btnSubmitPubBroadcast" onclick="submitPublishTimelineBroadcast()" style="padding:8px 22px;font-weight:800">🚀 Dispatch Update Broadcast</button>
+      <button class="btn-sm primary" id="btnSubmitPubBroadcast" onclick="submitPublishTimelineBroadcast()" style="display:inline-flex;align-items:center;gap:6px;padding:8px 22px;font-weight:800">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        <span>Dispatch Update Broadcast</span>
+      </button>
     </div>
   </div>
 </div>
@@ -1632,9 +1788,9 @@
     const totalRev = Math.max(rideFees + fundFees + adRev, 1);
 
     const streams = [
-      { name: 'Transit Fare Commission (₦10/ride)', amount: rideFees, color: '#6D28D9', icon: '🚐' },
-      { name: 'Gateway Top-up Processing (₦100/deposit)', amount: fundFees, color: '#10B981', icon: '💳' },
-      { name: 'Spotlight & Banner Advertising', amount: adRev, color: '#F59E0B', icon: '📢' }
+      { name: 'Transit Fare Commission (₦10/ride)', amount: rideFees, color: '#6D28D9' },
+      { name: 'Gateway Top-up Processing (₦100/deposit)', amount: fundFees, color: '#10B981' },
+      { name: 'Spotlight & Banner Advertising', amount: adRev, color: '#F59E0B' }
     ];
 
     container.innerHTML = streams.map(s => {
@@ -1642,7 +1798,7 @@
       return `
         <div>
           <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;margin-bottom:4px">
-            <span style="font-weight:700;color:var(--text);display:flex;align-items:center;gap:6px"><span>${s.icon}</span> <span>${s.name}</span></span>
+            <span style="font-weight:700;color:var(--text);display:flex;align-items:center;gap:6px"><span>${s.name}</span></span>
             <span style="font-weight:800;color:var(--text)">₦${s.amount.toLocaleString()} <span style="font-size:11px;color:var(--text-dim)">(${pct}%)</span></span>
           </div>
           <div style="width:100%;height:8px;background:var(--line);border-radius:999px;overflow:hidden">
@@ -2232,11 +2388,54 @@
       const requests = await Promise.allSettled([fetch(`${API_BASE}/admin/broadcasts`), fetch(`${API_BASE}/admin/config`), fetch(`${API_BASE}/admin/pin-requests`)]);
       const read = async (index, fallback) => requests[index].status === 'fulfilled' && requests[index].value.ok ? requests[index].value.json() : fallback;
       const [list, cfg, pins] = await Promise.all([read(0,[]),read(1,{}),read(2,[])]);
-      document.getElementById('broadcastList').innerHTML = (list || []).map(b => `<div style="padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--panel-alt)"><div style="display:flex;justify-content:space-between;gap:8px"><b>${b.title}</b><span class="badge">${b.target}</span></div><span style="font-size:12px;color:var(--text-dim)">${b.message}</span><div style="font-size:11px;color:var(--text-dim);margin-top:7px">${b.send_email?'✉ Email enabled':'In-app only'} · ${new Date(b.created_at).toLocaleString()}</div></div>`).join('') || '<span style="color:var(--text-dim)">No broadcasts yet.</span>';
-      const hourTime=value=>Number.isInteger(Number(value))?`${String(Number(value)).padStart(2,'0')}:00`:''; document.getElementById('configFare').value = cfg.driverFare ?? 250; document.getElementById('configFee').value = cfg.platformFee ?? 10; document.getElementById('configGateway').value = cfg.activeGateway || 'korapay'; document.getElementById('configHeroImage').value = cfg.heroBannerImage || ''; document.getElementById('configHeroTitle').value = cfg.heroTitle || ''; document.getElementById('configHeroMediaType').value = cfg.heroMediaType || 'image'; document.getElementById('configScheduledHeroUrl').value = cfg.heroSchedule?.url || ''; document.getElementById('configHeroStartHour').value = hourTime(cfg.heroSchedule?.startHour); document.getElementById('configHeroEndHour').value = hourTime(cfg.heroSchedule?.endHour);
-      document.getElementById('pinReviewList').innerHTML = (pins || []).map(p => { const cooldownActive = p.pin_cooldown_until && new Date(p.pin_cooldown_until) > new Date(); const terminal = p.status === 'completed' || p.status === 'rejected'; return `<div style="padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--panel-alt)"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><div><b>${p.reg_no}</b><div style="font-size:11px;color:var(--text-dim);margin-top:3px">${p.email}</div></div><span class="badge ${p.status === 'pending' ? 'pending' : 'success'}">${p.status}</span></div><div style="font-size:11px;color:var(--text-dim);margin:9px 0">Requested ${new Date(p.created_at).toLocaleString()}${terminal && cooldownActive ? ` · Next request allowed ${new Date(p.pin_cooldown_until).toLocaleString()}` : ''}</div><div style="display:flex;gap:7px;flex-wrap:wrap"><button class="btn-sm" onclick="openPrivateReview(${p.id},'document')">View ID</button><button class="btn-sm" onclick="openPrivateReview(${p.id},'selfie')">View selfie video</button>${p.status === 'pending' ? `<button class="btn-sm primary" onclick="approvePinReview(${p.id})">Approve & send code</button><button class="btn-sm danger" onclick="rejectPinReview(${p.id})">Reject</button>` : ''}${terminal && cooldownActive ? `<button class="btn-sm" onclick="liftPinCooldown(${p.student_id},'${p.reg_no}')">Lift 72h wait</button>` : ''}</div></div>`; }).join('') || '<span style="color:var(--text-dim)">No PIN reviews yet.</span>';
+      
+      document.getElementById('broadcastList').innerHTML = (list || []).map(b => {
+        const mediaHtml = b.image_url ? (/\.(mp4|webm|ogg|mov)(\?|$)/i.test(b.image_url)
+          ? `<video src="${b.image_url}" controls muted style="display:block;width:100%;max-height:160px;border-radius:8px;margin-top:8px"></video>`
+          : `<img src="${b.image_url}" style="display:block;width:100%;max-height:160px;object-fit:cover;border-radius:8px;margin-top:8px">`) : '';
+        return `<div style="padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--panel-alt)">
+          <div style="display:flex;justify-content:space-between;gap:8px"><b>${b.title}</b><span class="badge">${b.target}</span></div>
+          <span style="font-size:12px;color:var(--text-dim);display:block;margin-top:4px;white-space:pre-wrap">${b.message}</span>
+          ${mediaHtml}
+          <div style="font-size:11px;color:var(--text-dim);margin-top:7px">${b.send_email ? 'Email delivery active' : 'In-app notification only'} · ${new Date(b.created_at).toLocaleString()}</div>
+        </div>`;
+      }).join('') || '<span style="color:var(--text-dim)">No broadcasts yet.</span>';
+
+      const hourTime = value => Number.isInteger(Number(value)) ? `${String(Number(value)).padStart(2,'0')}:00` : '';
+      document.getElementById('configFare').value = cfg.driverFare ?? 250;
+      document.getElementById('configFee').value = cfg.platformFee ?? 10;
+      document.getElementById('configGateway').value = cfg.activeGateway || 'korapay';
+      document.getElementById('configHeroImage').value = cfg.heroBannerImage || '';
+      document.getElementById('configHeroTitle').value = cfg.heroTitle || '';
+      document.getElementById('configHeroMediaType').value = cfg.heroMediaType || 'image';
+      document.getElementById('configScheduledHeroUrl').value = cfg.heroSchedule?.url || '';
+      document.getElementById('configHeroStartHour').value = hourTime(cfg.heroSchedule?.startHour);
+      document.getElementById('configHeroEndHour').value = hourTime(cfg.heroSchedule?.endHour);
+      previewHeroConfigMedia();
+
+      document.getElementById('pinReviewList').innerHTML = (pins || []).map(p => {
+        const cooldownActive = p.pin_cooldown_until && new Date(p.pin_cooldown_until) > new Date();
+        const terminal = p.status === 'completed' || p.status === 'rejected';
+        return `<div style="padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--panel-alt)">
+          <div style="display:flex;justify-content:space-between;gap:8px;align-items:center">
+            <div><b>${p.reg_no}</b><div style="font-size:11px;color:var(--text-dim);margin-top:3px">${p.email}</div></div>
+            <span class="badge ${p.status === 'pending' ? 'pending' : 'success'}">${p.status}</span>
+          </div>
+          <div style="font-size:11px;color:var(--text-dim);margin:9px 0">Requested ${new Date(p.created_at).toLocaleString()}${terminal && cooldownActive ? ` · Next request allowed ${new Date(p.pin_cooldown_until).toLocaleString()}` : ''}</div>
+          <div style="display:flex;gap:7px;flex-wrap:wrap">
+            <button class="btn-sm" onclick="openPrivateReview(${p.id},'document')">View ID</button>
+            <button class="btn-sm" onclick="openPrivateReview(${p.id},'selfie')">View selfie video</button>
+            ${p.status === 'pending' ? `<button class="btn-sm primary" onclick="approvePinReview(${p.id})">Approve & send code</button><button class="btn-sm danger" onclick="rejectPinReview(${p.id})">Reject</button>` : ''}
+            ${terminal && cooldownActive ? `<button class="btn-sm" onclick="liftPinCooldown(${p.student_id},'${p.reg_no}')">Lift 72h wait</button>` : ''}
+          </div>
+        </div>`;
+      }).join('') || '<span style="color:var(--text-dim)">No PIN reviews yet.</span>';
+      
       await loadChangeTimeline(true);
-    } catch (e) { console.error(e); showAdminNotice('Could not load some Operations data. Refresh and sign in again if this continues.', true); }
+    } catch (e) {
+      console.error(e);
+      showAdminNotice('Could not load some Operations data. Refresh and sign in again if this continues.', true);
+    }
   }
 
   // Platform change timeline: who (Codex/ChatGPT/Claude/Admin) did what,
@@ -2307,50 +2506,226 @@
       box.innerHTML = '<span style="color:var(--danger)">Could not load the change timeline.</span>';
     }
   }
-  async function sendBroadcast() { const title = broadcastTitle.value.trim(), message = broadcastMessage.value.trim(), imageUrl=broadcastImageUrl.value.trim(); if (!title || !message) return alert('Add a title and message.'); const res = await fetch(`${API_BASE}/admin/broadcasts`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ title, message, target:broadcastTarget.value, urgency:broadcastUrgency.value, imageUrl, sendEmail:broadcastSendEmail.checked }) }); if (!res.ok) return alert('Broadcast could not be published.'); broadcastTitle.value=''; broadcastMessage.value=''; broadcastImageUrl.value=''; loadOperations(); }
-  async function saveConfig() { const scheduleUrl=configScheduledHeroUrl.value.trim(), startTime=configHeroStartHour.value,endTime=configHeroEndHour.value,start=startTime?Number(startTime.split(':')[0]):NaN,end=endTime?Number(endTime.split(':')[0]):NaN; if(scheduleUrl && (!startTime||!endTime||!Number.isInteger(start)||!Number.isInteger(end))) return showAdminNotice('Choose both start and end times for scheduled media.', true); const config = { driverFare:Number(configFare.value), platformFee:Number(configFee.value), activeGateway:configGateway.value, heroBannerImage:configHeroImage.value.trim(), heroTitle:configHeroTitle.value.trim(), heroMediaType:configHeroMediaType.value, heroSchedule:scheduleUrl?{url:scheduleUrl,type:configHeroMediaType.value,startHour:start,endHour:end}:null }; try { const res = await fetch(`${API_BASE}/admin/config`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(config) }); const data=await res.json(); showAdminNotice(res.ok ? 'Settings saved and now live.' : (data.error||'Could not save settings.'), !res.ok); } catch (_) { showAdminNotice('Connection failed. Please try again.', true); } }
-  async function uploadHeroMedia(input) { const file=input.files?.[0];if(!file)return;const form=new FormData();form.append('media',file);showAdminNotice('Uploading hero media…');try { const res=await fetch(`${API_BASE}/admin/hero-media`,{method:'POST',body:form});const data=await res.json();if(!res.ok)throw new Error(data.error||'Upload failed.');configHeroImage.value=data.url;configHeroMediaType.value=data.mediaType;showAdminNotice('Uploaded. Save experience settings to publish it.'); } catch(e) { showAdminNotice(e.message||'Upload failed.',true); } finally { input.value=''; } }
-  async function approvePinReview(id) { const res = await fetch(`${API_BASE}/admin/pin-requests/${id}/approve`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({}) }); const data = await res.json(); alert(data.message || (res.ok ? 'Approved.' : 'Could not approve.')); if(res.ok) loadOperations(); }
-  async function rejectPinReview(id) { const note = prompt('Reason for rejecting this identity review:'); if(!note)return; const res = await fetch(`${API_BASE}/admin/pin-requests/${id}/reject`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({note}) }); if(res.ok)loadOperations(); }
-  async function liftPinCooldown(studentId, regNo) { if(!confirm(`Let ${regNo} submit a new PIN-change request immediately, skipping the rest of the 72h wait?`)) return; const res = await fetch(`${API_BASE}/admin/pin-requests/student/${studentId}/lift-cooldown`, { method:'POST' }); const data = await res.json(); alert(data.message || (res.ok ? 'Lifted.' : 'Could not lift the wait.')); if(res.ok) loadOperations(); }
-  async function openPrivateReview(id, kind) { const res = await fetch(`${API_BASE}/admin/pin-requests/${id}/file/${kind}`); if (!res.ok) return alert('Private file unavailable.'); const url = URL.createObjectURL(await res.blob()); window.open(url, '_blank', 'noopener'); }
-
-  async function approveBankChange(id) {
-    if (!confirm('Approve this bank account update?')) return;
-    try {
-      const res = await fetch(`${API_BASE}/admin/bank/change-requests/${id}/approve`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${ADMIN_TOKEN}` }
-      });
-      if (res.ok) {
-        alert('Approved!');
-        loadBankReviews();
-      } else {
-        alert('Approval failed.');
-      }
-    } catch (e) {
-      alert('Error approving');
+  function previewBroadcastMedia() {
+    const url = (document.getElementById('broadcastImageUrl')?.value || '').trim();
+    const box = document.getElementById('broadcastMediaPreviewBox');
+    const img = document.getElementById('broadcastImgPreview');
+    const vid = document.getElementById('broadcastVideoPreview');
+    if (!box || !img || !vid) return;
+    if (!url) {
+      box.style.display = 'none';
+      img.style.display = 'none';
+      vid.style.display = 'none';
+      vid.pause();
+      return;
+    }
+    const isVideo = /\.(mp4|webm|ogg|mov)(\?|$)/i.test(url) || url.includes('/video/') || url.startsWith('data:video');
+    box.style.display = 'block';
+    if (isVideo) {
+      img.style.display = 'none';
+      vid.src = url;
+      vid.style.display = 'block';
+      vid.load();
+    } else {
+      vid.style.display = 'none';
+      vid.pause();
+      img.src = url;
+      img.style.display = 'block';
     }
   }
 
-  async function rejectBankChange(id) {
-    const note = prompt('Reason for rejection:') || 'Rejected by administrator';
+  async function uploadBroadcastMediaFile(input) {
+    const file = input.files?.[0];
+    if (!file) return;
+    const form = new FormData();
+    form.append('media', file);
+    adminToast('Uploading broadcast media…');
     try {
-      const res = await fetch(`${API_BASE}/admin/bank/change-requests/${id}/reject`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${ADMIN_TOKEN}`
-        },
-        body: JSON.stringify({ note })
-      });
-      if (res.ok) {
-        alert('Rejected.');
-        loadBankReviews();
-      }
+      const res = await fetch(`${API_BASE}/admin/hero-media`, { method: 'POST', body: form });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Upload failed.');
+      document.getElementById('broadcastImageUrl').value = data.url;
+      previewBroadcastMedia();
+      adminToast('Media attached to broadcast.');
     } catch (e) {
-      alert('Error rejecting');
+      adminToast(e.message || 'Media upload failed.');
+    } finally {
+      input.value = '';
     }
+  }
+
+  function previewHeroConfigMedia() {
+    const url = (document.getElementById('configHeroImage')?.value || '').trim();
+    const mediaType = document.getElementById('configHeroMediaType')?.value || 'image';
+    const box = document.getElementById('heroMediaPreviewBox');
+    const img = document.getElementById('heroImgPreview');
+    const vid = document.getElementById('heroVideoPreview');
+    if (!box || !img || !vid) return;
+    if (!url) {
+      box.style.display = 'none';
+      img.style.display = 'none';
+      vid.style.display = 'none';
+      vid.pause();
+      return;
+    }
+    const isVideo = mediaType === 'video' || /\.(mp4|webm|ogg|mov)(\?|$)/i.test(url);
+    box.style.display = 'block';
+    if (isVideo) {
+      img.style.display = 'none';
+      vid.src = url;
+      vid.style.display = 'block';
+      vid.load();
+    } else {
+      vid.style.display = 'none';
+      vid.pause();
+      img.src = url;
+      img.style.display = 'block';
+    }
+  }
+
+  async function uploadPubMediaFile(input) {
+    const file = input.files?.[0];
+    if (!file) return;
+    const form = new FormData();
+    form.append('media', file);
+    adminToast('Uploading release media…');
+    try {
+      const res = await fetch(`${API_BASE}/admin/hero-media`, { method: 'POST', body: form });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Upload failed.');
+      document.getElementById('pubBroadcastImageUrl').value = data.url;
+      updatePublishPreview();
+      adminToast('Media attached.');
+    } catch (e) {
+      adminToast(e.message || 'Media upload failed.');
+    } finally {
+      input.value = '';
+    }
+  }
+
+  async function sendBroadcast() {
+    const title = (document.getElementById('broadcastTitle')?.value || '').trim();
+    const message = (document.getElementById('broadcastMessage')?.value || '').trim();
+    const imageUrl = (document.getElementById('broadcastImageUrl')?.value || '').trim();
+    const target = document.getElementById('broadcastTarget')?.value || 'all';
+    const urgency = document.getElementById('broadcastUrgency')?.value || 'info';
+    const sendEmail = document.getElementById('broadcastSendEmail')?.checked ?? true;
+
+    if (!title || !message) {
+      alert('Please provide both a notice title and announcement body.');
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/admin/broadcasts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, message, target, urgency, imageUrl, sendEmail })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Broadcast could not be published.');
+      document.getElementById('broadcastTitle').value = '';
+      document.getElementById('broadcastMessage').value = '';
+      document.getElementById('broadcastImageUrl').value = '';
+      previewBroadcastMedia();
+      adminToast('Broadcast published successfully.');
+      loadOperations();
+    } catch (err) {
+      alert(err.message || 'Broadcast dispatch failed.');
+    }
+  }
+
+  async function saveConfig() {
+    const scheduleUrl = (document.getElementById('configScheduledHeroUrl')?.value || '').trim();
+    const startTime = document.getElementById('configHeroStartHour')?.value;
+    const endTime = document.getElementById('configHeroEndHour')?.value;
+    const start = startTime !== '' ? Number(startTime.split(':')[0]) : NaN;
+    const end = endTime !== '' ? Number(endTime.split(':')[0]) : NaN;
+
+    if (scheduleUrl && (!Number.isInteger(start) || !Number.isInteger(end))) {
+      return showAdminNotice('Choose both start and end times for scheduled media.', true);
+    }
+
+    const config = {
+      driverFare: Number(document.getElementById('configFare')?.value || 250),
+      platformFee: Number(document.getElementById('configFee')?.value || 10),
+      activeGateway: document.getElementById('configGateway')?.value || 'korapay',
+      heroBannerImage: (document.getElementById('configHeroImage')?.value || '').trim(),
+      heroTitle: (document.getElementById('configHeroTitle')?.value || '').trim(),
+      heroMediaType: document.getElementById('configHeroMediaType')?.value || 'image',
+      heroSchedule: scheduleUrl ? { url: scheduleUrl, type: document.getElementById('configHeroMediaType')?.value || 'image', startHour: start, endHour: end } : null
+    };
+
+    try {
+      const res = await fetch(`${API_BASE}/admin/config`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config)
+      });
+      const data = await res.json();
+      showAdminNotice(res.ok ? 'Settings saved and now live.' : (data.error || 'Could not save settings.'), !res.ok);
+      previewHeroConfigMedia();
+    } catch (_) {
+      showAdminNotice('Connection failed. Please try again.', true);
+    }
+  }
+
+  async function uploadHeroMedia(input) {
+    const file = input.files?.[0];
+    if (!file) return;
+    const form = new FormData();
+    form.append('media', file);
+    showAdminNotice('Uploading hero media…');
+    try {
+      const res = await fetch(`${API_BASE}/admin/hero-media`, { method: 'POST', body: form });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Upload failed.');
+      document.getElementById('configHeroImage').value = data.url;
+      document.getElementById('configHeroMediaType').value = data.mediaType;
+      previewHeroConfigMedia();
+      showAdminNotice('Uploaded. Save experience settings to publish it.');
+    } catch (e) {
+      showAdminNotice(e.message || 'Upload failed.', true);
+    } finally {
+      input.value = '';
+    }
+  }
+
+  async function approvePinReview(id) {
+    const res = await fetch(`${API_BASE}/admin/pin-requests/${id}/approve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    });
+    const data = await res.json();
+    alert(data.message || (res.ok ? 'Approved.' : 'Could not approve.'));
+    if (res.ok) loadOperations();
+  }
+
+  async function rejectPinReview(id) {
+    const note = prompt('Reason for rejecting this identity review:');
+    if (!note) return;
+    const res = await fetch(`${API_BASE}/admin/pin-requests/${id}/reject`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ note })
+    });
+    if (res.ok) loadOperations();
+  }
+
+  async function liftPinCooldown(studentId, regNo) {
+    if (!confirm(`Let ${regNo} submit a new PIN-change request immediately, skipping the rest of the 72h wait?`)) return;
+    const res = await fetch(`${API_BASE}/admin/pin-requests/student/${studentId}/lift-cooldown`, { method: 'POST' });
+    const data = await res.json();
+    alert(data.message || (res.ok ? 'Lifted.' : 'Could not lift the wait.'));
+    if (res.ok) loadOperations();
+  }
+
+  async function openPrivateReview(id, kind) {
+    const res = await fetch(`${API_BASE}/admin/pin-requests/${id}/file/${kind}`);
+    if (!res.ok) return alert('Private file unavailable.');
+    const url = URL.createObjectURL(await res.blob());
+    window.open(url, '_blank', 'noopener');
   }
 
   function openPublishTimelineModal() {
@@ -2360,23 +2735,53 @@
   }
 
   function updatePublishPreview() {
-    const title = document.getElementById('pubBroadcastTitle')?.value || '';
-    const body = document.getElementById('pubBroadcastMessage')?.value || '';
+    const title = (document.getElementById('pubBroadcastTitle')?.value || '').trim();
+    const body = (document.getElementById('pubBroadcastMessage')?.value || '').trim();
+    const mediaUrl = (document.getElementById('pubBroadcastImageUrl')?.value || '').trim();
+    
     const previewTitle = document.getElementById('previewEmailTitle');
     const previewBody = document.getElementById('previewEmailBody');
-    if (previewTitle) previewTitle.textContent = title || '🚀 New Upgrades & Features on Zira Go!';
+    const mediaContainer = document.getElementById('previewEmailMediaContainer');
+    const imgEl = document.getElementById('previewEmailImg');
+    const vidEl = document.getElementById('previewEmailVideo');
+
+    if (previewTitle) previewTitle.textContent = title || 'System Update: Enhanced Transit Engine & Performance Upgrades on Zira Go';
     if (previewBody) previewBody.textContent = body || 'No summary message provided.';
+
+    if (mediaContainer && imgEl && vidEl) {
+      if (mediaUrl) {
+        mediaContainer.style.display = 'block';
+        const isVideo = /\.(mp4|webm|ogg|mov)(\?|$)/i.test(mediaUrl) || mediaUrl.includes('/video/') || mediaUrl.startsWith('data:video');
+        if (isVideo) {
+          imgEl.style.display = 'none';
+          vidEl.src = mediaUrl;
+          vidEl.style.display = 'block';
+          vidEl.load();
+        } else {
+          vidEl.style.display = 'none';
+          vidEl.pause();
+          imgEl.src = mediaUrl;
+          imgEl.style.display = 'block';
+        }
+      } else {
+        mediaContainer.style.display = 'none';
+        imgEl.style.display = 'none';
+        vidEl.style.display = 'none';
+        vidEl.pause();
+      }
+    }
   }
 
   async function submitPublishTimelineBroadcast() {
     const title = (document.getElementById('pubBroadcastTitle')?.value || '').trim();
     const message = (document.getElementById('pubBroadcastMessage')?.value || '').trim();
+    const imageUrl = (document.getElementById('pubBroadcastImageUrl')?.value || '').trim();
     const target = document.getElementById('pubBroadcastTarget')?.value || 'all';
     const sendEmail = document.getElementById('pubBroadcastSendEmail')?.checked ?? true;
     const btn = document.getElementById('btnSubmitPubBroadcast');
 
     if (!title || !message) {
-      adminToast('Please provide a title and summary body.');
+      adminToast('Please provide a title and executive summary body.');
       return;
     }
 
@@ -2394,7 +2799,7 @@
           message,
           target,
           urgency: 'high',
-          imageUrl: '',
+          imageUrl,
           sendEmail
         })
       });
@@ -2404,7 +2809,7 @@
       }
 
       closeModal('modalPublishUpdate');
-      adminToast('🚀 Platform updates published & broadcasted successfully to all users!');
+      adminToast('Platform updates published & broadcasted successfully to all users.');
       if (typeof loadOperations === 'function') loadOperations();
     } catch (e) {
       console.error(e);
@@ -2412,7 +2817,7 @@
     } finally {
       if (btn) {
         btn.disabled = false;
-        btn.textContent = '🚀 Dispatch Update Broadcast';
+        btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span>Dispatch Update Broadcast</span>`;
       }
     }
   }
@@ -2541,7 +2946,7 @@
     function renderThread(stick = true) {
       const c = active(), box = $('supBody');
       $('supHead').hidden = !c; $('supCompose').hidden = !c; $('supQuick').hidden = !c;
-      if (!c) { box.innerHTML = '<div class="sup-placeholder">💬<br>Select a conversation to start chatting.</div>'; return; }
+      if (!c) { box.innerHTML = '<div class="sup-placeholder"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="margin-bottom:8px;opacity:0.6"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><br>Select a conversation to start chatting.</div>'; return; }
       $('supHeadAv').textContent = initial(c.name);
       $('supHeadName').textContent = c.name;
       $('supHeadSub').textContent = `${c.userRole === 'driver' ? 'Driver' : 'Student'}${c.ref ? ' · ' + c.ref : ''} · ${c.category}${c.status === 'resolved' ? ' · Resolved' : ''}`;
@@ -2555,7 +2960,7 @@
         if (m.sender === 'system') { html += `<div class="sm-sys">${esc(m.body)}</div>`; continue; }
         const mine = m.sender === 'admin';
         const st = m.failed ? 'failed' : m.pending ? 'pending' : '';
-        const tick = !mine ? '' : m.failed ? `<button class="sm-retry" onclick="Sup.retry('${m.clientId}')">Not sent · Retry</button>` : m.pending ? '🕓' : m.readAt ? '<span class="read">✓✓ Seen</span>' : '✓';
+        const tick = !mine ? '' : m.failed ? `<button class="sm-retry" onclick="Sup.retry('${m.clientId}')">Not sent · Retry</button>` : m.pending ? '· · ·' : m.readAt ? '<span class="read">✓✓ Seen</span>' : '✓';
         html += `<div class="sm-row ${mine ? 'me' : 'them'} ${st}"><div class="sm-bubble">${esc(m.body)}</div><div class="sm-meta">${m.pending ? '' : time(m.createdAt)}${tick}</div></div>`;
       }
       box.innerHTML = html;
@@ -2632,7 +3037,7 @@
       else if (ev === 'message') {
         const m = p.message, viewing = m.conversationId === activeId;
         if (viewing) { upsert(m); if (m.sender === 'user' && isVisible()) markRead(); }
-        if (m.sender === 'user' && (!viewing || !isVisible())) { beep(); if (!$('paneSupport').classList.contains('active')) adminToast(`💬 ${p.conversation.name}: ${m.body.slice(0, 60)}`); }
+        if (m.sender === 'user' && (!viewing || !isVisible())) { beep(); if (!$('paneSupport').classList.contains('active')) adminToast(`[Support] ${p.conversation.name}: ${m.body.slice(0, 60)}`); }
         refreshSoon();
       } else if (ev === 'typing') {
         if (p.conversationId === activeId) { $('supTyping').textContent = `${active()?.name || 'User'} is typing…`; clearTimeout(typingTimer); typingTimer = setTimeout(() => $('supTyping').textContent = '', 4000); }

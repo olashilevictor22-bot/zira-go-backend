@@ -24,15 +24,85 @@ async function sendNotificationEmail({ userId, role, title, body, imageUrl }) {
 // notifyRole() below (which already has every recipient's email from its one
 // bulk lookup) doesn't re-run a SELECT per user just to get what it already has.
 function sendNotificationEmailTo(email, { title, body, imageUrl }) {
-  const image = imageUrl ? `<img src="${String(imageUrl).replace(/"/g, '&quot;')}" alt="Notification banner" style="display:block;width:100%;max-height:260px;object-fit:cover;border-radius:12px;margin:0 0 18px">` : '';
-  return sendEmail({ to: email, subject: title, text: body, html: `<div style="font-family:Arial,sans-serif;max-width:540px;margin:auto;padding:24px;color:#0f172a">${image}<h2 style="color:#6d28d9">${title}</h2><p style="white-space:pre-line;line-height:1.55">${body}</p><p style="color:#64748b;font-size:12px">Zira Go · Landmark University</p></div>` });
+  const safeTitle = String(title || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const safeBody = String(body || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const appBaseUrl = (process.env.APP_BASE_URL || '').replace(/\/$/, '');
+  const logoUrl = appBaseUrl ? `${appBaseUrl}/zira_go_logo.png` : 'https://raw.githubusercontent.com/omoyaj/assets/main/zira_go_logo.png';
+  
+  const mediaBlock = imageUrl ? `
+    <div style="margin:20px 0;border-radius:12px;overflow:hidden;border:1px solid #E2E8F0;">
+      <img src="${String(imageUrl).replace(/"/g, '&quot;')}" alt="Broadcast Media" style="display:block;width:100%;max-height:280px;object-fit:cover;">
+    </div>` : '';
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="utf-8"></head>
+    <body style="margin:0;padding:0;background-color:#F8FAFC;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0F172A;">
+      <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color:#F8FAFC;padding:32px 16px;">
+        <tr>
+          <td align="center">
+            <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width:560px;background-color:#FFFFFF;border-radius:16px;overflow:hidden;border:1px solid #E2E8F0;box-shadow:0 4px 16px rgba(0,0,0,0.04);">
+              <!-- Corporate Brand Header -->
+              <tr>
+                <td style="background:linear-gradient(135deg, #1E1035 0%, #3B1676 100%);padding:24px 28px;text-align:left;">
+                  <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                    <tr>
+                      <td style="vertical-align:middle;">
+                        <span style="font-size:22px;font-weight:800;color:#FFFFFF;letter-spacing:-0.02em;">Zira <span style="color:#FBBF24;">GO!</span></span>
+                        <div style="font-size:11px;font-weight:600;color:#DDD6FE;letter-spacing:0.08em;text-transform:uppercase;margin-top:2px;">Landmark University Campus Transit</div>
+                      </td>
+                      <td align="right" style="vertical-align:middle;">
+                        <span style="display:inline-block;padding:4px 10px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);border-radius:999px;color:#FFFFFF;font-size:11px;font-weight:700;letter-spacing:0.04em;">Official Notice</span>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <!-- Content Section -->
+              <tr>
+                <td style="padding:28px 28px 24px 28px;">
+                  <h1 style="margin:0 0 16px 0;font-size:20px;font-weight:800;color:#0F172A;line-height:1.35;letter-spacing:-0.01em;">${safeTitle}</h1>
+                  ${mediaBlock}
+                  <div style="font-size:14px;line-height:1.65;color:#334155;white-space:pre-line;">
+${safeBody}
+                  </div>
+                </td>
+              </tr>
+              <!-- Footer Section -->
+              <tr>
+                <td style="background-color:#F8FAFC;border-top:1px solid #E2E8F0;padding:18px 28px;font-size:11.5px;color:#64748B;line-height:1.5;">
+                  <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                    <tr>
+                      <td>
+                        <strong style="color:#0F172A;">Zira Go Transit Operations</strong><br>
+                        Landmark University Campus Ecosystem • Verified Delivery
+                      </td>
+                      <td align="right" style="vertical-align:middle;">
+                        <span style="color:#6D28D9;font-weight:700;">Confidential</span>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `;
+
+  return sendEmail({
+    to: email,
+    subject: title,
+    text: body,
+    html
+  });
 }
 
 // Fire off a batch of async jobs with only `limit` running at once, instead of
-// every job starting simultaneously (Promise.all over a .map does that) — for
-// a few hundred students that used to mean a few hundred concurrent Resend
-// HTTP requests (and a few hundred concurrent AbortController timeouts) fired
-// in the same tick, which is how you get rate-limited or time out for no reason.
+// every job starting simultaneously.
 async function runWithConcurrency(items, limit, worker) {
   let i = 0;
   async function lane() { while (i < items.length) { const item = items[i++]; try { await worker(item); } catch (err) { console.warn('[notifyRole email]', err.message); } } }
@@ -42,19 +112,12 @@ async function runWithConcurrency(items, limit, worker) {
 async function notify({ userId, role, title, body, type = 'system', actionUrl = null, imageUrl = null, email = false }) {
   const result = await pool.query(`INSERT INTO notifications (recipient_id, recipient_role, title, body, type, action_url, image_url) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`, [userId, role, title, body, type, actionUrl, imageUrl]);
   if (email) sendNotificationEmail({ userId, role, title, body, imageUrl }).catch(err => console.warn('[Notification email]', err.message));
-  // Push it live to any open tab for this student/driver — the wallet and
-  // driver panel bells no longer have to wait for their 60s poll to notice.
   emitToUser(role, userId, 'notification', result.rows[0]);
   return result.rows[0];
 }
 
 // Same idea as notify(), but for "every student" / "every driver" at once —
-// used by broadcasts and by "Publish to users" on the change timeline. This
-// used to be `users.rows.map(u => notify(...))`: one INSERT per recipient
-// (a few hundred round-trips to Postgres for a few hundred students) plus,
-// with email on, a per-recipient SELECT just to re-fetch the address the
-// caller already had. Now it's one INSERT for the whole role and one SELECT
-// for the addresses, with email sends trickled out a handful at a time.
+// used by broadcasts and by "Publish to users" on the change timeline.
 async function notifyRole(role, { title, body, type = 'broadcast', actionUrl = null, imageUrl = null, email = false }) {
   const table = role === 'student' ? 'students' : 'drivers';
   const users = await pool.query(`SELECT id, email FROM ${table}`);
@@ -62,15 +125,11 @@ async function notifyRole(role, { title, body, type = 'broadcast', actionUrl = n
   const ids = users.rows.map(u => u.id);
   const inserted = await pool.query(
     `INSERT INTO notifications (recipient_id, recipient_role, title, body, type, action_url, image_url)
-     SELECT unnest($1::bigint[]), $2, $3, $4, $5, $6
+     SELECT unnest($1::bigint[]), $2, $3, $4, $5, $6, $7
      RETURNING *`,
-    [ids, role, title, body, type, actionUrl]
+    [ids, role, title, body, type, actionUrl, imageUrl || null]
   );
-  // image_url wasn't in the SELECT list above (unnest needs one array per
-  // column and imageUrl is the same value for every row, not per-user) — set
-  // it directly on the insert instead of threading it through unnest.
-  if (imageUrl) await pool.query(`UPDATE notifications SET image_url = $1 WHERE id = ANY($2::bigint[])`, [imageUrl, inserted.rows.map(r => r.id)]);
-  for (const row of inserted.rows) emitToUser(role, row.recipient_id, 'notification', imageUrl ? { ...row, image_url: imageUrl } : row);
+  for (const row of inserted.rows) emitToUser(role, row.recipient_id, 'notification', row);
   if (email && emailConfigured) {
     const emailByUser = new Map(users.rows.map(u => [Number(u.id), u.email]));
     runWithConcurrency(inserted.rows, 8, row => {

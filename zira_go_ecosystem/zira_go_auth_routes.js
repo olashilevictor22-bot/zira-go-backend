@@ -140,18 +140,46 @@ router.post('/send-otp', async (req, res) => {
                 to: cleanEmail,
                 subject: `${otp} is your Zira Go verification code`,
                 html: `
-                  <div style="font-family:sans-serif;max-width:460px;margin:0 auto;padding:24px;border:1px solid #e2e8f0;border-radius:16px;">
-                    <div style="text-align:center;margin-bottom:18px">
-                      <h2 style="color:#6D28D9;margin:0">Zira GO!</h2>
-                      <p style="color:#64748B;font-size:12px;margin:4px 0 0">Landmark University Campus Transit</p>
-                    </div>
-                    <p style="font-size:14px;color:#0F172A">Hello,</p>
-                    <p style="font-size:14px;color:#475569">Use the 6-digit verification code below to verify your account registration:</p>
-                    <div style="background:#F3EEFF;padding:16px;border-radius:12px;text-align:center;margin:20px 0;">
-                      <span style="font-family:monospace;font-size:32px;font-weight:bold;letter-spacing:6px;color:#6D28D9">${otp}</span>
-                    </div>
-                    <p style="font-size:12px;color:#94A3B8">This code expires in 10 minutes. If you did not request this, please disregard.</p>
-                  </div>
+                  <!DOCTYPE html>
+                  <html>
+                  <head><meta charset="utf-8"></head>
+                  <body style="margin:0;padding:0;background-color:#F8FAFC;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0F172A;">
+                    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color:#F8FAFC;padding:32px 16px;">
+                      <tr>
+                        <td align="center">
+                          <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width:500px;background-color:#FFFFFF;border-radius:16px;overflow:hidden;border:1px solid #E2E8F0;box-shadow:0 4px 16px rgba(0,0,0,0.04);">
+                            <!-- Corporate Brand Header -->
+                            <tr>
+                              <td style="background:linear-gradient(135deg, #1E1035 0%, #3B1676 100%);padding:24px 28px;text-align:left;">
+                                <span style="font-size:22px;font-weight:800;color:#FFFFFF;letter-spacing:-0.02em;">Zira <span style="color:#FBBF24;">GO!</span></span>
+                                <div style="font-size:11px;font-weight:600;color:#DDD6FE;letter-spacing:0.08em;text-transform:uppercase;margin-top:2px;">Landmark University Campus Transit</div>
+                              </td>
+                            </tr>
+                            <!-- Content Section -->
+                            <tr>
+                              <td style="padding:28px 28px 24px 28px;">
+                                <h2 style="margin:0 0 10px 0;font-size:18px;font-weight:800;color:#0F172A;letter-spacing:-0.01em;">Account Verification Code</h2>
+                                <p style="font-size:14px;color:#475569;line-height:1.55;margin:0 0 20px 0;">Use the 6-digit verification code below to confirm your identity and complete your account registration:</p>
+                                
+                                <div style="background:#F3EEFF;border:1.5px solid #DDD6FE;border-radius:12px;padding:18px;text-align:center;margin:18px 0 22px 0;">
+                                  <div style="font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:36px;font-weight:800;letter-spacing:8px;color:#6D28D9;line-height:1;">${otp}</div>
+                                </div>
+
+                                <p style="font-size:12.5px;color:#64748B;line-height:1.5;margin:0;">This one-time passcode expires in 10 minutes. If you did not initiate this request, no action is required.</p>
+                              </td>
+                            </tr>
+                            <!-- Footer Section -->
+                            <tr>
+                              <td style="background-color:#F8FAFC;border-top:1px solid #E2E8F0;padding:16px 28px;font-size:11px;color:#94A3B8;text-align:left;">
+                                Zira Go Security & Authentication • Landmark University
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                  </body>
+                  </html>
                 `
             });
             return res.json({ success: true, message: 'Verification code sent to your email.' });
@@ -479,23 +507,53 @@ router.post('/forgot-password', async (req, res) => {
 
         if (emailConfigured) {
             try {
+                const recipientName = found.rows[0].full_name ? ' ' + found.rows[0].full_name : '';
                 await sendEmail({
                     fromName: 'Zira Go Campus Transit',
                     to: email,
                     subject: 'Reset your Zira Go password',
                     html: `
-                      <div style="font-family:sans-serif;max-width:460px;margin:0 auto;padding:24px;border:1px solid #e2e8f0;border-radius:16px;">
-                        <div style="text-align:center;margin-bottom:18px">
-                          <h2 style="color:#6D28D9;margin:0">Zira GO!</h2>
-                          <p style="color:#64748B;font-size:12px;margin:4px 0 0">Landmark University Campus Transit</p>
-                        </div>
-                        <p style="font-size:14px;color:#0F172A">Hello${found.rows[0].full_name ? ' ' + found.rows[0].full_name : ''},</p>
-                        <p style="font-size:14px;color:#475569">We received a request to reset the password on your Zira Go ${role} account. Click the button below to choose a new one — this link works once and expires in 30 minutes.</p>
-                        <div style="text-align:center;margin:22px 0;">
-                          <a href="${resetLink}" style="display:inline-block;background:#6D28D9;color:#fff;text-decoration:none;font-weight:700;font-size:14px;padding:13px 22px;border-radius:10px">Reset password</a>
-                        </div>
-                        <p style="font-size:12px;color:#94A3B8">If you didn't request this, you can safely ignore this email — your password won't change.</p>
-                      </div>
+                      <!DOCTYPE html>
+                      <html>
+                      <head><meta charset="utf-8"></head>
+                      <body style="margin:0;padding:0;background-color:#F8FAFC;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0F172A;">
+                        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color:#F8FAFC;padding:32px 16px;">
+                          <tr>
+                            <td align="center">
+                              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width:500px;background-color:#FFFFFF;border-radius:16px;overflow:hidden;border:1px solid #E2E8F0;box-shadow:0 4px 16px rgba(0,0,0,0.04);">
+                                <!-- Corporate Brand Header -->
+                                <tr>
+                                  <td style="background:linear-gradient(135deg, #1E1035 0%, #3B1676 100%);padding:24px 28px;text-align:left;">
+                                    <span style="font-size:22px;font-weight:800;color:#FFFFFF;letter-spacing:-0.02em;">Zira <span style="color:#FBBF24;">GO!</span></span>
+                                    <div style="font-size:11px;font-weight:600;color:#DDD6FE;letter-spacing:0.08em;text-transform:uppercase;margin-top:2px;">Landmark University Campus Transit</div>
+                                  </td>
+                                </tr>
+                                <!-- Content Section -->
+                                <tr>
+                                  <td style="padding:28px 28px 24px 28px;">
+                                    <h2 style="margin:0 0 10px 0;font-size:18px;font-weight:800;color:#0F172A;letter-spacing:-0.01em;">Password Reset Authorization</h2>
+                                    <p style="font-size:14px;color:#475569;line-height:1.55;margin:0 0 16px 0;">Hello${recipientName},</p>
+                                    <p style="font-size:14px;color:#475569;line-height:1.55;margin:0 0 22px 0;">We received an authorized request to reset the password for your Zira Go ${role} account. Click the button below to establish a new password:</p>
+                                    
+                                    <div style="text-align:center;margin:24px 0 24px 0;">
+                                      <a href="${resetLink}" style="display:inline-block;background:#6D28D9;color:#FFFFFF;text-decoration:none;font-weight:700;font-size:14px;padding:14px 28px;border-radius:10px;box-shadow:0 4px 12px rgba(109,40,217,0.25);">Reset Password</a>
+                                    </div>
+
+                                    <p style="font-size:12.5px;color:#64748B;line-height:1.5;margin:0;">This secure link is single-use and expires in 30 minutes. If you did not request this change, please ignore this email and your password will remain unchanged.</p>
+                                  </td>
+                                </tr>
+                                <!-- Footer Section -->
+                                <tr>
+                                  <td style="background-color:#F8FAFC;border-top:1px solid #E2E8F0;padding:16px 28px;font-size:11px;color:#94A3B8;text-align:left;">
+                                    Zira Go Security & Authentication • Landmark University
+                                  </td>
+                                </tr>
+                              </table>
+                            </td>
+                          </tr>
+                        </table>
+                      </body>
+                      </html>
                     `
                 });
             } catch (mailErr) {

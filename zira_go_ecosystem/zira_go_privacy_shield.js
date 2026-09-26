@@ -65,26 +65,12 @@
     /* Capture Attempt Warning Banner */
     '.zira-capture-warning {' +
       'position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 2147483646;' +
-      'background: #E11D48; color: #FFFFFF; padding: 10px 18px; border-radius: 999px;' +
+      'background: #E11D48; color: #FFFFFF; padding: 10px 20px; border-radius: 999px;' +
       'font-size: 12.5px; font-weight: 700; box-shadow: 0 10px 30px rgba(225, 29, 72, 0.4);' +
       'display: flex; align-items: center; gap: 8px; pointer-events: none;' +
       'opacity: 0; transition: opacity 0.3s ease;' +
     '}' +
     '.zira-capture-warning.show { opacity: 1; }' +
-
-    /* Forensic Dynamic Watermark */
-    '.zira-forensic-watermark {' +
-      'position: fixed; inset: 0; z-index: 2147483640; pointer-events: none; user-select: none;' +
-      '-webkit-user-select: none; opacity: 0.045; overflow: hidden; display: flex; flex-direction: column;' +
-      'justify-content: space-around; transform: rotate(-18deg) scale(1.35); mix-blend-mode: multiply;' +
-    '}' +
-    '[data-theme="dark"] .zira-forensic-watermark {' +
-      'opacity: 0.075; mix-blend-mode: screen;' +
-    '}' +
-    '.zira-watermark-row {' +
-      'display: flex; justify-content: space-around; white-space: nowrap; font-family: monospace;' +
-      'font-size: 11px; font-weight: 800; letter-spacing: 0.12em; color: currentColor; text-transform: uppercase;' +
-    '}' +
 
     /* Selection and Context Protection */
     'body.zira-no-select, body.zira-no-select * {' +
@@ -107,51 +93,22 @@
       '<div class="zira-privacy-icon-badge">' +
         '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>' +
       '</div>' +
-      '<div class="zira-privacy-blur-title">🔒 Confidential Terminal Protected</div>' +
+      '<div class="zira-privacy-blur-title">Confidential Terminal Protected</div>' +
       '<div class="zira-privacy-blur-sub">Session contents are masked while in the background or during screen capture attempts for driver & student security.</div>';
     document.body.appendChild(overlay);
 
     // 2. Create Capture Warning Toast
     var warnToast = document.createElement('div');
     warnToast.className = 'zira-capture-warning';
-    warnToast.innerHTML = '<span>⚠️ Screen Capture Prohibited — Session protected</span>';
+    warnToast.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg><span>Screen Capture Prohibited — Session protected</span>';
     document.body.appendChild(warnToast);
-
-    // 3. Create Forensic Dynamic Watermark
-    var watermark = document.createElement('div');
-    watermark.className = 'zira-forensic-watermark';
-    document.body.appendChild(watermark);
-
-    function getIdentityString() {
-      var role = (localStorage.getItem('zira_role') || 'SECURE_SESSION').toUpperCase();
-      var id = localStorage.getItem('zira_id') || localStorage.getItem('zira_driver_id') || 'DEV';
-      var name = localStorage.getItem('zira_driver_name') || localStorage.getItem('zira_name') || '';
-      var custom = currentIdentity || (name ? (role + ': ' + name + ' (#' + id + ')') : (role + ' #' + id));
-      var date = new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
-      return 'ZIRA GO • ' + custom + ' • ' + date + ' • CONFIDENTIAL';
-    }
-
-    function renderWatermark() {
-      var str = getIdentityString();
-      var rows = '';
-      for (var i = 0; i < 9; i++) {
-        rows += '<div class="zira-watermark-row">' +
-                  '<span>' + str + '</span>' +
-                  '<span>' + str + '</span>' +
-                '</div>';
-      }
-      watermark.innerHTML = rows;
-    }
-
-    renderWatermark();
-    setInterval(renderWatermark, 30000); // Live UTC timestamp updates every 30s
 
     function shield() { overlay.classList.add('active'); }
     function unshield() { overlay.classList.remove('active'); }
 
     function flashWarning(msg) {
       if (msg) {
-        warnToast.innerHTML = '<span>⚠️ ' + msg + '</span>';
+        warnToast.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg><span>' + msg + '</span>';
       }
       warnToast.classList.add('show');
       shield();
@@ -256,7 +213,6 @@
       flashCaptureWarning: flashWarning,
       setIdentity: function (customStr) {
         currentIdentity = customStr;
-        renderWatermark();
       }
     };
   });
