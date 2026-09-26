@@ -156,7 +156,9 @@ router.post('/send-otp', async (req, res) => {
     const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
 
     otpStore.set(cleanEmail, { otp, expiresAt, verified: false });
-    console.log(`[OTP Verification] OTP generated for ${cl    if (emailConfigured) {
+    console.log(`[OTP Verification] OTP generated for ${cleanEmail}`);
+
+    if (emailConfigured) {
         try {
             const logoInfo = getAuthLogoInfo();
             const attachments = logoInfo.attachment ? [logoInfo.attachment] : [];
@@ -252,8 +254,6 @@ router.post('/send-otp', async (req, res) => {
             return res.json({ success: true, message: 'Verification code sent to your email.' });
         } catch (mailErr) {
             console.warn('[Email Warning] Failed to send via Resend:', mailErr.message);
-        }
-    }
         }
     }
 
