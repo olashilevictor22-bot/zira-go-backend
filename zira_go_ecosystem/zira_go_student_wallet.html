@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Zira Go — Campus Life, Made Easier</title>
+<!-- SECURITY: must load first. No valid, server-verified student session ->
+     straight to the student login screen, wallet never shown. The old
+     "?adminPreview=student" preview link only works now if a real, currently
+     valid admin session is present. -->
+<script src="zira_go_auth_guard.js"></script>
+<script src="zira_go_privacy_shield.js"></script>
+<script>ZiraGuard.protect('student', { previewParam: 'adminPreview', previewAllow: 'student' });</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
 <script>
@@ -95,6 +102,7 @@
     display: flex;
     flex-direction: column;
     overflow-y: auto;
+    overscroll-behavior-y: contain;
   }
 
   /* =========================================================================
@@ -400,12 +408,13 @@
      MAIN DASHBOARD CONTENT
      ========================================================================= */
   main {
-    padding: 20px 24px 70px;
+    padding: 20px 24px 28px;
     max-width: 980px;
     width: 100%;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
+    will-change: transform;
     gap: 20px;
   }
 
@@ -795,6 +804,13 @@
     align-items: center;
     gap: 8px;
     color: var(--text);
+  }
+  .section-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent, #F97316);
+    flex-shrink: 0;
   }
 
   .spotlight-marquee {
@@ -1470,7 +1486,7 @@
     .avatar-student-name { display: none; }
     .avatar-student-matric { font-size: 10.5px; }
 
-    main { padding: 14px 14px 75px; gap: 16px; }
+    main { padding: 14px 14px 24px; gap: 16px; }
 
     /* Keep the 4 action buttons in a straight horizontal line */
     .main-actions-grid {
@@ -1716,7 +1732,7 @@
       <section id="sec-campus-spotlight">
         <div class="section-header">
           <h2 class="section-title">
-            <span>🔥</span>
+            <span class="section-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 17a2.5 2.5 0 0 0 2.5-2.5c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7.5 7.5 0 1 1-15 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg></span>
             <span>Campus Spotlight</span>
           </h2>
           <span style="font-size:12.5px;color:var(--text-dim);font-weight:600">Landmark Hub</span>
@@ -1731,7 +1747,7 @@
       <section id="sec-trending-campus">
         <div class="section-header">
           <h2 class="section-title">
-            <span>⭐</span>
+            <span class="section-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg></span>
             <span>Trending on Campus</span>
           </h2>
           <span style="font-size:12.5px;color:var(--text-dim);font-weight:600">Student Brands</span>
@@ -2240,7 +2256,7 @@
       <div class="pin-upload-card"><strong>2. Record a selfie video</strong><small>Look at the camera and say your full name and registration number. A red indicator confirms recording is in progress.</small><div id="selfieCameraStatus" class="recording-status"><span class="recording-dot"></span><span id="selfieStatusText">Not recorded yet</span><span id="selfieRecordingTime" style="margin-left:auto;font-variant-numeric:tabular-nums"></span></div><video id="selfieCameraPreview" class="selfie-preview" autoplay playsinline muted></video><button type="button" class="primary" id="btnSelfieRecord" onclick="toggleSelfieRecording()" style="margin-top:10px">● Record selfie video</button><button type="button" class="secondary" id="btnRetakeSelfie" onclick="retakeSelfieVideo()" style="display:none;margin-top:8px">Record again</button><div style="text-align:center;color:var(--text-dim);font-size:11px;margin:10px 0 7px">or upload an existing selfie video</div><input type="file" id="pinSelfieVideo" accept="video/mp4,video/quicktime,video/webm" onchange="selectSelfieVideo(this)"></div>
       <button type="button" class="primary" onclick="submitPinChangeRequest()">Submit for identity review</button>
     </div>
-    <div id="pinApprovedStep" style="display:none"><p id="pinRequestStatus" class="pin-intro"></p><button id="btnGeneratePinCode" type="button" class="primary" style="display:none;margin-bottom:12px" onclick="generatePinApprovalCode()">Generate approval code</button><div id="pinCodeForm" class="pin-code-grid" style="display:none"><label class="pin-field full">Approval code from email<input id="pinApprovalCode" inputmode="numeric" maxlength="6" placeholder="6-digit code"></label><label class="pin-field">New wallet PIN<input id="pinNew" type="password" inputmode="numeric" maxlength="4" placeholder="••••"></label><label class="pin-field">Confirm PIN<input id="pinConfirm" type="password" inputmode="numeric" maxlength="4" placeholder="••••"></label><button type="button" class="primary" style="grid-column:1/-1" onclick="confirmPinChange()">Set new PIN securely</button></div></div>
+    <div id="pinApprovedStep" style="display:none"><p id="pinRequestStatus" class="pin-intro"></p><button id="btnGeneratePinCode" type="button" class="primary" style="display:none;margin-bottom:12px" onclick="generatePinApprovalCode()">Generate approval code</button><div id="pinCodeForm" class="pin-code-grid" style="display:none"><label class="pin-field full">Approval code from email<input id="pinApprovalCode" inputmode="numeric" maxlength="6" placeholder="6-digit code" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore data-form-type="other"></label><label class="pin-field">New wallet PIN<input id="pinNew" type="password" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore data-form-type="other"></label><label class="pin-field">Confirm PIN<input id="pinConfirm" type="password" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore data-form-type="other"></label><button type="button" class="primary" style="grid-column:1/-1" onclick="confirmPinChange()">Set new PIN securely</button></div></div>
     <button type="button" class="secondary" onclick="closeChangePinModal()">Close</button>
   </div>
 </div>
@@ -2820,6 +2836,28 @@ function notificationText(value) { const node=document.createElement('div'); nod
 function setNotificationBadge() { const count=studentNotifications.filter(n=>!n.read_at).length, badge=document.getElementById('notificationBadge'); if(!badge)return; badge.hidden=!count; badge.textContent=count>99?'99+':count; }
 function renderNotificationList() { const box=document.getElementById('notificationList'); if(!box)return; box.innerHTML=studentNotifications.length?studentNotifications.map(n=>`<button type="button" onclick="markNotificationRead(${n.id})" style="text-align:left;border:1px solid var(--line);border-radius:12px;background:${n.read_at?'var(--panel-alt)':'rgba(109,40,217,.08)'};padding:12px;color:var(--text);cursor:pointer"><div style="display:flex;justify-content:space-between;gap:8px"><b>${notificationText(n.title)}</b>${n.read_at?'':'<span style="color:var(--accent);font-size:11px">NEW</span>'}</div>${n.image_url?`<img src="${notificationText(n.image_url)}" alt="" style="width:100%;max-height:130px;object-fit:cover;border-radius:8px;margin:8px 0">`:''}<span style="font-size:12px;color:var(--text-dim);white-space:pre-line">${notificationText(n.body)}</span></button>`).join(''):'<span style="color:var(--text-dim)">You are all caught up.</span>'; }
 async function fetchNotifications(allowPopup=true) { try { const r=await fetch('/api/notifications',{headers:studentHeaders}); if(!r.ok)return; studentNotifications=await r.json(); setNotificationBadge(); renderNotificationList(); const next=studentNotifications.find(n=>!n.read_at && !sessionStorage.getItem(`zira_notice_seen_${n.id}`)); if(allowPopup && next) showNotificationPopup(next); } catch (_) {} }
+
+// Live delivery: a new notification (ride charge, PIN review update, broadcast…)
+// shows up the instant it's created instead of waiting up to 60s for the next
+// poll. The interval poll above stays as a fallback for the rare dropped stream.
+let notificationStream = null;
+function connectNotificationStream() {
+  try {
+    if (notificationStream) notificationStream.close();
+    notificationStream = new EventSource(`/api/notifications/stream?token=${encodeURIComponent(STUDENT_TOKEN)}`);
+    notificationStream.addEventListener('notification', (e) => {
+      try {
+        const n = JSON.parse(e.data);
+        studentNotifications = [n, ...studentNotifications.filter(x => x.id !== n.id)];
+        setNotificationBadge(); renderNotificationList();
+        if (!sessionStorage.getItem(`zira_notice_seen_${n.id}`)) showNotificationPopup(n);
+      } catch (_) {}
+    });
+    // Reconnect on drop (EventSource auto-retries, but also re-sync via a
+    // one-off fetch in case an event was missed while disconnected).
+    notificationStream.onerror = () => { fetchNotifications(false); };
+  } catch (_) { /* older browsers without EventSource just keep the poll */ }
+}
 async function openNotifications() { openModal('modalNotifications'); await fetchNotifications(false); }
 async function markNotificationRead(id) { await fetch(`/api/notifications/${id}/read`,{method:'POST',headers:studentHeaders}); const row=studentNotifications.find(n=>n.id===id); if(row)row.read_at=new Date().toISOString(); setNotificationBadge(); renderNotificationList(); }
 function showNotificationPopup(n) { currentPopupNotification=n; sessionStorage.setItem(`zira_notice_seen_${n.id}`,'1'); document.getElementById('notificationPopupType').textContent=n.type==='broadcast'?'Campus update':'New notification'; document.getElementById('notificationPopupTitle').textContent=n.title; document.getElementById('notificationPopupBody').textContent=n.body; const image=document.getElementById('notificationPopupImage'); image.style.display=n.image_url?'block':'none'; image.src=n.image_url||''; openModal('modalNotificationPopup'); }
@@ -3835,7 +3873,8 @@ document.addEventListener('DOMContentLoaded', () => {
   startCarouselAutoplay();
   loadBackendWallet();
   fetchNotifications();
-  setInterval(() => fetchNotifications(), 60000);
+  connectNotificationStream();
+  setInterval(() => fetchNotifications(false), 60000);
   renderBuses();
   resumeHostedPayment();
   loadPublicExperience();
@@ -4249,6 +4288,72 @@ window.addEventListener('load', () => {
     if (splash) splash.classList.add('hidden');
   }, 950);
 });
+
+// =========================================================================
+// RUBBER-BAND SCROLL EFFECT
+// #main-content is a custom nested scroller, so the browser's native
+// iOS-style bounce doesn't apply here on its own. This adds the same
+// elastic "pull and spring back" feel at the very top/bottom, on both
+// touch (phones/tablets) and mouse-wheel/trackpad (desktop).
+// =========================================================================
+(function () {
+  const scroller = document.getElementById('main-content');
+  const content = scroller ? scroller.querySelector(':scope > main') : null;
+  if (!scroller || !content) return;
+
+  const MAX_STRETCH = 64;   // px cap on how far the visual pull can go
+  const RESISTANCE = 0.42;  // 0..1, lower = stiffer
+  let pulling = false;
+  let startY = 0;
+
+  function atTop() { return scroller.scrollTop <= 0; }
+  function atBottom() { return Math.ceil(scroller.scrollTop + scroller.clientHeight) >= scroller.scrollHeight - 1; }
+
+  function applyPull(px) {
+    content.style.transition = 'none';
+    content.style.transform = `translateY(${px}px)`;
+  }
+  function releasePull() {
+    content.style.transition = 'transform 0.38s cubic-bezier(.16,1,.3,1)';
+    content.style.transform = 'translateY(0px)';
+  }
+
+  scroller.addEventListener('touchstart', (e) => {
+    if (e.touches.length !== 1) return;
+    startY = e.touches[0].clientY;
+    pulling = false;
+  }, { passive: true });
+
+  scroller.addEventListener('touchmove', (e) => {
+    const diff = e.touches[0].clientY - startY;
+    if (diff > 0 && atTop()) {
+      pulling = true;
+      applyPull(Math.min(MAX_STRETCH, diff * RESISTANCE));
+    } else if (diff < 0 && atBottom()) {
+      pulling = true;
+      applyPull(Math.max(-MAX_STRETCH, diff * RESISTANCE));
+    } else if (pulling) {
+      releasePull();
+      pulling = false;
+    }
+  }, { passive: true });
+
+  scroller.addEventListener('touchend', () => { if (pulling) { releasePull(); pulling = false; } });
+  scroller.addEventListener('touchcancel', () => { if (pulling) { releasePull(); pulling = false; } });
+
+  let wheelPull = 0;
+  let wheelTimer = null;
+  scroller.addEventListener('wheel', (e) => {
+    const goingUp = e.deltaY < 0, goingDown = e.deltaY > 0;
+    if ((goingUp && atTop()) || (goingDown && atBottom())) {
+      wheelPull = Math.max(-MAX_STRETCH, Math.min(MAX_STRETCH, wheelPull - e.deltaY * RESISTANCE * 0.5));
+      applyPull(wheelPull);
+      clearTimeout(wheelTimer);
+      wheelTimer = setTimeout(() => { releasePull(); wheelPull = 0; }, 120);
+    }
+  }, { passive: true });
+})();
+
 </script>
 </body>
 </html>

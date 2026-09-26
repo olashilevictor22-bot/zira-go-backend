@@ -40,7 +40,7 @@ router.get('/profile', requireAuth, requireRole('driver'), async (req, res) => {
         const result = await pool.query(
             `SELECT id, full_name, email, wallet_balance, bank_code, bank_name,
                     bank_account_number, bank_account_name, bank_locked, is_flagged,
-                    trip_close_pin_hash
+                    trip_close_pin_hash, approval_status, rejection_reason
              FROM drivers
              WHERE id = $1`,
             [driverId]
@@ -59,7 +59,9 @@ router.get('/profile', requireAuth, requireRole('driver'), async (req, res) => {
             accountName: d.bank_account_name,
             bankLocked: Boolean(d.bank_locked),
             isFlagged: Boolean(d.is_flagged),
-            hasTripClosePin: Boolean(d.trip_close_pin_hash)
+            hasTripClosePin: Boolean(d.trip_close_pin_hash),
+            approvalStatus: d.approval_status,
+            rejectionReason: d.rejection_reason
         });
     } catch (err) {
         console.error('[Driver Profile Error]', err);
@@ -90,7 +92,8 @@ router.post('/withdraw', requireAuth, requireRole('driver'), async (req, res) =>
         // Lock driver record for update
         const driverRes = await client.query(
             `SELECT id, full_name, wallet_balance, bank_code, bank_name,
-                    bank_account_number, bank_account_name, bank_locked, is_flagged
+                    bank_account_number, bank_account_name, bank_locked, is_flagged,
+                    approval_status
              FROM drivers
              WHERE id = $1 FOR UPDATE`,
             [driverId]
@@ -102,6 +105,16 @@ router.post('/withdraw', requireAuth, requireRole('driver'), async (req, res) =>
         }
 
         const driver = driverRes.rows[0];
+
+        if (driver.approval_status !== 'approved') {
+            await client.query('ROLLBACK');
+            return res.status(403).json({
+                error: 'driver_not_approved',
+                message: driver.approval_status === 'rejected'
+                    ? 'Your driver application was not approved. Please contact campus admin support.'
+                    : 'Your driver account is still pending admin review. Withdrawals unlock once you are approved.'
+            });
+        }
 
         if (driver.is_flagged) {
             await client.query('ROLLBACK');

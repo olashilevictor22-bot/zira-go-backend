@@ -8,6 +8,7 @@ const path = require('path');
 const { sendEmail, isConfigured: emailConfigured } = require('./zira_go_email_service');
 const { notify } = require('./zira_go_notification_routes');
 const { requireAuth, requireRole } = require('./zira_go_auth_routes');
+const { emitToAdmins } = require('./zira_go_realtime');
 
 const uploadDir = path.join(__dirname, 'uploads', 'pin-review');
 fs.mkdirSync(uploadDir, { recursive: true });
@@ -56,6 +57,10 @@ router.post('/request', requireAuth, requireRole('student'), upload.fields([{ na
     const active = await pool.query(`SELECT id FROM pin_change_requests WHERE student_id=$1 AND status IN ('pending','approved')`, [req.auth.id]);
     if (active.rows.length) return res.status(409).json({ message: 'You already have a PIN-change request under review.' });
     const created = await pool.query(`INSERT INTO pin_change_requests (student_id, document_path, selfie_video_path) VALUES ($1,$2,$3) RETURNING id, status, created_at`, [req.auth.id, identityDocument.path, selfieVideo.path]);
+    const student = await pool.query('SELECT reg_no, email FROM students WHERE id = $1', [req.auth.id]);
+    // Push it straight to any open Operations Desk tab so the Pending
+    // drivers... err, Pending reviews queue doesn't need a manual refresh.
+    emitToAdmins('pin-request', { ...created.rows[0], reg_no: student.rows[0]?.reg_no, email: student.rows[0]?.email });
     res.status(201).json({ success: true, request: created.rows[0] });
   } catch (err) { console.error('[PIN change request]', err); res.status(400).json({ message: 'Could not submit the request.' }); }
 });

@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Zira Go — Driver</title>
+<!-- SECURITY: must load first. No valid, server-verified driver session ->
+     straight to the driver login screen, panel never shown. The old
+     "?adminPreview=driver" preview link only works now if a real, currently
+     valid admin session is present — the query string alone no longer
+     unlocks anything. -->
+<script src="zira_go_auth_guard.js"></script>
+<script src="zira_go_privacy_shield.js"></script>
+<script>ZiraGuard.protect('driver', { previewParam: 'adminPreview', previewAllow: 'driver' });</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <script>
@@ -364,6 +372,7 @@
   }
   .result-icon.ok { background: rgba(52,211,153,0.15); color: var(--success); }
   .result-icon.fail { background: rgba(251,113,133,0.15); color: var(--danger); }
+  .result-icon.pending { background: var(--warning-bg); color: var(--warning); }
   @keyframes pop { from { transform: scale(0.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
   .result-shell .num { font-size: 34px; font-weight: 800; margin: 4px 0 6px; }
   .result-shell .msg { color: var(--text-dim); font-size: 14.5px; margin-bottom: 30px; }
@@ -603,6 +612,31 @@
       </div>
     </section>
 
+    <!-- PENDING APPROVAL -->
+    <section class="screen" id="screen-pending">
+      <div class="flag-shell">
+        <div class="result-icon pending">⏳</div>
+        <h2>Application under review</h2>
+        <p>Thanks for signing up to drive with Zira Go! Our team is reviewing your details now. You'll be notified as soon as you're approved — trips and withdrawals unlock automatically once that happens.</p>
+        <button class="secondary" style="margin-bottom:10px" onclick="loadDriverProfile().then(applyApprovalGate)">Check status</button>
+        <a href="mailto:support@zirapay.ng?subject=Zira%20Go%20driver%20application" style="text-decoration:none">
+          <button class="primary">Email support</button>
+        </a>
+      </div>
+    </section>
+
+    <!-- REJECTED -->
+    <section class="screen" id="screen-rejected">
+      <div class="flag-shell">
+        <div class="result-icon fail">✕</div>
+        <h2>Application not approved</h2>
+        <p id="rejectedReasonText">Your driver application was not approved. Please contact campus admin support for details.</p>
+        <a href="mailto:support@zirapay.ng?subject=Zira%20Go%20driver%20application" style="text-decoration:none">
+          <button class="primary">Email support</button>
+        </a>
+      </div>
+    </section>
+
     <!-- START / MODE SELECT -->
     <section class="screen" id="screen-start">
       <!-- Withdrawable Earnings Card -->
@@ -698,7 +732,7 @@
 
       <div id="regNoField" style="display:none">
         <label>Student reg number</label>
-        <input type="text" id="regNoInput" placeholder="e.g. LMU/20/1234">
+        <input type="text" id="regNoInput" placeholder="e.g. LMU/20/1234" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore data-form-type="other">
       </div>
 
       <div id="codeField" style="display:none">
@@ -972,6 +1006,7 @@ let pinBuffer = '';
 let mockPinTries = 0;
 let mockCodeStreak = 0;
 let driverFlagged = new URLSearchParams(window.location.search).get('flagged') === '1';
+let driverPending = new URLSearchParams(window.location.search).get('pending') === '1';
 
 function toggleCapacityPicker() { document.getElementById('capacityOptions').classList.toggle('open'); }
 function setVehicleCapacity(value, label, button) { document.getElementById('vehicleCapacity').value=value;document.getElementById('capacitySelection').textContent=label;document.querySelectorAll('.capacity-option').forEach(item=>item.classList.remove('active'));button.classList.add('active');document.getElementById('capacityOptions').classList.remove('open'); }
@@ -986,9 +1021,27 @@ document.getElementById('driverTag').textContent = DRIVER_ID;
 
 function init() {
   if (driverFlagged) { showScreen('flagged'); return; }
+  if (driverPending) { showScreen('pending'); return; }
   showScreen('start');
 }
 init();
+
+// Backstop for a plain reload (no ?pending=1/?flagged=1 in the URL): once the
+// real profile loads, trust its approvalStatus over whatever screen init()
+// guessed from the query string.
+function applyApprovalGate(profile) {
+  const p = profile || currentDriver;
+  if (!p || DEMO_MODE) return;
+  if (p.approvalStatus === 'rejected') {
+    document.getElementById('rejectedReasonText').textContent = p.rejectionReason || 'Your driver application was not approved. Please contact campus admin support for details.';
+    showScreen('rejected');
+  } else if (p.approvalStatus === 'pending') {
+    showScreen('pending');
+  } else if (!driverFlagged && document.getElementById('screen-pending').classList.contains('active')) {
+    // Was pending, just got approved — move them into the real app.
+    showScreen('start');
+  }
+}
 
 // ---------------- Trip lifecycle ----------------
 async function startTrip(mode) {
@@ -1006,7 +1059,10 @@ async function startTrip(mode) {
       body: JSON.stringify({ driverId: DRIVER_ID, mode, seatCapacity })
     });
     const data = await res.json();
-    if(!res.ok){panelNotice(data.message||'Could not start trip.');if(data.tripSessionId)switchTrip(data.tripSessionId);return;}
+    if(!res.ok){
+      if (data.error === 'driver_not_approved') { loadDriverProfile().then(applyApprovalGate); return; }
+      panelNotice(data.message||'Could not start trip.');if(data.tripSessionId)switchTrip(data.tripSessionId);return;
+    }
     trip = { id: data.tripSessionId, mode, seatCapacity: data.seatCapacity || seatCapacity, seatsFilled: 0, totalCollected: 0, charges: [] };
   }
   renderDashboard();
@@ -1530,6 +1586,7 @@ async function loadDriverProfile() {
 
     const availText = document.getElementById('wdAvailableText');
     if (availText) availText.textContent = balanceFormatted;
+    return data;
   } catch (err) {
     console.warn('[Driver Profile Error]', err);
   }
@@ -1718,6 +1775,26 @@ function driverNotificationText(value) { const n=document.createElement('div'); 
 function setDriverNotificationBadge() { const count=driverNotifications.filter(n=>!n.read_at).length,badge=document.getElementById('driverNotificationBadge'); if(!badge)return;badge.hidden=!count;badge.textContent=count>99?'99+':count; }
 function renderDriverNotifications() { const box=document.getElementById('driverNotificationList'); if(!box)return; box.innerHTML=driverNotifications.length?driverNotifications.map(n=>`<button type="button" onclick="markDriverNotificationRead(${n.id})" style="width:100%;text-align:left;border:1px solid var(--line);border-radius:12px;background:${n.read_at?'var(--panel-alt)':'rgba(109,40,217,.08)'};padding:12px;color:var(--text);cursor:pointer;margin-bottom:8px"><div style="display:flex;justify-content:space-between;gap:8px"><b>${driverNotificationText(n.title)}</b>${n.read_at?'':'<span style="font-size:11px;color:var(--accent)">NEW</span>'}</div>${n.image_url?`<img src="${driverNotificationText(n.image_url)}" alt="" style="width:100%;max-height:130px;object-fit:cover;border-radius:8px;margin:8px 0">`:''}<span style="font-size:12px;color:var(--text-dim);white-space:pre-line">${driverNotificationText(n.body)}</span></button>`).join(''):'No notifications.'; }
 async function fetchDriverNotifications(allowPopup=true) { try { const r=await fetch('/api/notifications',{headers:{Authorization:`Bearer ${AUTH_TOKEN}`}}); if(!r.ok)return; driverNotifications=await r.json();setDriverNotificationBadge();renderDriverNotifications();const next=driverNotifications.find(n=>!n.read_at&&!sessionStorage.getItem(`zira_notice_seen_${n.id}`));if(allowPopup&&next)showDriverNotificationPopup(next); } catch (_) {} }
+
+// Live delivery — see zira_go_student_wallet.html for the matching student-side
+// version; same idea, kept as a separate small function since this file has
+// its own notification list/badge renderers.
+let driverNotificationStream = null;
+function connectDriverNotificationStream() {
+  try {
+    if (driverNotificationStream) driverNotificationStream.close();
+    driverNotificationStream = new EventSource(`/api/notifications/stream?token=${encodeURIComponent(AUTH_TOKEN)}`);
+    driverNotificationStream.addEventListener('notification', (e) => {
+      try {
+        const n = JSON.parse(e.data);
+        driverNotifications = [n, ...driverNotifications.filter(x => x.id !== n.id)];
+        setDriverNotificationBadge(); renderDriverNotifications();
+        if (!sessionStorage.getItem(`zira_notice_seen_${n.id}`)) showDriverNotificationPopup(n);
+      } catch (_) {}
+    });
+    driverNotificationStream.onerror = () => { fetchDriverNotifications(false); };
+  } catch (_) {}
+}
 async function openDriverNotifications() { document.getElementById('modalDriverNotifications').classList.add('active'); await fetchDriverNotifications(false); }
 async function markDriverNotificationRead(id) { await fetch(`/api/notifications/${id}/read`,{method:'POST',headers:{Authorization:`Bearer ${AUTH_TOKEN}`}});const item=driverNotifications.find(n=>n.id===id);if(item)item.read_at=new Date().toISOString();setDriverNotificationBadge();renderDriverNotifications(); }
 function showDriverNotificationPopup(n) { currentDriverPopupNotification=n;sessionStorage.setItem(`zira_notice_seen_${n.id}`,'1');document.getElementById('driverNotificationPopupTitle').textContent=n.title;document.getElementById('driverNotificationPopupBody').textContent=n.body;const image=document.getElementById('driverNotificationPopupImage');image.style.display=n.image_url?'block':'none';image.src=n.image_url||'';document.getElementById('modalDriverNotificationPopup').classList.add('active'); }
@@ -1756,7 +1833,7 @@ function toggleTheme() {
 }
 
 // Load driver info and transactions on initial page mount
-loadDriverProfile();
+loadDriverProfile().then(applyApprovalGate);
 loadDriverTransactions();
 fetchDriverNotifications();
 restoreActiveTrip();

@@ -86,6 +86,18 @@ async function runAdminAuditLog() {
     }
 }
 
+async function runDriverApprovalAndPasswordReset() {
+    const client = await pool.connect();
+    try {
+        const sql = fs.readFileSync(path.join(__dirname, '06_driver_approval_and_password_reset.sql'), 'utf8');
+        await client.query(sql);
+        console.log('✅ Driver approval columns and password-reset table applied.');
+    } finally {
+        client.release();
+        await pool.end();
+    }
+}
+
 async function runMigrations() {
     const client = await pool.connect();
     console.log('🔗 Connected to database.');
@@ -119,4 +131,5 @@ else if (process.argv.includes('--vehicle-capacity-upgrade')) runVehicleCapacity
 else if (process.argv.includes('--pin-lockout-upgrade')) runPinLockoutUpgrade();
 else if (process.argv.includes('--charter-fare-guard')) runCharterFareGuard();
 else if (process.argv.includes('--admin-audit-log')) runAdminAuditLog();
+else if (process.argv.includes('--driver-approval-upgrade')) runDriverApprovalAndPasswordReset();
 else runMigrations();

@@ -242,8 +242,16 @@ router.post('/start', requireAuth, requireRole('driver'), async (req, res) => {
     const driverId = req.auth.id;
     const seatCapacity = Number(req.body.seatCapacity || 4);
 
-    const driver = await pool.query('SELECT is_flagged FROM drivers WHERE id = $1', [driverId]);
+    const driver = await pool.query('SELECT is_flagged, approval_status FROM drivers WHERE id = $1', [driverId]);
     if (!driver.rows.length) return res.status(404).json({ error: 'driver_not_found' });
+    if (driver.rows[0].approval_status !== 'approved') {
+        return res.status(403).json({
+            error: 'driver_not_approved',
+            message: driver.rows[0].approval_status === 'rejected'
+                ? 'Your driver application was not approved. Please contact campus admin support.'
+                : 'Your driver account is still pending admin review. You can start taking trips once approved.'
+        });
+    }
     if (driver.rows[0].is_flagged) return res.status(403).json({ error: 'driver_flagged' });
 
     if (!['complete_ride', 'charter'].includes(mode)) {

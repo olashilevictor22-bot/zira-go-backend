@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Zira Go — Account</title>
+<!-- SECURITY: must load first. This screen is shared by students and
+     drivers, so it accepts either role — but only with a valid,
+     server-verified session; otherwise straight to login. -->
+<script src="zira_go_auth_guard.js"></script>
+<script src="zira_go_privacy_shield.js"></script>
+<script>ZiraGuard.protect(['student', 'driver']);</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <script>

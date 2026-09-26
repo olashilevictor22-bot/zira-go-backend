@@ -7,16 +7,21 @@ const path = require('path');
 const fs = require('fs');
 const router = express.Router();
 const { requireAuth, requireRole } = require('./zira_go_auth_routes');
-const { notify } = require('./zira_go_notification_routes');
+const { notify, notifyRole } = require('./zira_go_notification_routes');
 const { expireOneApplication } = require('./zira_go_ads_routes');
+const { openStream, addAdminStream, removeAdminStream, emitToAdmins } = require('./zira_go_realtime');
 
 async function recordPlatformChange({ key, actor = 'Codex', area = 'Platform', title, details }) {
-    await pool.query(
+    const result = await pool.query(
         `INSERT INTO platform_change_log (change_key, actor, area, title, details)
          VALUES ($1, $2, $3, $4, $5)
-         ON CONFLICT (change_key) DO NOTHING`,
+         ON CONFLICT (change_key) DO NOTHING
+         RETURNING *`,
         [key, actor, area, title, details]
     );
+    // Push the new entry to any open Operations Desk tab. ON CONFLICT means
+    // re-running a seed on startup won't re-broadcast an entry that already existed.
+    if (result.rows.length) emitToAdmins('change-log', result.rows[0]);
 }
 
 // Append-only trail of who did what in the admin portal, separate from
@@ -254,9 +259,9 @@ router.get('/ledgers/drivers', async (req, res) => {
         const drivers = await pool.query(
             `SELECT id, full_name, email, wallet_balance, bank_name,
                     bank_account_number, bank_account_name, bank_locked,
-                    is_flagged, created_at
+                    is_flagged, approval_status, rejection_reason, created_at
              FROM drivers
-             ORDER BY created_at DESC`
+             ORDER BY (approval_status = 'pending') DESC, created_at DESC`
         );
 
         const withdrawals = await pool.query(
@@ -281,6 +286,8 @@ router.get('/ledgers/drivers', async (req, res) => {
                 accountName: d.bank_account_name || '—',
                 bankLocked: Boolean(d.bank_locked),
                 isFlagged: Boolean(d.is_flagged),
+                approvalStatus: d.approval_status || 'approved',
+                rejectionReason: d.rejection_reason,
                 joinedAt: new Date(d.created_at).toLocaleDateString()
             })),
             withdrawals: withdrawals.rows.map(w => ({
@@ -336,6 +343,75 @@ router.post('/drivers/:id/toggle-flag', async (req, res) => {
     }
 });
 
+// ------------------------------------------------------------------
+// POST /api/admin/drivers/:id/approve — Clears a pending/rejected driver to go live
+// ------------------------------------------------------------------
+router.post('/drivers/:id/approve', async (req, res) => {
+    try {
+        const driverId = req.params.id;
+        const current = await pool.query('SELECT id, approval_status FROM drivers WHERE id = $1', [driverId]);
+        if (!current.rows.length) return res.status(404).json({ error: 'driver_not_found' });
+
+        await pool.query(
+            `UPDATE drivers
+             SET approval_status = 'approved', rejection_reason = NULL,
+                 approval_reviewed_at = now(), approval_reviewed_by = $1
+             WHERE id = $2`,
+            [req.auth.id, driverId]
+        );
+
+        await logAdminAction(req, { action: 'driver_approve', targetType: 'driver', targetId: driverId });
+
+        notify({
+            userId: driverId,
+            role: 'driver',
+            title: 'You\'re approved to drive!',
+            body: 'Your Zira Go driver application has been approved. You can now start taking trips and requesting withdrawals.',
+            type: 'system'
+        }).catch(err => console.warn('[Driver Approve Notify]', err.message));
+
+        res.json({ success: true, approvalStatus: 'approved' });
+    } catch (err) {
+        console.error('[Driver Approve Error]', err);
+        res.status(500).json({ error: 'internal_error' });
+    }
+});
+
+// ------------------------------------------------------------------
+// POST /api/admin/drivers/:id/reject — body: { reason }
+// ------------------------------------------------------------------
+router.post('/drivers/:id/reject', async (req, res) => {
+    try {
+        const driverId = req.params.id;
+        const reason = (req.body.reason || '').trim() || 'Your driver application was not approved.';
+        const current = await pool.query('SELECT id FROM drivers WHERE id = $1', [driverId]);
+        if (!current.rows.length) return res.status(404).json({ error: 'driver_not_found' });
+
+        await pool.query(
+            `UPDATE drivers
+             SET approval_status = 'rejected', rejection_reason = $1,
+                 approval_reviewed_at = now(), approval_reviewed_by = $2
+             WHERE id = $3`,
+            [reason, req.auth.id, driverId]
+        );
+
+        await logAdminAction(req, { action: 'driver_reject', targetType: 'driver', targetId: driverId, details: { reason } });
+
+        notify({
+            userId: driverId,
+            role: 'driver',
+            title: 'Driver application update',
+            body: reason,
+            type: 'system'
+        }).catch(err => console.warn('[Driver Reject Notify]', err.message));
+
+        res.json({ success: true, approvalStatus: 'rejected' });
+    } catch (err) {
+        console.error('[Driver Reject Error]', err);
+        res.status(500).json({ error: 'internal_error' });
+    }
+});
+
 // Auto-initialize support, broadcast, and config tables
 (async () => {
     try {
@@ -386,6 +462,16 @@ router.post('/drivers/:id/toggle-flag', async (req, res) => {
                 details TEXT NOT NULL,
                 created_at TIMESTAMPTZ NOT NULL DEFAULT now()
             );
+            -- Lets an admin "Publish" a timeline entry out to real users (broadcast +
+            -- optional email), and remembers that it was published so the button
+            -- doesn't fire twice by accident.
+            ALTER TABLE platform_change_log ADD COLUMN IF NOT EXISTS published_at TIMESTAMPTZ;
+            ALTER TABLE platform_change_log ADD COLUMN IF NOT EXISTS published_target TEXT;
+            ALTER TABLE platform_change_log ADD COLUMN IF NOT EXISTS broadcast_id BIGINT;
+            -- The timeline query always sorts by created_at DESC (optionally filtered
+            -- by actor/area); this was a full sequential scan + sort on every load.
+            CREATE INDEX IF NOT EXISTS idx_platform_change_log_created_at ON platform_change_log (created_at DESC);
+            CREATE INDEX IF NOT EXISTS idx_campus_broadcasts_created_at ON campus_broadcasts (created_at DESC);
 
             -- Campus Spotlight cards and Trending-on-Campus ad banners, both
             -- fully admin-editable (image, copy, link, button colour).
@@ -508,6 +594,34 @@ router.post('/drivers/:id/toggle-flag', async (req, res) => {
             area: 'Admin Operations desk',
             title: 'Platform change timeline is now filterable by contributor and area',
             details: 'Operations desk now has two dropdowns above the change timeline — "All contributors" (Codex, ChatGPT, Claude, Admin, etc.) and "All areas" — so it is easy to see which AI or person made a given change and what they touched, without scrolling the full history.'
+        });
+        await recordPlatformChange({
+            key: '2026-09-26-password-reset',
+            actor: 'Claude',
+            area: 'Auth & login',
+            title: 'Password reset is now live for students and drivers',
+            details: 'Added a "Forgot password?" flow on the sign-in screen: a single-use, 30-minute reset link is emailed via Resend, and a new reset page lets the account holder set a new password. No login-enumeration leak — the request always returns the same generic response whether or not the email is registered.'
+        });
+        await recordPlatformChange({
+            key: '2026-09-26-driver-approval-workflow',
+            actor: 'Claude',
+            area: 'Driver onboarding & Admin portal',
+            title: 'New drivers now require admin approval before going live',
+            details: 'Driver accounts created from here on start in "Pending review" — they can sign in and see status, but can\'t start trips or request withdrawals until an admin approves them from a new Pending drivers queue in the Driver Fleet tab. Existing driver accounts were left approved so nobody already active is affected. Approve/reject actions notify the driver and are recorded in the admin audit log.'
+        });
+        await recordPlatformChange({
+            key: '2026-09-26-realtime-and-publish',
+            actor: 'Claude',
+            area: 'Admin Operations desk, Student wallet & Driver panel',
+            title: 'Live updates and a Publish button for the change timeline',
+            details: 'Notifications and the Operations desk (change timeline, broadcasts, PIN reviews) now arrive live over a stream instead of waiting on the next refresh or poll. Each timeline entry also has a new "Publish to users" button that turns it into a real broadcast (in-app + optional email) to students, drivers, or everyone. Also added gzip compression and image/response caching for faster loads.'
+        });
+        await recordPlatformChange({
+            key: '2026-09-26-speed-pass-images-and-batch-notify',
+            actor: 'Claude',
+            area: 'Performance',
+            title: 'Broadcasts now send in one batch, and images load much faster',
+            details: 'Broadcasting to every student or driver used to run one database insert (and, with email on, one extra lookup) per recipient one at a time — now it is a single bulk insert per role, with emails trickled out a few at a time instead of all firing at once. The logo, campus banner, and ad-banner images were also resized and re-compressed for how large they actually appear on screen, cutting each of them by roughly 65 to 90 percent with no visible quality loss.'
         });
 
         // Seed default platform config if empty
@@ -913,6 +1027,49 @@ router.get('/change-log', async (req, res) => {
     }
 });
 
+// POST /admin/change-log/:id/publish — turn a platform-timeline entry into a
+// real campus broadcast (in-app notification + optional email) to students,
+// drivers, or both. Kept as an explicit, separate action from
+// recordPlatformChange so every internal/dev-facing entry doesn't blast
+// users by default — an admin chooses which ones are user-facing news.
+router.post('/change-log/:id/publish', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { target = 'all', sendEmail = true } = req.body || {};
+        if (!['all', 'students', 'drivers'].includes(target)) return res.status(400).json({ error: 'invalid_target' });
+        const entry = await pool.query('SELECT * FROM platform_change_log WHERE id = $1', [id]);
+        if (!entry.rows.length) return res.status(404).json({ error: 'not_found' });
+        const change = entry.rows[0];
+        if (change.published_at) return res.status(409).json({ error: 'already_published', published_at: change.published_at });
+
+        const broadcast = await pool.query(
+            `INSERT INTO campus_broadcasts (title, message, urgency, target, send_email, active)
+             VALUES ($1, $2, 'info', $3, $4, true) RETURNING *`,
+            [change.title, change.details, target, Boolean(sendEmail)]
+        );
+        const audience = target === 'students' ? ['student'] : target === 'drivers' ? ['driver'] : ['student', 'driver'];
+        // One bulk insert per role instead of one INSERT per recipient.
+        await Promise.all(audience.map(role => notifyRole(role, { title: change.title, body: change.details, type: 'broadcast', email: Boolean(sendEmail) })));
+        const updated = await pool.query(
+            `UPDATE platform_change_log SET published_at = now(), published_target = $2, broadcast_id = $3 WHERE id = $1 RETURNING *`,
+            [id, target, broadcast.rows[0].id]
+        );
+        emitToAdmins('change-log-published', updated.rows[0]);
+        await logAdminAction(req, { action: 'change_log_publish', targetType: 'platform_change_log', targetId: id, details: { target, sendEmail: Boolean(sendEmail) } });
+        res.json({ success: true, change: updated.rows[0], broadcast: broadcast.rows[0] });
+    } catch (err) {
+        console.error('[Admin Change Log Publish Error]', err);
+        res.status(500).json({ error: 'internal_error' });
+    }
+});
+
+// GET /admin/stream — Server-Sent Events for the Operations Desk: new
+// platform-timeline entries, publishes, and new broadcasts show up live
+// instead of only on the next manual refresh / tab switch.
+router.get('/stream', (req, res) => {
+    openStream(req, res, { register: addAdminStream, unregister: removeAdminStream });
+});
+
 // ------------------------------------------------------------------
 // Campus Broadcast Endpoints
 // ------------------------------------------------------------------
@@ -938,16 +1095,14 @@ router.post('/broadcasts', async (req, res) => {
             [title, message, urgency, target, imageUrl || null, Boolean(sendEmail)]
         );
         const audience = target === 'students' ? ['student'] : target === 'drivers' ? ['driver'] : ['student', 'driver'];
-        for (const role of audience) {
-            const users = await pool.query(`SELECT id FROM ${role === 'student' ? 'students' : 'drivers'}`);
-            await Promise.all(users.rows.map(u => notify({ userId: u.id, role, title, body: message, type: 'broadcast', imageUrl: imageUrl || null, email: Boolean(sendEmail) })));
-        }
+        await Promise.all(audience.map(role => notifyRole(role, { title, body: message, type: 'broadcast', imageUrl: imageUrl || null, email: Boolean(sendEmail) })));
         await logAdminAction(req, {
             action: 'broadcast_create',
             targetType: 'broadcast',
             targetId: result.rows[0].id,
             details: { title, target, urgency, sendEmail: Boolean(sendEmail) }
         });
+        emitToAdmins('broadcast', result.rows[0]);
         res.json({ success: true, broadcast: result.rows[0] });
     } catch (err) {
         console.error('[zira_go_admin_routes]', err);

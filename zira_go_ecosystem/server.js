@@ -8,6 +8,7 @@
 require('dotenv').config();
 const express = require('express');
 const helmet = require('helmet');
+const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const { Pool } = require('pg');
 const path = require('path');
@@ -16,6 +17,11 @@ const app = express();
 app.set('trust proxy', 1);
 app.disable('x-powered-by');
 app.use(helmet({ contentSecurityPolicy: false, crossOriginResourcePolicy: { policy: 'same-origin' } }));
+// Gzip everything (HTML/JS/CSS/JSON) — these are single-file, several-thousand-
+// line HTML apps, so this materially cuts first-load and API payload size.
+// SSE responses (text/event-stream) are excluded: compression buffers output,
+// which would delay/batch live events instead of streaming them immediately.
+app.use(compression({ filter: (req, res) => res.getHeader('Content-Type') !== 'text/event-stream' && compression.filter(req, res) }));
 // The UI is sometimes hosted by a separate static server during device
 // testing. Allow only the configured public app origin (and explicit extra
 // origins), rather than making the money/auth API public to every website.
@@ -42,6 +48,8 @@ const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHea
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 app.use('/api/auth/send-otp', authLimiter);
+app.use('/api/auth/forgot-password', authLimiter);
+app.use('/api/auth/reset-password', authLimiter);
 // This endpoint runs its own bcrypt.compare against the admin password before
 // sending the Telegram MFA code, so it's a second admin-password-guessing
 // surface — same as /login and /login/admin — and needs the same tight limit,
@@ -184,10 +192,20 @@ app.get('/healthz', async (_req, res) => {
 app.use('/uploads', (_req, res) => res.status(404).end());
 app.use((req, res, next) => {
     if (req.path === '/') return next();
-    const allowedStatic = /\.(html|png|jpe?g|webp|svg|ico)$/i.test(req.path);
+    const allowedStatic = /\.(html|js|css|png|jpe?g|webp|svg|ico)$/i.test(req.path);
     return allowedStatic ? next() : res.status(404).end();
 });
-app.use(express.static(__dirname, { dotfiles: 'deny', index: 'zira_go_login.html' }));
+app.use(express.static(__dirname, {
+    dotfiles: 'deny',
+    index: 'zira_go_login.html',
+    // Images (logo, campus banner) rarely change and are safe to cache hard;
+    // HTML/JS get NO cache so a deploy is visible immediately on next load —
+    // these are actively-edited single-file apps, not versioned build output.
+    setHeaders: (res, filePath) => {
+        if (/\.(png|jpe?g|webp|svg|ico)$/i.test(filePath)) res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+        else res.setHeader('Cache-Control', 'no-cache');
+    }
+}));
 
 app.use((err, _req, res, _next) => {
     if (err.type === 'entity.too.large') return res.status(413).json({ error: 'payload_too_large' });

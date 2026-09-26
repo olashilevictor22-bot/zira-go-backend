@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Zira Go — Admin Portal & Analytics</title>
+<!-- SECURITY: must load first and run before anything else. Pasting this
+     URL with no valid, server-verified admin session redirects straight to
+     the admin login screen — the panel itself is never shown. -->
+<script src="zira_go_auth_guard.js"></script>
+<script src="zira_go_privacy_shield.js"></script>
+<script>ZiraGuard.protect('admin');</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
 <script>
@@ -848,6 +854,26 @@
 
   <!-- TAB 3: DRIVER LEDGER & PAYOUTS -->
   <div class="tab-pane" id="paneDrivers">
+    <div class="panel-card" id="pendingDriversCard" style="display:none">
+      <div class="panel-header">
+        <h3 class="panel-title">Pending Driver Applications</h3>
+        <span id="pendingDriversCount" class="badge pending"></span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Driver Full Name</th>
+              <th>Email</th>
+              <th>Applied</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="tblPendingDrivers"></tbody>
+        </table>
+      </div>
+    </div>
+
     <div class="panel-card">
       <div class="panel-header">
         <h3 class="panel-title">Driver Fleet & Bank Verification</h3>
@@ -1309,7 +1335,8 @@
   function renderDrivers() {
     const q = (document.getElementById('searchDriver')?.value || '').trim().toLowerCase();
     const all = window.allDrivers || [];
-    const rows = q ? all.filter(d => `${d.fullName} ${d.email}`.toLowerCase().includes(q)) : all;
+    const pending = all.filter(d => d.approvalStatus === 'pending');
+    const rows = (q ? all.filter(d => `${d.fullName} ${d.email}`.toLowerCase().includes(q)) : all);
     const tblDri = document.getElementById('tblDrivers');
     tblDri.innerHTML = rows.map(d => `
         <tr>
@@ -1320,9 +1347,10 @@
           <td>${d.accountName}</td>
           <td>${d.joinedAt || '—'}</td>
           <td>
-            ${d.isFlagged ? '<span class="badge danger">Flagged</span>' : '<span class="badge success">Active</span>'}
+            ${driverStatusBadge(d)}
           </td>
           <td>
+            ${d.approvalStatus === 'pending' ? `<button class="btn-sm primary" onclick="approveDriver(${d.id})">Approve</button><button class="btn-sm danger" onclick="rejectDriver(${d.id})">Reject</button>` : ''}
             <button class="btn-sm ${d.isFlagged ? 'primary' : 'danger'}" onclick="toggleFlag(${d.id})">
               ${d.isFlagged ? 'Unflag' : 'Flag'}
             </button>
@@ -1330,6 +1358,62 @@
           </td>
         </tr>
       `).join('') || `<tr><td colspan="8" style="text-align:center;color:var(--text-dim)">${q ? 'No drivers match this search.' : 'No drivers registered.'}</td></tr>`;
+
+    const pendingCard = document.getElementById('pendingDriversCard');
+    const pendingBody = document.getElementById('tblPendingDrivers');
+    const pendingCount = document.getElementById('pendingDriversCount');
+    if (pendingCard) {
+      pendingCard.style.display = pending.length ? '' : 'none';
+      pendingCount.textContent = `${pending.length} awaiting review`;
+      pendingBody.innerHTML = pending.map(d => `
+        <tr>
+          <td><b>${d.fullName}</b></td>
+          <td>${d.email}</td>
+          <td>${d.joinedAt || '—'}</td>
+          <td>
+            <button class="btn-sm primary" onclick="approveDriver(${d.id})">Approve</button>
+            <button class="btn-sm danger" onclick="rejectDriver(${d.id})">Reject</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+  }
+
+  function driverStatusBadge(d) {
+    if (d.approvalStatus === 'pending') return '<span class="badge pending">Pending review</span>';
+    if (d.approvalStatus === 'rejected') return `<span class="badge danger" title="${(d.rejectionReason || '').replace(/"/g, '&quot;')}">Rejected</span>`;
+    return d.isFlagged ? '<span class="badge danger">Flagged</span>' : '<span class="badge success">Active</span>';
+  }
+
+  async function approveDriver(driverId) {
+    if (!confirm('Approve this driver? They will be able to start trips and request withdrawals immediately.')) return;
+    try {
+      const res = await fetch(`${API_BASE}/admin/drivers/${driverId}/approve`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || data.error || 'Could not approve driver.');
+      showAdminNotice('Driver approved.');
+      loadDriverLedger();
+    } catch (e) {
+      showAdminNotice(e.message || 'Action failed.', true);
+    }
+  }
+
+  async function rejectDriver(driverId) {
+    const reason = prompt('Reason for rejecting this driver application (shown to the driver):');
+    if (reason === null) return;
+    try {
+      const res = await fetch(`${API_BASE}/admin/drivers/${driverId}/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: reason.trim() })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || data.error || 'Could not reject driver.');
+      showAdminNotice('Driver application rejected.');
+      loadDriverLedger();
+    } catch (e) {
+      showAdminNotice(e.message || 'Action failed.', true);
+    }
   }
 
   function renderDriverWithdrawals() {
@@ -1526,6 +1610,45 @@
   // on the first load of a session, so the dropdown options are built from
   // the full unfiltered set and don't shrink to just what's currently shown.
   const changeEsc = v => { const d = document.createElement('div'); d.textContent = v == null ? '' : String(v); return d.innerHTML; };
+  // Shared markup for one timeline entry, used both by the initial load below
+  // and by the live "change-log" SSE event so a freshly-recorded entry looks
+  // identical whether it just streamed in or came from the page load.
+  function publishedBadge(c) { return `<span class="badge" style="background:#065f46;color:#d1fae5" title="Published ${new Date(c.published_at).toLocaleString()}">✓ Published${c.published_target ? ' · ' + changeEsc(c.published_target) : ''}</span>`; }
+  function changeCardHtml(c) {
+    const publishControl = c.published_at
+      ? publishedBadge(c)
+      : `<button class="btn-sm primary" data-publish-id="${c.id}" onclick="publishChange(${c.id}, this)">Publish to users</button>`;
+    return `<div id="changeCard-${c.id}" style="position:relative;padding:12px 12px 12px 18px;border-left:3px solid var(--accent);border-radius:0 12px 12px 0;background:var(--panel-alt)"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><b>${changeEsc(c.title)}</b><span class="badge">${changeEsc(c.actor)}</span></div><div style="font-size:12px;color:var(--text-dim);margin-top:5px">${changeEsc(c.details)}</div><div style="font-size:11px;color:var(--text-dim);margin-top:8px">${changeEsc(c.area)} · ${new Date(c.created_at).toLocaleString()}</div><div style="margin-top:9px">${publishControl}</div></div>`;
+  }
+  function prependChangeCard(c) {
+    const box = document.getElementById('changeTimeline');
+    if (!box || box.querySelector(`#changeCard-${c.id}`)) return;
+    box.insertAdjacentHTML('afterbegin', changeCardHtml(c));
+  }
+  // Publish an internal timeline entry out to real students/drivers as a
+  // broadcast (in-app notification + optional email). Asks who should get
+  // it — plain prompt to match this file's existing confirm()/prompt() style
+  // for admin actions (approve/reject reviews, etc.) rather than a new modal.
+  async function publishChange(id, btn) {
+    const choice = (prompt('Publish to: type "students", "drivers", or "all"', 'all') || '').trim().toLowerCase();
+    if (!choice) return;
+    const target = choice === 'students' || choice === 'student' ? 'students' : choice === 'drivers' || choice === 'driver' ? 'drivers' : choice === 'all' ? 'all' : null;
+    if (!target) return alert('Type "students", "drivers", or "all".');
+    const sendEmail = confirm('Also email affected users? OK = yes, Cancel = in-app only.');
+    if (btn) { btn.disabled = true; btn.textContent = 'Publishing…'; }
+    try {
+      const res = await fetch(`${API_BASE}/admin/change-log/${id}/publish`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ target, sendEmail }) });
+      const data = await res.json();
+      if (!res.ok) { alert(data.error === 'already_published' ? 'This was already published.' : 'Could not publish this update.'); if (btn) { btn.disabled = false; btn.textContent = 'Publish to users'; } return; }
+      const card = document.getElementById(`changeCard-${id}`);
+      const control = card?.lastElementChild;
+      if (control) control.innerHTML = publishedBadge(data.change);
+      adminToast('Published to ' + target + '.');
+    } catch (_) {
+      alert('Connection failed. Please try again.');
+      if (btn) { btn.disabled = false; btn.textContent = 'Publish to users'; }
+    }
+  }
   async function loadChangeTimeline(populateFilters) {
     const box = document.getElementById('changeTimeline');
     const actor = document.getElementById('changeActorFilter').value;
@@ -1544,7 +1667,7 @@
         actorSel.innerHTML = '<option value="">All contributors</option>' + actors.map(a => `<option value="${changeEsc(a)}">${changeEsc(a)}</option>`).join('');
         areaSel.innerHTML = '<option value="">All areas</option>' + areas.map(a => `<option value="${changeEsc(a)}">${changeEsc(a)}</option>`).join('');
       }
-      box.innerHTML = (Array.isArray(changes) ? changes : []).map(c => `<div style="position:relative;padding:12px 12px 12px 18px;border-left:3px solid var(--accent);border-radius:0 12px 12px 0;background:var(--panel-alt)"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><b>${changeEsc(c.title)}</b><span class="badge">${changeEsc(c.actor)}</span></div><div style="font-size:12px;color:var(--text-dim);margin-top:5px">${changeEsc(c.details)}</div><div style="font-size:11px;color:var(--text-dim);margin-top:8px">${changeEsc(c.area)} · ${new Date(c.created_at).toLocaleString()}</div></div>`).join('') || '<span style="color:var(--text-dim)">No platform updates match this filter.</span>';
+      box.innerHTML = (Array.isArray(changes) ? changes : []).map(changeCardHtml).join('') || '<span style="color:var(--text-dim)">No platform updates match this filter.</span>';
     } catch (e) {
       console.error(e);
       box.innerHTML = '<span style="color:var(--danger)">Could not load the change timeline.</span>';
@@ -2060,6 +2183,52 @@
     };
   })();
 
+  // ------------------------------------------------------------------
+  // Operations Desk live feed — mirrors Sup's fetch+stream pattern above.
+  // Runs globally (not just while the Operations tab is open) so a new
+  // platform-timeline entry, broadcast, or PIN review is already sitting
+  // there the moment an admin switches to the tab, instead of only showing
+  // up after they click it (which is all loadOperations() on its own gives you).
+  const Ops = (function () {
+    let retry = 2000;
+    function handle(block) {
+      let ev = 'message', data = '';
+      block.split('\n').forEach(l => { if (l.startsWith('event:')) ev = l.slice(6).trim(); else if (l.startsWith('data:')) data += l.slice(5).trim(); });
+      if (!data) return;
+      let p; try { p = JSON.parse(data); } catch (_) { return; }
+      const opsTabActive = document.getElementById('paneOperations')?.classList.contains('active');
+      if (ev === 'change-log') {
+        if (opsTabActive) prependChangeCard(p);
+        else adminToast(`🆕 Platform update: ${p.title}`);
+      } else if (ev === 'change-log-published') {
+        const btn = document.querySelector(`[data-publish-id="${p.id}"]`);
+        if (btn) { btn.outerHTML = publishedBadge(p); }
+      } else if (ev === 'broadcast') {
+        if (opsTabActive) loadOperations();
+      } else if (ev === 'pin-request') {
+        adminToast(`🪪 New PIN identity review: ${p.reg_no || 'a student'}`);
+        if (opsTabActive) loadOperations();
+      }
+    }
+    async function connect() {
+      try {
+        const res = await fetch(`${API_BASE}/admin/stream`);
+        if (res.status === 401 || res.status === 403) return;
+        if (!res.ok || !res.body) throw new Error('stream');
+        retry = 2000;
+        const reader = res.body.getReader(), dec = new TextDecoder(); let buf = '';
+        for (;;) {
+          const { value, done } = await reader.read(); if (done) break;
+          buf += dec.decode(value, { stream: true });
+          let i; while ((i = buf.indexOf('\n\n')) >= 0) { const b = buf.slice(0, i); buf = buf.slice(i + 2); handle(b); }
+        }
+      } catch (_) {}
+      setTimeout(connect, retry); retry = Math.min(retry * 1.7, 15000);
+    }
+    return { init() { connect(); } };
+  })();
+
+  Ops.init();
   Sup.init();
 
   // Splash screen dismiss

@@ -139,6 +139,13 @@ approvals, per what's already built). Mount it there and gate it with
 
 ## What this bundle does NOT include
 
+*(Note: this section is from an earlier build stage and hasn't been kept
+fully in sync with the app — for instance the admin dashboard UI and driver
+withdrawal endpoint it describes as missing now exist. Password reset and
+the driver-approval queue, called out as missing below, were added on
+2026-09-26; see the Operations Desk change timeline in the admin panel for
+the full history.)*
+
 Being upfront about scope, since "complete ecosystem" covers a lot of
 ground:
 
@@ -151,11 +158,13 @@ ground:
   versions from the earlier build. Per what's already live, ZiraPay's real
   Korapay funding-by-polling flow should replace `submitFunding()` once
   this file is merged into the real app rather than run standalone.
-- **Rate limiting, refresh tokens, password reset, or 2FA** on the auth
-  routes — this is a working login system, not a hardened one. Before this
-  goes in front of real students' money, I'd want to add at minimum:
-  rate-limiting on `/login`, a password-reset flow, and shorter-lived
-  access tokens with a refresh token instead of one 7-day JWT.
+- ~~**Rate limiting, refresh tokens, password reset, or 2FA** on the auth
+  routes~~ — rate limiting and password reset are now in place
+  (`/api/auth/forgot-password` + `/api/auth/reset-password`, plus a new
+  driver approval queue so new driver accounts can't take trips or withdraw
+  until an admin reviews them). Refresh tokens / shorter-lived access
+  tokens and 2FA for regular (non-admin) accounts are still open — see the
+  checklist above.
 - **A driver-side bank withdrawal flow** — verification/locking is here;
   the actual "move money out" endpoint isn't, since ZiraPay likely already
   has one for the wallet generally and this should reuse it rather than
