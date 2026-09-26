@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <style>
-  :root, [data-theme="light"] {
+  /* Light theme only — dark mode was removed for readability & consistency.
+     --text-dim was darkened from the original #64748B so secondary text
+     clears WCAG AA contrast (4.5:1) on both --panel and --panel-alt. */
+  :root {
     --bg: #F8F9FD;
     --panel: #FFFFFF;
     --panel-alt: #F1F3F9;
@@ -26,23 +29,8 @@
     --danger: #E11D48;
     --warning: #D97706;
     --text: #0F172A;
-    --text-dim: #64748B;
+    --text-dim: #475569;
     --card-shadow: 0 4px 20px -2px rgba(99, 102, 241, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
-  }
-  [data-theme="dark"] {
-    --bg: #0D071E;
-    --panel: #160D33;
-    --panel-alt: #22154D;
-    --line: #2E1F60;
-    --accent: #8B5CF6;
-    --accent-2: #A78BFA;
-    --accent-glow: rgba(139, 92, 246, 0.18);
-    --success: #34D399;
-    --danger: #FB7185;
-    --warning: #FBBF24;
-    --text: #F8FAFC;
-    --text-dim: #94A3B8;
-    --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -190,8 +178,8 @@
     font-size:11.5px;
   }
   .view-as-row span.vlabel { font-weight:700; color:var(--text-dim); }
-  .view-as-row a { font-weight:800; color:var(--accent); text-decoration:none; margin-left:auto; padding-left: 4px; }
-  .theme-toggle-btn, .btn-logout {
+  .view-as-row a { font-weight:800; color:var(--accent); text-decoration:none; margin-left:auto; padding-left: 4px; display:inline-flex; align-items:center; gap:4px; }
+  .btn-logout {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -208,7 +196,6 @@
     width: 100%;
     font-family: inherit;
   }
-  .theme-toggle-btn:hover { border-color: var(--accent); color: var(--accent); }
   .btn-logout:hover { background: rgba(225, 29, 72, 0.1); color: var(--danger); border-color: var(--danger); }
 
   .sidebar-backdrop { display: none; }
@@ -786,13 +773,9 @@
   <div class="sidebar-footer">
     <div class="view-as-row">
       <span class="vlabel">View as</span>
-      <a href="zira_go_student_wallet.html?adminPreview=student" target="_blank">Student</a>
-      <a href="zira_go_driver_panel.html?adminPreview=driver" target="_blank">Driver</a>
+      <a href="zira_go_student_wallet.html?adminPreview=student" target="_blank"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Student</a>
+      <a href="zira_go_driver_panel.html?adminPreview=driver" target="_blank"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="14" rx="2"/><circle cx="7.5" cy="14.5" r="1.5"/><circle cx="16.5" cy="14.5" r="1.5"/></svg>Driver</a>
     </div>
-    <button class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleAdminTheme()">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
-      <span id="themeToggleLabel">Dark mode</span>
-    </button>
     <button class="btn-logout" onclick="logoutAdmin()">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       Sign Out
@@ -945,6 +928,23 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Bus Ride Home — schedules, routes & drivers (fully admin-managed) -->
+    <div class="panel-card" data-panel-id="busSchedulesCard" style="border-top:3px solid #6D28D9">
+      <div class="panel-header">
+        <div>
+          <h3 class="panel-title">Bus Ride Home — Schedules & Drivers</h3>
+          <div style="font-size:12px;color:var(--text-dim)">Every vacation/interstate bus students can see and book. Add, edit or remove routes, fares, seats and driver contacts here.</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="btn-sm primary" onclick="BUS.openForm()">+ Add bus</button>
+          <button type="button" class="btn-panel-toggle" title="Minimize / Expand section" aria-expanded="true" onclick="togglePanelMinimize(this)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+        </div>
+      </div>
+      <div id="busScheduleList" style="display:grid;gap:10px"><div class="cc-empty">Loading…</div></div>
     </div>
 
     <!-- Recent Universal Transactions Ledger -->
@@ -1797,6 +1797,47 @@
   </div>
 </div></div>
 
+<!-- BUS RIDE HOME — ADD/EDIT SCHEDULE MODAL -->
+<div class="modal-overlay" id="modalBusSchedule"><div class="modal-card" style="max-width:600px">
+  <button class="modal-close" onclick="closeModal('modalBusSchedule')">✕</button>
+  <h3 id="busFormTitle" class="panel-title">Add bus</h3>
+  <div style="font-size:12px;color:var(--text-dim);margin-top:4px">Shown to students in the Bus Ride Home module as soon as you save it.</div>
+
+  <div class="cc-form-grid" style="margin-top:14px">
+    <label style="grid-column:1/-1">Listing title<input id="busTitle" maxlength="120" placeholder="e.g. Landmark Student Council Executive Coaster"></label>
+    <label>Organizer<input id="busOrganizer" maxlength="120" placeholder="e.g. Campus Kulture Official Charter"></label>
+    <label>Category
+      <select id="busCategory">
+        <option value="coaster">Executive Coaster</option>
+        <option value="sienna">Express Sienna</option>
+        <option value="other">Other</option>
+      </select>
+    </label>
+    <label style="display:flex;align-items:center;gap:8px;grid-column:1/-1;margin-top:4px"><input type="checkbox" id="busIsSchool" style="width:auto;margin:0"> Organized by School / Student Council</label>
+
+    <label>Destination (short, for the filter)<input id="busDest" maxlength="60" placeholder="e.g. Lagos"></label>
+    <label>Full route detail<input id="busDestDetail" maxlength="140" placeholder="e.g. Lagos (Berger, Ikeja & Lekki)"></label>
+    <label>Travel date<input id="busDate" type="date"></label>
+    <label>Departure time<input id="busDepartureTime" maxlength="20" placeholder="e.g. 6:30 AM"></label>
+    <label style="grid-column:1/-1">Boarding point<input id="busBoardingPoint" maxlength="120" placeholder="e.g. Senate Car Park / Main Gate"></label>
+
+    <label>Fare per seat (₦)<input id="busFare" type="number" min="1" step="1" placeholder="12500"></label>
+    <label>Total seats<input id="busSeatsTotal" type="number" min="1" step="1" placeholder="30"></label>
+    <label>Seats remaining<input id="busSeatsRemaining" type="number" min="0" step="1" placeholder="leave blank = all seats free"></label>
+    <label style="display:flex;align-items:center;gap:8px;margin-top:22px"><input type="checkbox" id="busActive" checked style="width:auto;margin:0"> Visible to students</label>
+
+    <label>Driver name (optional)<input id="busDriverName" maxlength="120" placeholder="e.g. Musa Adamu"></label>
+    <label>Driver phone (optional)<input id="busDriverPhone" maxlength="30" placeholder="e.g. 0803 123 4567"></label>
+    <label style="grid-column:1/-1">Features (comma-separated)<input id="busFeatures" placeholder="Comfortable AC Coaster, Guaranteed Luggage Space, Security Escort"></label>
+  </div>
+
+  <div id="busFormError" style="display:none;margin-top:12px;padding:9px 12px;border-radius:10px;background:rgba(225,29,72,.1);border:1px solid var(--danger);color:var(--danger);font-size:12.5px;font-weight:600"></div>
+  <div style="display:flex;gap:10px;margin-top:16px">
+    <button class="btn-sm" onclick="closeModal('modalBusSchedule')" style="flex:0 0 30%">Cancel</button>
+    <button class="btn-sm primary" id="busSaveBtn" onclick="BUS.save()" style="flex:1">Save bus</button>
+  </div>
+</div></div>
+
 <!-- PUBLISH TIMELINE BROADCAST MODAL -->
 <div class="modal-overlay" id="modalPublishUpdate">
   <div class="modal-card" style="max-width:700px;max-height:90vh;overflow-y:auto">
@@ -2026,27 +2067,6 @@
     sb.classList.toggle('open', open);
     bd.classList.toggle('open', open);
   }
-
-  function toggleAdminTheme() {
-    const html = document.documentElement;
-    const isDark = html.getAttribute('data-theme') === 'dark';
-    const next = isDark ? 'light' : 'dark';
-    html.setAttribute('data-theme', next);
-    try { localStorage.setItem('ziraAdminTheme', next); } catch (e) {}
-    const label = document.getElementById('themeToggleLabel');
-    if (label) label.textContent = next === 'dark' ? 'Light mode' : 'Dark mode';
-  }
-  (function initAdminTheme() {
-    let saved = null;
-    try { saved = localStorage.getItem('ziraAdminTheme'); } catch (e) {}
-    if (saved === 'dark' || saved === 'light') {
-      document.documentElement.setAttribute('data-theme', saved);
-    }
-    document.addEventListener('DOMContentLoaded', () => {
-      const label = document.getElementById('themeToggleLabel');
-      if (label) label.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? 'Light mode' : 'Dark mode';
-    });
-  })();
 
   function switchTab(tab) {
     document.querySelectorAll('.tab-btn').forEach((b) => {
@@ -3924,6 +3944,164 @@
       openForm, save, remove, toggleActive, move, uploadImage, previewImage, onColorModeChange
     };
   })();
+
+  // ------------------------------------------------------------------
+  // Bus Ride Home — admin-managed schedules/routes/drivers shown in the
+  // student "Bus Ride Home" module. This is the fix for buses & drivers
+  // having no admin control before: they lived only as a hardcoded array
+  // in the student HTML. Everything here is real CRUD against the
+  // bus_schedules table (see zira_go_admin_routes.js).
+  // ------------------------------------------------------------------
+  const BUS = (() => {
+    const API = `${API_BASE}/admin/bus-schedules`;
+    const esc = v => { const d = document.createElement('div'); d.textContent = v == null ? '' : String(v); return d.innerHTML; };
+    let cache = [];
+    let editingId = null;
+
+    function fmtDate(d) {
+      if (!d) return '';
+      const dt = new Date(d);
+      return Number.isNaN(dt.getTime()) ? String(d) : dt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    async function load() {
+      const box = document.getElementById('busScheduleList');
+      try {
+        const r = await fetch(API);
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.message || 'Could not load bus schedules.');
+        cache = d.schedules || [];
+        render();
+      } catch (e) {
+        if (box) box.innerHTML = `<div class="cc-empty">${esc(e.message || 'Could not load.')}</div>`;
+      }
+    }
+
+    function render() {
+      const box = document.getElementById('busScheduleList');
+      if (!box) return;
+      if (!cache.length) { box.innerHTML = `<div class="cc-empty">No buses added yet. Click "+ Add bus" above to create the first listing.</div>`; return; }
+      box.innerHTML = cache.map(b => `
+        <div class="cc-row ${b.active ? '' : 'inactive'}">
+          <div class="cc-mid">
+            <div class="cc-title">${esc(b.title)}${b.active ? '' : ' <span class="badge">Hidden</span>'}</div>
+            <div class="cc-sub">${esc(b.destDetail)} • ${fmtDate(b.date)}, ${esc(b.departureTime)} • ₦${Number(b.fare).toLocaleString()} • ${b.seatsRemaining}/${b.seatsTotal} seats${b.driverName ? ' • Driver: ' + esc(b.driverName) : ''}</div>
+          </div>
+          <div class="cc-actions">
+            <button onclick="BUS.toggleActive(${b.id})">${b.active ? 'Hide' : 'Show'}</button>
+            <button onclick="BUS.openForm(${b.id})">Edit</button>
+            <button class="danger" onclick="BUS.remove(${b.id})">Delete</button>
+          </div>
+        </div>`).join('');
+    }
+
+    function resetForm() {
+      ['busTitle','busOrganizer','busDest','busDestDetail','busDepartureTime','busBoardingPoint','busFare','busSeatsTotal','busSeatsRemaining','busDriverName','busDriverPhone','busFeatures'].forEach(id => { document.getElementById(id).value = ''; });
+      document.getElementById('busCategory').value = 'coaster';
+      document.getElementById('busIsSchool').checked = false;
+      document.getElementById('busActive').checked = true;
+      document.getElementById('busDate').value = new Date().toISOString().slice(0, 10);
+      document.getElementById('busFormError').style.display = 'none';
+    }
+
+    function openForm(id) {
+      resetForm();
+      const bus = id ? cache.find(b => b.id === id) : null;
+      editingId = bus ? bus.id : null;
+      document.getElementById('busFormTitle').textContent = bus ? 'Edit bus' : 'Add bus';
+      if (bus) {
+        document.getElementById('busTitle').value = bus.title || '';
+        document.getElementById('busOrganizer').value = bus.organizer || '';
+        document.getElementById('busCategory').value = bus.category || 'coaster';
+        document.getElementById('busIsSchool').checked = Boolean(bus.isSchool);
+        document.getElementById('busDest').value = bus.dest || '';
+        document.getElementById('busDestDetail').value = bus.destDetail || '';
+        document.getElementById('busDate').value = bus.date ? String(bus.date).slice(0, 10) : '';
+        document.getElementById('busDepartureTime').value = bus.departureTime || '';
+        document.getElementById('busBoardingPoint').value = bus.boardingPoint || '';
+        document.getElementById('busFare').value = bus.fare != null ? bus.fare : '';
+        document.getElementById('busSeatsTotal').value = bus.seatsTotal != null ? bus.seatsTotal : '';
+        document.getElementById('busSeatsRemaining').value = bus.seatsRemaining != null ? bus.seatsRemaining : '';
+        document.getElementById('busDriverName').value = bus.driverName || '';
+        document.getElementById('busDriverPhone').value = bus.driverPhone || '';
+        document.getElementById('busFeatures').value = (bus.features || []).join(', ');
+        document.getElementById('busActive').checked = Boolean(bus.active);
+      }
+      document.getElementById('modalBusSchedule')?.classList.add('active');
+      ziraSound.open();
+    }
+
+    function formError(msg) { const el = document.getElementById('busFormError'); el.textContent = msg; el.style.display = 'block'; }
+
+    async function save() {
+      const seatsRemainingRaw = document.getElementById('busSeatsRemaining').value.trim();
+      const body = {
+        title: document.getElementById('busTitle').value.trim(),
+        organizer: document.getElementById('busOrganizer').value.trim(),
+        category: document.getElementById('busCategory').value,
+        isSchool: document.getElementById('busIsSchool').checked,
+        dest: document.getElementById('busDest').value.trim(),
+        destDetail: document.getElementById('busDestDetail').value.trim(),
+        date: document.getElementById('busDate').value,
+        departureTime: document.getElementById('busDepartureTime').value.trim(),
+        boardingPoint: document.getElementById('busBoardingPoint').value.trim(),
+        fare: Number(document.getElementById('busFare').value),
+        seatsTotal: Number(document.getElementById('busSeatsTotal').value),
+        driverName: document.getElementById('busDriverName').value.trim(),
+        driverPhone: document.getElementById('busDriverPhone').value.trim(),
+        features: document.getElementById('busFeatures').value.split(',').map(s => s.trim()).filter(Boolean),
+        active: document.getElementById('busActive').checked
+      };
+      if (seatsRemainingRaw !== '') body.seatsRemaining = Number(seatsRemainingRaw);
+
+      if (!body.title || !body.organizer || !body.dest || !body.destDetail || !body.date || !body.departureTime) return formError('Fill in the listing title, organizer, destination, route detail, date and departure time.');
+      if (!Number.isFinite(body.fare) || body.fare <= 0) return formError('Enter a valid fare greater than 0.');
+      if (!Number.isInteger(body.seatsTotal) || body.seatsTotal <= 0) return formError('Enter a valid total seat count.');
+
+      const btn = document.getElementById('busSaveBtn');
+      btn.disabled = true; btn.textContent = 'Saving…';
+      try {
+        const isEdit = Boolean(editingId);
+        const r = await fetch(isEdit ? `${API}/${editingId}` : API, {
+          method: isEdit ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.message || 'Could not save.');
+        closeModal('modalBusSchedule');
+        adminToast(isEdit ? 'Bus updated.' : 'Bus added.');
+        await load();
+      } catch (e) {
+        formError(e.message || 'Could not save.');
+      } finally {
+        btn.disabled = false; btn.textContent = 'Save bus';
+      }
+    }
+
+    async function remove(id) {
+      if (!confirm('Delete this bus listing? This cannot be undone.')) return;
+      try {
+        const r = await fetch(`${API}/${id}`, { method: 'DELETE' });
+        if (!r.ok) throw new Error();
+        adminToast('Bus deleted.');
+        await load();
+      } catch (_) { adminToast('Could not delete that bus.'); }
+    }
+
+    async function toggleActive(id) {
+      const bus = cache.find(b => b.id === id);
+      if (!bus) return;
+      try {
+        const r = await fetch(`${API}/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ active: !bus.active }) });
+        if (!r.ok) throw new Error();
+        await load();
+      } catch (_) { adminToast('Could not update visibility.'); }
+    }
+
+    return { load, openForm, save, remove, toggleActive };
+  })();
+  BUS.load();
 
   // ------------------------------------------------------------------
   // Operations Desk live feed — mirrors Sup's fetch+stream pattern above.
