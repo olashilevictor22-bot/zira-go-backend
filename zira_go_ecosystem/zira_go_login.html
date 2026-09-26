@@ -233,40 +233,35 @@
   .fp-role-toggle {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 4px;
+    gap: 6px;
     padding: 4px;
-    border: 1px solid var(--line);
-    border-radius: 12px;
+    border: 1.5px solid var(--line);
+    border-radius: 14px;
     background: var(--panel-alt);
     margin-bottom: 16px;
   }
-  .fp-role-pill {
-    position: relative;
+  .fp-role-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 9px 8px;
-    border-radius: 9px;
-    font-size: 13px;
-    font-weight: 700;
-    font-family: 'Sora', sans-serif;
+    height: 44px;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
     color: var(--text-dim);
+    font: 700 13.5px 'Sora', sans-serif;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.2s ease;
     user-select: none;
   }
-  .fp-role-pill input {
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
-    width: 0;
-    height: 0;
-    margin: 0;
+  .fp-role-btn:hover {
+    color: var(--text);
   }
-  .fp-role-pill:has(input:checked) {
+  .fp-role-btn.selected {
     background: linear-gradient(100deg, var(--accent), var(--accent-2));
     color: #FFFFFF;
-    box-shadow: 0 3px 10px rgba(124, 58, 237, 0.25);
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.28);
   }
   .fp-actions {
     display: flex;
@@ -465,8 +460,8 @@
         <p class="fp-desc">Tell us which account this is and where to send the password reset link.</p>
         <label>Account type</label>
         <div class="fp-role-toggle">
-          <label class="fp-role-pill"><input type="radio" name="forgotRole" value="student" checked>Student</label>
-          <label class="fp-role-pill"><input type="radio" name="forgotRole" value="driver">Driver</label>
+          <button type="button" class="fp-role-btn selected" id="fpRoleStudent" onclick="setForgotRole('student')">Student</button>
+          <button type="button" class="fp-role-btn" id="fpRoleDriver" onclick="setForgotRole('driver')">Driver</button>
         </div>
         <label>Email address</label>
         <input type="email" id="forgotEmail" placeholder="you@lmu.edu.ng" autocomplete="email">
@@ -839,8 +834,18 @@
   function openTerms(event) { event.preventDefault(); document.getElementById('termsModal').classList.add('active'); ziraSound.open(); }
   function closeTerms() { document.getElementById('termsModal').classList.remove('active'); ziraSound.close(); }
 
+  let forgotRole = 'student';
+  function setForgotRole(r) {
+    forgotRole = r;
+    const btnStd = document.getElementById('fpRoleStudent');
+    const btnDrv = document.getElementById('fpRoleDriver');
+    if (btnStd) btnStd.classList.toggle('selected', r === 'student');
+    if (btnDrv) btnDrv.classList.toggle('selected', r === 'driver');
+  }
+
   function openForgotPassword(event) {
     if (event) event.preventDefault();
+    setForgotRole(role || 'student');
     document.getElementById('forgotEmail').value = document.getElementById('email')?.value?.trim() || '';
     document.getElementById('forgotStep1').style.display = '';
     document.getElementById('forgotStep2').style.display = 'none';
@@ -855,7 +860,7 @@
   }
   async function submitForgotPassword() {
     const email = document.getElementById('forgotEmail').value.trim();
-    const role = document.querySelector('input[name="forgotRole"]:checked')?.value || 'student';
+    const roleChoice = forgotRole || 'student';
     const errEl = document.getElementById('forgotError');
     errEl.textContent = '';
     if (!email || !email.includes('@')) {
@@ -869,7 +874,7 @@
       const res = await fetch(`${API_BASE}/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, role })
+        body: JSON.stringify({ email, role: roleChoice })
       });
       const data = await res.json();
       btn.disabled = false;
