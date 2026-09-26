@@ -314,6 +314,61 @@ router.get('/ledgers/drivers', async (req, res) => {
 });
 
 // ------------------------------------------------------------------
+// POST /api/admin/withdrawals/:id/resolve — Manual reconciliation
+// body: { outcome: 'completed' | 'failed', reason? }
+// Withdrawals normally settle via the Flutterwave webhook alone. If that
+// webhook is misconfigured (wrong URL, missing FLW_WEBHOOK_HASH) or a
+// delivery is lost, a withdrawal can sit at 'pending'/'processing'
+// indefinitely with the rider's money already gone out (or not) and no
+// automatic way to close it out. This lets admin settle it by hand after
+// checking the Flutterwave dashboard for the transfer's real status.
+// ------------------------------------------------------------------
+router.post('/withdrawals/:id/resolve', async (req, res) => {
+    const { outcome, reason } = req.body || {};
+    if (!['completed', 'failed'].includes(outcome)) {
+        return res.status(400).json({ error: 'invalid_outcome', message: `outcome must be 'completed' or 'failed'.` });
+    }
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        const result = await client.query(
+            'SELECT id, driver_id, amount, status, reference FROM driver_withdrawals WHERE id = $1 FOR UPDATE',
+            [req.params.id]
+        );
+        if (!result.rows.length) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ error: 'withdrawal_not_found' });
+        }
+        const withdrawal = result.rows[0];
+        if (withdrawal.status !== 'pending' && withdrawal.status !== 'processing') {
+            await client.query('ROLLBACK');
+            return res.status(409).json({ error: 'already_resolved', message: `This withdrawal is already '${withdrawal.status}'.` });
+        }
+
+        if (outcome === 'completed') {
+            await client.query(`UPDATE driver_withdrawals SET status = 'completed', processed_at = now() WHERE id = $1`, [withdrawal.id]);
+            await client.query(`UPDATE wallet_transactions SET status = 'success' WHERE gateway_reference = $1`, [withdrawal.reference]);
+        } else {
+            await client.query('UPDATE drivers SET wallet_balance = wallet_balance + $1 WHERE id = $2', [withdrawal.amount, withdrawal.driver_id]);
+            await client.query(
+                `UPDATE driver_withdrawals SET status = 'rejected', rejection_reason = $1, processed_at = now() WHERE id = $2`,
+                [reason || 'Manually resolved as failed by admin', withdrawal.id]
+            );
+            await client.query(`UPDATE wallet_transactions SET status = 'failed', description = description || ' (manually resolved, refunded)' WHERE gateway_reference = $1`, [withdrawal.reference]);
+            await notify({ userId: withdrawal.driver_id, role: 'driver', title: 'Withdrawal refunded', body: `Your ₦${Number(withdrawal.amount).toLocaleString()} withdrawal could not be completed and has been refunded to your wallet. ${reason || ''}`.trim(), type: 'wallet' });
+        }
+        await client.query('COMMIT');
+        res.json({ success: true, message: `Withdrawal marked as ${outcome}.` });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('[Admin Withdrawal Resolve Error]', err);
+        res.status(500).json({ error: 'internal_error' });
+    } finally {
+        client.release();
+    }
+});
+
+// ------------------------------------------------------------------
 // POST /api/admin/drivers/:id/toggle-flag — Fraud protection flag
 // ------------------------------------------------------------------
 router.post('/drivers/:id/toggle-flag', async (req, res) => {

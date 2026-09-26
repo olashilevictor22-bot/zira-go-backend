@@ -48,12 +48,29 @@ const MAX_CODE_LOCK_STAGE = 3;
   // lockout columns existed — IF NOT EXISTS makes this harmless to re-run.
   await pool.query(`ALTER TABLE pin_change_requests ADD COLUMN IF NOT EXISTS code_fail_count INTEGER NOT NULL DEFAULT 0`);
   await pool.query(`ALTER TABLE pin_change_requests ADD COLUMN IF NOT EXISTS code_lock_stage INTEGER NOT NULL DEFAULT 0`);
+  // 72-hour cooldown after a request reaches a terminal state (completed or
+  // rejected), so a compromised session can't just keep grinding through
+  // identity reviews. Lives on students, not pin_change_requests, since it
+  // has to be checked before a new request row even exists.
+  await pool.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS pin_cooldown_until TIMESTAMPTZ`);
 })().catch(err => console.error('[PIN review table]', err.message));
+
+const COOLDOWN_INTERVAL = `interval '72 hours'`;
+const SUPPORT_EMAIL = 'support@zirago.ng';
+function cooldownMessage(cooldownUntil) {
+  return `You can submit a new PIN-change request from ${new Date(cooldownUntil).toLocaleString()}. `
+    + `Need it sooner? Email ${SUPPORT_EMAIL} with your registration number and admin can lift the wait for you.`;
+}
 
 router.post('/request', requireAuth, requireRole('student'), upload.fields([{ name: 'identityDocument', maxCount: 1 }, { name: 'selfieVideo', maxCount: 1 }]), async (req, res) => {
   try {
     const identityDocument = req.files?.identityDocument?.[0], selfieVideo = req.files?.selfieVideo?.[0];
     if (!identityDocument || !selfieVideo) return res.status(400).json({ message: 'Both your ID document and selfie video are required.' });
+    const cooldownRow = await pool.query(`SELECT pin_cooldown_until FROM students WHERE id=$1`, [req.auth.id]);
+    const cooldownUntil = cooldownRow.rows[0]?.pin_cooldown_until;
+    if (cooldownUntil && new Date(cooldownUntil) > new Date()) {
+      return res.status(429).json({ error: 'pin_change_cooldown', message: cooldownMessage(cooldownUntil), cooldownUntil });
+    }
     const active = await pool.query(`SELECT id FROM pin_change_requests WHERE student_id=$1 AND status IN ('pending','approved')`, [req.auth.id]);
     if (active.rows.length) return res.status(409).json({ message: 'You already have a PIN-change request under review.' });
     const created = await pool.query(`INSERT INTO pin_change_requests (student_id, document_path, selfie_video_path) VALUES ($1,$2,$3) RETURNING id, status, created_at`, [req.auth.id, identityDocument.path, selfieVideo.path]);
@@ -67,7 +84,10 @@ router.post('/request', requireAuth, requireRole('student'), upload.fields([{ na
 
 router.get('/status', requireAuth, requireRole('student'), async (req, res) => {
   const result = await pool.query(`SELECT id,status,review_note,created_at,reviewed_at,approval_code_expires_at FROM pin_change_requests WHERE student_id=$1 ORDER BY created_at DESC LIMIT 1`, [req.auth.id]);
-  res.json({ request: result.rows[0] || null });
+  const cooldownRow = await pool.query(`SELECT pin_cooldown_until FROM students WHERE id=$1`, [req.auth.id]);
+  const cooldownUntil = cooldownRow.rows[0]?.pin_cooldown_until || null;
+  const cooldownActive = Boolean(cooldownUntil && new Date(cooldownUntil) > new Date());
+  res.json({ request: result.rows[0] || null, cooldownUntil, cooldownActive });
 });
 
 router.post('/confirm', requireAuth, requireRole('student'), async (req, res) => {
@@ -85,7 +105,7 @@ router.post('/confirm', requireAuth, requireRole('student'), async (req, res) =>
 
     const codeValid = codeHash(code || '') === request.approval_code_hash;
     if (codeValid) {
-      await client.query('UPDATE students SET pin_hash=$1 WHERE id=$2', [await bcrypt.hash(newPin, 12), req.auth.id]);
+      await client.query(`UPDATE students SET pin_hash=$1, pin_cooldown_until=now() + ${COOLDOWN_INTERVAL} WHERE id=$2`, [await bcrypt.hash(newPin, 12), req.auth.id]);
       await client.query(`UPDATE pin_change_requests SET status='completed', used_at=now() WHERE id=$1`, [request.id]);
       await client.query('COMMIT');
       return res.json({ success: true, message: 'Your wallet PIN has been changed.' });
@@ -111,6 +131,7 @@ router.post('/confirm', requireAuth, requireRole('student'), async (req, res) =>
          WHERE id=$3`,
         ['Too many incorrect approval codes entered. Submit a new PIN-change request.', newStage, request.id]
       );
+      await client.query(`UPDATE students SET pin_cooldown_until=now() + ${COOLDOWN_INTERVAL} WHERE id=$1`, [req.auth.id]);
       await client.query('COMMIT');
       return res.status(423).json({
         error: 'pin_change_locked',
@@ -132,7 +153,7 @@ router.post('/confirm', requireAuth, requireRole('student'), async (req, res) =>
 
 adminRouter.use(requireAuth, requireRole('admin'));
 adminRouter.get('/', async (_req, res) => {
-  const result = await pool.query(`SELECT p.id,p.status,p.review_note,p.created_at,p.reviewed_at,s.reg_no,s.email FROM pin_change_requests p JOIN students s ON s.id=p.student_id ORDER BY p.created_at DESC LIMIT 100`);
+  const result = await pool.query(`SELECT p.id,p.status,p.review_note,p.created_at,p.reviewed_at,s.id AS student_id,s.reg_no,s.email,s.pin_cooldown_until FROM pin_change_requests p JOIN students s ON s.id=p.student_id ORDER BY p.created_at DESC LIMIT 100`);
   res.json(result.rows);
 });
 adminRouter.get('/:id/file/:kind', async (req, res) => {
@@ -167,6 +188,23 @@ router.post('/generate-code', requireAuth, requireRole('student'), async (req, r
   await pool.query(`UPDATE pin_change_requests SET approval_code_hash=$1,approval_code_expires_at=$2 WHERE id=$3`, [codeHash(code), expires, request.id]);
   res.json({ success: true, message: 'A six-digit approval code was sent to your email.', expiresAt: expires });
 });
-adminRouter.post('/:id/reject', async (req, res) => { const result=await pool.query(`UPDATE pin_change_requests SET status='rejected',reviewed_by=$1,reviewed_at=now(),review_note=$2 WHERE id=$3 AND status='pending' RETURNING student_id,review_note`, [req.auth.id, req.body.note || 'Identity check could not be verified.', req.params.id]); if(result.rows[0]) await notify({ userId:result.rows[0].student_id,role:'student',title:'Wallet PIN change update',body:`Your identity review needs attention. ${result.rows[0].review_note}`,type:'security' }); res.json({ success: true }); });
+adminRouter.post('/:id/reject', async (req, res) => {
+  const result=await pool.query(`UPDATE pin_change_requests SET status='rejected',reviewed_by=$1,reviewed_at=now(),review_note=$2 WHERE id=$3 AND status='pending' RETURNING student_id,review_note`, [req.auth.id, req.body.note || 'Identity check could not be verified.', req.params.id]);
+  if(result.rows[0]) {
+    await pool.query(`UPDATE students SET pin_cooldown_until=now() + ${COOLDOWN_INTERVAL} WHERE id=$1`, [result.rows[0].student_id]);
+    await notify({ userId:result.rows[0].student_id,role:'student',title:'Wallet PIN change update',body:`Your identity review needs attention. ${result.rows[0].review_note}`,type:'security' });
+  }
+  res.json({ success: true });
+});
+
+// POST /api/admin/pin-requests/student/:studentId/lift-cooldown
+// Manual override so a student who emails support doesn't have to sit out
+// the full 72 hours — admin can clear the wait for just that one student.
+adminRouter.post('/student/:studentId/lift-cooldown', async (req, res) => {
+  const result = await pool.query(`UPDATE students SET pin_cooldown_until=NULL WHERE id=$1 RETURNING id, reg_no, email`, [req.params.studentId]);
+  if (!result.rows.length) return res.status(404).json({ message: 'Student not found.' });
+  await notify({ userId: result.rows[0].id, role: 'student', title: 'PIN-change wait lifted', body: 'Admin has cleared your PIN-change waiting period — you can submit a new request now.', type: 'security' });
+  res.json({ success: true, message: `Cooldown lifted for ${result.rows[0].reg_no}. They can submit a new PIN-change request immediately.` });
+});
 
 module.exports = { router, adminRouter };

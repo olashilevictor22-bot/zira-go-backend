@@ -345,7 +345,14 @@ function friendlyPayoutMessage(raw) {
 async function initiateDriverPayout({ accountNumber, bankCode, amount, reference, narration }) {
     const hasLiveKey = FLW_SECRET_KEY && !FLW_SECRET_KEY.startsWith('your_') && FLW_SECRET_KEY !== 'mock';
     if (!hasLiveKey) {
-        throw new Error('Flutterwave payouts are not configured. Set FLW_SECRET_KEY before enabling withdrawals.');
+        // This exact message reaches the rider's withdrawal-failed alert, so it
+        // must never expose env-var/config wording — only the server log should
+        // say why. The wallet debit is rolled back by the caller before this
+        // error propagates, same as any other rejected payout.
+        console.error('[Flutterwave transfer] FLW_SECRET_KEY is not set (or is a placeholder) — payouts cannot be started.');
+        const err = new Error(friendlyPayoutMessage('cannot be processed'));
+        err.providerMessage = 'FLW_SECRET_KEY not configured';
+        throw err;
     }
     let res;
     try {

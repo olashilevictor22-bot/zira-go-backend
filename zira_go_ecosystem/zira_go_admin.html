@@ -925,6 +925,7 @@
               <th>Account Name Match</th>
               <th>Status</th>
               <th>Date</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody id="tblDriverWithdrawals"></tbody>
@@ -1441,8 +1442,27 @@
           </td>
           <td><span class="badge ${w.status === 'completed' ? 'success' : w.status === 'rejected' ? 'danger' : 'pending'}">${w.status}</span></td>
           <td>${w.date}</td>
+          <td>${w.status === 'pending' || w.status === 'processing' ? `<button class="btn-sm primary" onclick="resolveWithdrawal(${w.id},'completed')">Mark completed</button><button class="btn-sm danger" onclick="resolveWithdrawal(${w.id},'failed')">Mark failed & refund</button>` : ''}</td>
         </tr>
-      `).join('') || `<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">${all.length ? 'No withdrawals match these filters.' : 'No withdrawal requests yet.'}</td></tr>`;
+      `).join('') || `<tr><td colspan="8" style="text-align:center;color:var(--text-dim)">${all.length ? 'No withdrawals match these filters.' : 'No withdrawal requests yet.'}</td></tr>`;
+  }
+
+  // Manual fallback for a withdrawal stuck at pending/processing — normally
+  // only the Flutterwave webhook settles these. Check the Flutterwave
+  // dashboard for the transfer's real status before choosing an outcome.
+  async function resolveWithdrawal(id, outcome) {
+    const verb = outcome === 'completed' ? 'mark this withdrawal as COMPLETED (money already sent)' : 'mark this withdrawal as FAILED and refund the rider\'s wallet';
+    if (!confirm(`Check the Flutterwave dashboard first. Are you sure you want to ${verb}?`)) return;
+    const reason = outcome === 'failed' ? (prompt('Reason for marking this failed (shown to the rider):') || 'Manually resolved as failed by admin') : undefined;
+    try {
+      const res = await fetch(`${API_BASE}/admin/withdrawals/${id}/resolve`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ outcome, reason }) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Could not resolve this withdrawal.');
+      showAdminNotice(data.message || 'Withdrawal resolved.');
+      loadDriverLedger();
+    } catch (e) {
+      showAdminNotice(e.message || 'Action failed.', true);
+    }
   }
 
   // ------------------------------------------------------------------
@@ -1600,7 +1620,7 @@
       const [list, cfg, pins] = await Promise.all([read(0,[]),read(1,{}),read(2,[])]);
       document.getElementById('broadcastList').innerHTML = (list || []).map(b => `<div style="padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--panel-alt)"><div style="display:flex;justify-content:space-between;gap:8px"><b>${b.title}</b><span class="badge">${b.target}</span></div><span style="font-size:12px;color:var(--text-dim)">${b.message}</span><div style="font-size:11px;color:var(--text-dim);margin-top:7px">${b.send_email?'✉ Email enabled':'In-app only'} · ${new Date(b.created_at).toLocaleString()}</div></div>`).join('') || '<span style="color:var(--text-dim)">No broadcasts yet.</span>';
       const hourTime=value=>Number.isInteger(Number(value))?`${String(Number(value)).padStart(2,'0')}:00`:''; document.getElementById('configFare').value = cfg.driverFare ?? 250; document.getElementById('configFee').value = cfg.platformFee ?? 10; document.getElementById('configGateway').value = cfg.activeGateway || 'korapay'; document.getElementById('configHeroImage').value = cfg.heroBannerImage || ''; document.getElementById('configHeroTitle').value = cfg.heroTitle || ''; document.getElementById('configHeroMediaType').value = cfg.heroMediaType || 'image'; document.getElementById('configScheduledHeroUrl').value = cfg.heroSchedule?.url || ''; document.getElementById('configHeroStartHour').value = hourTime(cfg.heroSchedule?.startHour); document.getElementById('configHeroEndHour').value = hourTime(cfg.heroSchedule?.endHour);
-      document.getElementById('pinReviewList').innerHTML = (pins || []).map(p => `<div style="padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--panel-alt)"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><div><b>${p.reg_no}</b><div style="font-size:11px;color:var(--text-dim);margin-top:3px">${p.email}</div></div><span class="badge ${p.status === 'pending' ? 'pending' : 'success'}">${p.status}</span></div><div style="font-size:11px;color:var(--text-dim);margin:9px 0">Requested ${new Date(p.created_at).toLocaleString()}</div><div style="display:flex;gap:7px;flex-wrap:wrap"><button class="btn-sm" onclick="openPrivateReview(${p.id},'document')">View ID</button><button class="btn-sm" onclick="openPrivateReview(${p.id},'selfie')">View selfie video</button>${p.status === 'pending' ? `<button class="btn-sm primary" onclick="approvePinReview(${p.id})">Approve & send code</button><button class="btn-sm danger" onclick="rejectPinReview(${p.id})">Reject</button>` : ''}</div></div>`).join('') || '<span style="color:var(--text-dim)">No PIN reviews yet.</span>';
+      document.getElementById('pinReviewList').innerHTML = (pins || []).map(p => { const cooldownActive = p.pin_cooldown_until && new Date(p.pin_cooldown_until) > new Date(); const terminal = p.status === 'completed' || p.status === 'rejected'; return `<div style="padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--panel-alt)"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><div><b>${p.reg_no}</b><div style="font-size:11px;color:var(--text-dim);margin-top:3px">${p.email}</div></div><span class="badge ${p.status === 'pending' ? 'pending' : 'success'}">${p.status}</span></div><div style="font-size:11px;color:var(--text-dim);margin:9px 0">Requested ${new Date(p.created_at).toLocaleString()}${terminal && cooldownActive ? ` · Next request allowed ${new Date(p.pin_cooldown_until).toLocaleString()}` : ''}</div><div style="display:flex;gap:7px;flex-wrap:wrap"><button class="btn-sm" onclick="openPrivateReview(${p.id},'document')">View ID</button><button class="btn-sm" onclick="openPrivateReview(${p.id},'selfie')">View selfie video</button>${p.status === 'pending' ? `<button class="btn-sm primary" onclick="approvePinReview(${p.id})">Approve & send code</button><button class="btn-sm danger" onclick="rejectPinReview(${p.id})">Reject</button>` : ''}${terminal && cooldownActive ? `<button class="btn-sm" onclick="liftPinCooldown(${p.student_id},'${p.reg_no}')">Lift 72h wait</button>` : ''}</div></div>`; }).join('') || '<span style="color:var(--text-dim)">No PIN reviews yet.</span>';
       await loadChangeTimeline(true);
     } catch (e) { console.error(e); showAdminNotice('Could not load some Operations data. Refresh and sign in again if this continues.', true); }
   }
@@ -1678,6 +1698,7 @@
   async function uploadHeroMedia(input) { const file=input.files?.[0];if(!file)return;const form=new FormData();form.append('media',file);showAdminNotice('Uploading hero media…');try { const res=await fetch(`${API_BASE}/admin/hero-media`,{method:'POST',body:form});const data=await res.json();if(!res.ok)throw new Error(data.error||'Upload failed.');configHeroImage.value=data.url;configHeroMediaType.value=data.mediaType;showAdminNotice('Uploaded. Save experience settings to publish it.'); } catch(e) { showAdminNotice(e.message||'Upload failed.',true); } finally { input.value=''; } }
   async function approvePinReview(id) { const res = await fetch(`${API_BASE}/admin/pin-requests/${id}/approve`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({}) }); const data = await res.json(); alert(data.message || (res.ok ? 'Approved.' : 'Could not approve.')); if(res.ok) loadOperations(); }
   async function rejectPinReview(id) { const note = prompt('Reason for rejecting this identity review:'); if(!note)return; const res = await fetch(`${API_BASE}/admin/pin-requests/${id}/reject`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({note}) }); if(res.ok)loadOperations(); }
+  async function liftPinCooldown(studentId, regNo) { if(!confirm(`Let ${regNo} submit a new PIN-change request immediately, skipping the rest of the 72h wait?`)) return; const res = await fetch(`${API_BASE}/admin/pin-requests/student/${studentId}/lift-cooldown`, { method:'POST' }); const data = await res.json(); alert(data.message || (res.ok ? 'Lifted.' : 'Could not lift the wait.')); if(res.ok) loadOperations(); }
   async function openPrivateReview(id, kind) { const res = await fetch(`${API_BASE}/admin/pin-requests/${id}/file/${kind}`); if (!res.ok) return alert('Private file unavailable.'); const url = URL.createObjectURL(await res.blob()); window.open(url, '_blank', 'noopener'); }
 
   async function approveBankChange(id) {
