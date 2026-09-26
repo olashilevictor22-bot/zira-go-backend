@@ -246,16 +246,73 @@
     border-radius: 20px;
     padding: 22px;
     box-shadow: var(--card-shadow);
+    transition: padding 0.2s ease;
+  }
+  .panel-card.minimized {
+    padding-bottom: 14px;
+  }
+  .panel-card.minimized > div:not(.panel-header) {
+    display: none !important;
+  }
+  .panel-card.minimized .panel-header {
+    margin-bottom: 0;
   }
   .panel-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 18px;
+    gap: 12px;
   }
   .panel-title {
     font-size: 16.5px;
     font-weight: 700;
+  }
+  .btn-panel-toggle {
+    background: var(--panel-alt);
+    border: 1px solid var(--line);
+    color: var(--text-dim);
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+  }
+  .btn-panel-toggle:hover {
+    color: var(--text);
+    border-color: var(--accent);
+    background: rgba(124, 58, 237, 0.08);
+  }
+  .btn-panel-toggle svg {
+    transition: transform 0.25s ease;
+  }
+  .panel-card.minimized .btn-panel-toggle svg {
+    transform: rotate(180deg);
+  }
+
+  /* Compact scrollable lists with max heights */
+  .scrollable-list-box {
+    max-height: 420px;
+    overflow-y: auto;
+    padding-right: 4px;
+    scrollbar-width: thin;
+  }
+  .scrollable-list-box::-webkit-scrollbar {
+    width: 6px;
+  }
+  .scrollable-list-box::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollable-list-box::-webkit-scrollbar-thumb {
+    background: var(--line);
+    border-radius: 4px;
+  }
+  .scrollable-list-box::-webkit-scrollbar-thumb:hover {
+    background: var(--accent);
   }
   .search-input {
     padding: 8px 14px;
@@ -982,12 +1039,15 @@
     </div>
 
     <!-- Comprehensive Financial Ledger & Payout Queue -->
-    <div class="panel-card" style="margin-top:16px">
+    <div class="panel-card" data-panel-id="finAuditLedger" style="margin-top:16px">
       <div class="panel-header">
         <div>
           <h3 class="panel-title">Universal Financial Audit Ledger</h3>
           <div style="font-size:12px;color:var(--text-dim)">Complete history of deposits, transit debits, driver payouts, ad fees, and admin adjustments</div>
         </div>
+        <button type="button" class="btn-panel-toggle" title="Minimize / Expand section" aria-expanded="true" onclick="togglePanelMinimize(this)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
       </div>
 
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
@@ -1033,10 +1093,17 @@
 
   <!-- TAB 3: STUDENT LEDGER -->
   <div class="tab-pane" id="paneStudents">
-    <div class="panel-card">
+    <div class="panel-card" data-panel-id="studentsListCard">
       <div class="panel-header">
-        <h3 class="panel-title">Registered Students & Balances</h3>
-        <input type="text" class="search-input" id="searchStudent" placeholder="Search Reg No or Email..." oninput="loadStudentLedger()">
+        <div>
+          <h3 class="panel-title">Registered Students & Balances</h3>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <input type="text" class="search-input" id="searchStudent" placeholder="Search Reg No or Email..." oninput="loadStudentLedger()">
+          <button type="button" class="btn-panel-toggle" title="Minimize / Expand section" aria-expanded="true" onclick="togglePanelMinimize(this)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+        </div>
       </div>
       <div class="table-wrap">
         <table>
@@ -1054,9 +1121,12 @@
       </div>
     </div>
 
-    <div class="panel-card">
+    <div class="panel-card" data-panel-id="studentFundingCard">
       <div class="panel-header">
         <h3 class="panel-title">Student Funding & Ride Ledger</h3>
+        <button type="button" class="btn-panel-toggle" title="Minimize / Expand section" aria-expanded="true" onclick="togglePanelMinimize(this)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
       </div>
       <div class="table-wrap">
         <table>
@@ -1082,10 +1152,15 @@
 
   <!-- TAB 3: DRIVER LEDGER & PAYOUTS -->
   <div class="tab-pane" id="paneDrivers">
-    <div class="panel-card" id="pendingDriversCard" style="display:none">
+    <div class="panel-card" id="pendingDriversCard" data-panel-id="pendingDriversCard" style="display:none">
       <div class="panel-header">
-        <h3 class="panel-title">Pending Driver Applications</h3>
-        <span id="pendingDriversCount" class="badge pending"></span>
+        <div style="display:flex;align-items:center;gap:10px">
+          <h3 class="panel-title">Pending Driver Applications</h3>
+          <span id="pendingDriversCount" class="badge pending"></span>
+        </div>
+        <button type="button" class="btn-panel-toggle" title="Minimize / Expand section" aria-expanded="true" onclick="togglePanelMinimize(this)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
       </div>
       <div class="table-wrap">
         <table>
@@ -1102,10 +1177,17 @@
       </div>
     </div>
 
-    <div class="panel-card">
+    <div class="panel-card" data-panel-id="driverFleetCard">
       <div class="panel-header">
-        <h3 class="panel-title">Driver Fleet & Bank Verification</h3>
-        <input type="text" class="search-input" id="searchDriver" placeholder="Search name or email..." oninput="loadDriverLedger()">
+        <div>
+          <h3 class="panel-title">Driver Fleet & Bank Verification</h3>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <input type="text" class="search-input" id="searchDriver" placeholder="Search name or email..." oninput="loadDriverLedger()">
+          <button type="button" class="btn-panel-toggle" title="Minimize / Expand section" aria-expanded="true" onclick="togglePanelMinimize(this)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+        </div>
       </div>
       <div class="table-wrap">
         <table>
@@ -1126,9 +1208,12 @@
       </div>
     </div>
 
-    <div class="panel-card">
+    <div class="panel-card" data-panel-id="driverPayoutsCard">
       <div class="panel-header">
         <h3 class="panel-title">Driver Payout & Withdrawal Ledger</h3>
+        <button type="button" class="btn-panel-toggle" title="Minimize / Expand section" aria-expanded="true" onclick="togglePanelMinimize(this)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
         <input type="text" class="search-input" id="wdSearch" placeholder="Search receipt, ref or driver..." style="max-width:220px" oninput="renderDriverWithdrawals()">
@@ -1197,12 +1282,15 @@
 
   <div class="tab-pane" id="paneOperations">
     <!-- Broadcast Section with Picture / Video Support -->
-    <div class="panel-card" style="border-top:3px solid var(--accent)">
+    <div class="panel-card" data-panel-id="opBroadcast" style="border-top:3px solid var(--accent)">
       <div class="panel-header">
         <div>
           <h3 class="panel-title">Campus Broadcast Engine</h3>
           <div style="font-size:12px;color:var(--text-dim)">Dispatch real-time announcements with picture or video attachments to student & driver terminals and emails.</div>
         </div>
+        <button type="button" class="btn-panel-toggle" title="Minimize / Expand section" aria-expanded="true" onclick="togglePanelMinimize(this)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
       </div>
       <input class="search-input" id="broadcastTitle" placeholder="Notice Title / Announcement Heading" style="max-width:none;margin-bottom:10px">
       <textarea id="broadcastMessage" rows="4" placeholder="Compose message for campus students and shuttle drivers" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--panel-alt);color:var(--text);font:inherit;font-size:13px"></textarea>
@@ -1251,12 +1339,15 @@
     </div>
 
     <!-- Experience Settings with Video Background Selector -->
-    <div class="panel-card" style="border-top:3px solid #2563eb">
+    <div class="panel-card" data-panel-id="opHero" style="border-top:3px solid #2563eb">
       <div class="panel-header">
         <div>
           <h3 class="panel-title">Experience & Background Settings</h3>
           <div style="font-size:12px;color:var(--text-dim)">Configure base fare rates, payment gateways, and customize hero background image or video.</div>
         </div>
+        <button type="button" class="btn-panel-toggle" title="Minimize / Expand section" aria-expanded="true" onclick="togglePanelMinimize(this)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
       </div>
       
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px">
@@ -1314,28 +1405,45 @@
     </div>
 
     <!-- PIN Identity Reviews -->
-    <div class="panel-card" style="border-top:3px solid #f59e0b">
-      <div class="panel-header"><div><h3 class="panel-title">PIN Identity Reviews</h3><div style="font-size:12px;color:var(--text-dim)">Review student ID credentials and verification recordings before issuing single-use reset authorizations.</div></div></div>
-      <div id="pinReviewList" style="display:grid;gap:9px">Loading requests…</div>
+    <div class="panel-card" data-panel-id="opPins" style="border-top:3px solid #f59e0b">
+      <div class="panel-header">
+        <div>
+          <h3 class="panel-title">PIN Identity Reviews</h3>
+          <div style="font-size:12px;color:var(--text-dim)">Review student ID credentials and verification recordings before issuing single-use reset authorizations.</div>
+        </div>
+        <button type="button" class="btn-panel-toggle" title="Minimize / Expand section" aria-expanded="true" onclick="togglePanelMinimize(this)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+      </div>
+      <div class="scrollable-list-box">
+        <div id="pinReviewList" style="display:grid;gap:9px">Loading requests…</div>
+      </div>
     </div>
 
     <!-- Platform Change Timeline -->
-    <div class="panel-card" style="border-top:3px solid #7c3aed">
+    <div class="panel-card" data-panel-id="opTimeline" style="border-top:3px solid #7c3aed">
       <div class="panel-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
         <div>
           <h3 class="panel-title">Platform Change Timeline</h3>
           <div style="font-size:12px;color:var(--text-dim)">A permanent record of Victor, Anti gravity, and Claude engineering updates — filter by contributor or operational area.</div>
         </div>
-        <button type="button" class="btn-sm primary" onclick="openPublishTimelineModal()" style="display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:8px;font-weight:700">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-          <span>Publish & Broadcast Summary</span>
-        </button>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button type="button" class="btn-sm primary" onclick="openPublishTimelineModal()" style="display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:8px;font-weight:700">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            <span>Publish & Broadcast Summary</span>
+          </button>
+          <button type="button" class="btn-panel-toggle" title="Minimize / Expand section" aria-expanded="true" onclick="togglePanelMinimize(this)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+        </div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
         <select id="changeActorFilter" class="search-input" style="max-width:160px" onchange="loadChangeTimeline()"><option value="">All contributors</option></select>
         <select id="changeAreaFilter" class="search-input" style="max-width:200px" onchange="loadChangeTimeline()"><option value="">All areas</option></select>
       </div>
-      <div id="changeTimeline" style="display:grid;gap:9px">Loading platform updates…</div>
+      <div class="scrollable-list-box">
+        <div id="changeTimeline" style="display:grid;gap:9px">Loading platform updates…</div>
+      </div>
     </div>
   </div>
 
@@ -1378,17 +1486,27 @@
 
   <!-- TAB 7: CAMPUS SPOTLIGHT & AD BANNERS -->
   <div class="tab-pane" id="paneContent">
-    <div class="panel-card" style="border-top:3px solid #6D28D9">
+    <div class="panel-card" data-panel-id="campusSpotlightCard" style="border-top:3px solid #6D28D9">
       <div class="panel-header">
         <div><h3 class="panel-title">Campus Spotlight</h3><div style="font-size:12px;color:var(--text-dim)">The 3-card row on the student home screen, above Trending on Campus.</div></div>
-        <button class="btn-sm primary" onclick="CC.openForm('spotlight')">+ Add card</button>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="btn-sm primary" onclick="CC.openForm('spotlight')">+ Add card</button>
+          <button type="button" class="btn-panel-toggle" title="Minimize / Expand section" aria-expanded="true" onclick="togglePanelMinimize(this)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+        </div>
       </div>
       <div id="ccList_spotlight" style="display:grid;gap:10px"><div class="cc-empty">Loading…</div></div>
     </div>
-    <div class="panel-card" style="border-top:3px solid #0EA5E9">
+    <div class="panel-card" data-panel-id="campusBannersCard" style="border-top:3px solid #0EA5E9">
       <div class="panel-header">
         <div><h3 class="panel-title">Trending on Campus (Ad Banners)</h3><div style="font-size:12px;color:var(--text-dim)">The rotating banner carousel at the bottom of the student home screen.</div></div>
-        <button class="btn-sm primary" onclick="CC.openForm('ad_banner')">+ Add banner</button>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="btn-sm primary" onclick="CC.openForm('ad_banner')">+ Add banner</button>
+          <button type="button" class="btn-panel-toggle" title="Minimize / Expand section" aria-expanded="true" onclick="togglePanelMinimize(this)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+        </div>
       </div>
       <div id="ccList_ad_banner" style="display:grid;gap:10px"><div class="cc-empty">Loading…</div></div>
     </div>
@@ -1396,9 +1514,12 @@
 
   <!-- TAB: AD APPLICATIONS -->
   <div class="tab-pane" id="paneAdApplications">
-    <div class="panel-card" style="border-top:3px solid #6D28D9">
+    <div class="panel-card" data-panel-id="adApplicationsCard" style="border-top:3px solid #6D28D9">
       <div class="panel-header">
         <div><h3 class="panel-title">Student Advert Applications</h3><div style="font-size:12px;color:var(--text-dim)">Every student's first advert is free. Approving publishes it straight to the Trending-on-Campus banners; it auto-expires and emails the student a ₦1,000 Korapay renewal link.</div></div>
+        <button type="button" class="btn-panel-toggle" title="Minimize / Expand section" aria-expanded="true" onclick="togglePanelMinimize(this)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
         <select id="adAppStatus" class="search-input" style="max-width:190px" onchange="loadAdApplications()">
@@ -1497,6 +1618,21 @@
       </div>
     </div>
 
+    <!-- AI Summarization Toolbar (Zibo AI) -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding:10px 14px;border:1px solid #DDD6FE;border-radius:12px;background:linear-gradient(135deg, rgba(109,40,217,0.06) 0%, rgba(139,92,246,0.04) 100%);">
+      <div>
+        <div style="font-size:12.5px;font-weight:800;color:var(--text);display:flex;align-items:center;gap:6px">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2.5"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+          <span>Zibo AI Release Summarizer</span>
+        </div>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:2px">Automatically analyze platform updates and write a professional announcement</div>
+      </div>
+      <button type="button" class="btn-sm" id="btnAiSummarize" onclick="generateAiReleaseSummary()" style="background:#7C3AED;color:#FFFFFF;border-radius:8px;font-weight:700;display:inline-flex;align-items:center;gap:6px;padding:6px 14px;box-shadow:0 2px 8px rgba(124,58,237,0.25);">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <span>Auto-Summarize with Zibo AI</span>
+      </button>
+    </div>
+
     <!-- Edit Broadcast Subject & Summary -->
     <div style="margin-bottom:14px">
       <label style="font-size:12px;font-weight:700">Broadcast Title / Email Subject</label>
@@ -1537,19 +1673,22 @@
       </div>
 
       <!-- Mock Email Card -->
-      <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:14px;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,0.05)">
-        <div style="background:linear-gradient(135deg, #1E1035, #3B1676);padding:18px 22px;color:#FFFFFF">
+      <div style="background:#FFFFFF;border:1px solid #E9D5FF;border-radius:16px;overflow:hidden;box-shadow:0 6px 18px rgba(91,33,182,0.06)">
+        <div style="background:linear-gradient(135deg, #1E0B36, #2E1065 50%, #4C1D95);padding:18px 22px;color:#FFFFFF">
           <div style="display:flex;justify-content:space-between;align-items:center">
-            <div>
-              <span style="font-weight:800;font-size:18px;letter-spacing:-0.02em">Zira <span style="color:#FBBF24">GO!</span></span>
-              <div style="font-size:10.5px;color:#DDD6FE;letter-spacing:0.06em;text-transform:uppercase;margin-top:2px">Landmark University Campus Transit</div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <img src="zira_go_logo.png" alt="Zira Go" style="width:36px;height:36px;border-radius:9px;background:#FFFFFF;padding:2px;object-fit:contain">
+              <div>
+                <span style="font-weight:900;font-size:17px;letter-spacing:-0.02em">Zira <span style="color:#C084FC">GO!</span></span>
+                <div style="font-size:10px;font-weight:700;color:#E9D5FF;letter-spacing:0.08em;text-transform:uppercase;margin-top:1px">Campus Tap & Move • Transit</div>
+              </div>
             </div>
-            <span style="font-size:11px;background:rgba(255,255,255,0.15);padding:3px 10px;border-radius:999px;color:#FFFFFF;font-weight:700">Official Notice</span>
+            <span style="font-size:11px;background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.25);padding:4px 11px;border-radius:999px;color:#FFFFFF;font-weight:700;white-space:nowrap">Official Notice</span>
           </div>
           <div id="previewEmailTitle" style="font-weight:800;font-size:16px;margin-top:12px;color:#FFFFFF;line-height:1.35">System Update: Enhanced Transit Engine & Performance Upgrades on Zira Go</div>
         </div>
 
-        <div id="previewEmailMediaContainer" style="display:none;background:#000;border-bottom:1px solid #E2E8F0">
+        <div id="previewEmailMediaContainer" style="display:none;background:#0F172A;border-bottom:1px solid #E9D5FF">
           <img id="previewEmailImg" style="display:none;width:100%;max-height:220px;object-fit:cover" alt="Banner Preview">
           <video id="previewEmailVideo" controls muted loop style="display:none;width:100%;max-height:220px;object-fit:contain"></video>
         </div>
@@ -1561,9 +1700,9 @@
 • Executive Treasury & Audit Ledger — Real-time transaction accounting, settlement streams, and verified driver payouts.
 • 24/7 Operations Desk — Direct live support via WhatsApp (+234 806 202 1448) and Telegram Bot.</div>
         
-        <div style="padding:12px 22px;background:#F8FAFC;border-top:1px solid #E2E8F0;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#64748B">
-          <span>Operations Desk • Victor, Anti gravity & Claude Engineering</span>
-          <span style="color:#6D28D9;font-weight:700">Confidential Transit Record</span>
+        <div style="padding:12px 22px;background:#FAF5FF;border-top:1px solid #F3E8FF;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#64748B">
+          <span><strong>Zira Go Transit Operations</strong> · Landmark University</span>
+          <span style="color:#6D28D9;font-weight:700">Confidential</span>
         </div>
       </div>
     </div>
@@ -2728,10 +2867,69 @@
     window.open(url, '_blank', 'noopener');
   }
 
+  function togglePanelMinimize(btn) {
+    const card = btn.closest('.panel-card');
+    if (!card) return;
+    const isMin = card.classList.toggle('minimized');
+    btn.setAttribute('aria-expanded', !isMin);
+    btn.setAttribute('title', isMin ? 'Expand section' : 'Minimize section');
+    const panelId = card.id || card.getAttribute('data-panel-id');
+    if (panelId) {
+      try { localStorage.setItem('zira_panel_min_' + panelId, isMin ? '1' : '0'); } catch (_) {}
+    }
+  }
+
+  function restorePanelStates() {
+    try {
+      document.querySelectorAll('.panel-card[data-panel-id], .panel-card[id]').forEach(card => {
+        const id = card.id || card.getAttribute('data-panel-id');
+        if (id && localStorage.getItem('zira_panel_min_' + id) === '1') {
+          card.classList.add('minimized');
+          const btn = card.querySelector('.btn-panel-toggle');
+          if (btn) {
+            btn.setAttribute('aria-expanded', 'false');
+            btn.setAttribute('title', 'Expand section');
+          }
+        }
+      });
+    } catch (_) {}
+  }
+
   function openPublishTimelineModal() {
     updatePublishPreview();
     document.getElementById('modalPublishUpdate')?.classList.add('active');
     ziraSound.open();
+  }
+
+  async function generateAiReleaseSummary() {
+    const btn = document.getElementById('btnAiSummarize');
+    const origHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Summarizing with Zibo AI…';
+    }
+    adminToast('Analyzing platform changelog with Zibo AI…');
+    try {
+      const res = await fetch(`${API_BASE}/admin/summarize-release`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.message || 'AI summarization failed');
+      
+      if (data.title) document.getElementById('pubBroadcastTitle').value = data.title;
+      if (data.summary) document.getElementById('pubBroadcastMessage').value = data.summary;
+      updatePublishPreview();
+      adminToast('Zibo AI summary generated successfully.');
+    } catch (e) {
+      adminToast(e.message || 'Could not generate AI summary.');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = origHtml;
+      }
+    }
   }
 
   function updatePublishPreview() {
@@ -3320,8 +3518,9 @@
   Ops.init();
   Sup.init();
 
-  // Splash screen dismiss
+  // Splash screen dismiss & restore panel minimized states
   window.addEventListener('load', function() {
+    restorePanelStates();
     setTimeout(function() {
       const splash = document.getElementById('splash-screen');
       if (splash) {

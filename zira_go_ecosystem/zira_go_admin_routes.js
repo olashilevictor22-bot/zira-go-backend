@@ -10,6 +10,7 @@ const { requireAuth, requireRole } = require('./zira_go_auth_routes');
 const { notify, notifyRole } = require('./zira_go_notification_routes');
 const { expireOneApplication } = require('./zira_go_ads_routes');
 const { openStream, addAdminStream, removeAdminStream, emitToAdmins } = require('./zira_go_realtime');
+const { generateReleaseSummary } = require('./zira_go_gemini_service');
 
 async function recordPlatformChange({ key, actor = 'Codex', area = 'Platform', title, details }) {
     const result = await pool.query(
@@ -1204,6 +1205,27 @@ router.post('/change-log/:id/publish', async (req, res) => {
     } catch (err) {
         console.error('[Admin Change Log Publish Error]', err);
         res.status(500).json({ error: 'internal_error' });
+    }
+});
+
+// POST /admin/summarize-release — AI Summarization with Google Gemini
+router.post('/summarize-release', async (req, res) => {
+    try {
+        const { changeIds, customNotes, apiKey } = req.body || {};
+        let changes = [];
+        if (Array.isArray(changeIds) && changeIds.length > 0) {
+            const result = await pool.query('SELECT * FROM platform_change_log WHERE id = ANY($1::bigint[]) ORDER BY created_at DESC', [changeIds]);
+            changes = result.rows;
+        } else {
+            const result = await pool.query('SELECT * FROM platform_change_log ORDER BY created_at DESC LIMIT 12');
+            changes = result.rows;
+        }
+
+        const summaryData = await generateReleaseSummary({ changes, customNotes, apiKey });
+        res.json({ success: true, ...summaryData });
+    } catch (e) {
+        console.error('[Summarize Release Error]', e);
+        res.status(500).json({ error: 'summarization_failed', message: e.message });
     }
 });
 

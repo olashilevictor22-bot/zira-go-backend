@@ -13,7 +13,32 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 const router = express.Router();
+
+function getAuthLogoInfo() {
+  const logoPath = path.join(__dirname, 'zira_go_logo.png');
+  const appBaseUrl = (process.env.APP_BASE_URL || process.env.RENDER_EXTERNAL_URL || 'https://therealzionbites.com.ng').replace(/\/$/, '');
+  const publicUrl = `${appBaseUrl}/zira_go_logo.png`;
+
+  if (fs.existsSync(logoPath)) {
+    try {
+      const buf = fs.readFileSync(logoPath);
+      return {
+        src: 'cid:zira_go_official_logo',
+        publicUrl,
+        attachment: {
+          filename: 'zira_go_logo.png',
+          content: buf.toString('base64'),
+          content_type: 'image/png',
+          cid: 'zira_go_official_logo'
+        }
+      };
+    } catch (_) {}
+  }
+  return { src: publicUrl, publicUrl, attachment: null };
+}
 
 if (!process.env.JWT_SECRET) {
     throw new Error('JWT_SECRET must be set — refusing to start with an insecure default.');
@@ -131,38 +156,80 @@ router.post('/send-otp', async (req, res) => {
     const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
 
     otpStore.set(cleanEmail, { otp, expiresAt, verified: false });
-    console.log(`[OTP Verification] OTP generated for ${cleanEmail}`);
-
-    if (emailConfigured) {
+    console.log(`[OTP Verification] OTP generated for ${cl    if (emailConfigured) {
         try {
+            const logoInfo = getAuthLogoInfo();
+            const attachments = logoInfo.attachment ? [logoInfo.attachment] : [];
             await sendEmail({
                 fromName: 'Zira Go Campus Transit',
                 to: cleanEmail,
                 subject: `${otp} is your Zira Go verification code`,
+                attachments,
                 html: `
                   <!DOCTYPE html>
-                  <html>
-                  <head><meta charset="utf-8"></head>
-                  <body style="margin:0;padding:0;background-color:#F8FAFC;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0F172A;">
-                    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color:#F8FAFC;padding:32px 16px;">
+                  <html lang="en">
+                  <head>
+                    <meta charset="utf-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <meta name="color-scheme" content="light dark">
+                    <style>
+                      @media only screen and (max-width: 540px) {
+                        .email-wrapper { padding: 12px 8px !important; }
+                        .email-container { width: 100% !important; max-width: 100% !important; border-radius: 14px !important; }
+                        .header-cell { padding: 20px 18px !important; }
+                        .brand-title { font-size: 19px !important; }
+                        .badge-cell { padding-top: 10px !important; display: block !important; text-align: left !important; width: 100% !important; }
+                        .body-cell { padding: 22px 18px !important; }
+                        .otp-box { padding: 16px 12px !important; }
+                        .otp-code { font-size: 30px !important; letter-spacing: 6px !important; }
+                        .footer-cell { padding: 16px 18px !important; }
+                      }
+                    </style>
+                  </head>
+                  <body style="margin:0;padding:0;background-color:#F5F3FF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;color:#0F172A;">
+                    <table class="email-wrapper" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color:#F5F3FF;padding:32px 16px;">
                       <tr>
                         <td align="center">
-                          <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width:500px;background-color:#FFFFFF;border-radius:16px;overflow:hidden;border:1px solid #E2E8F0;box-shadow:0 4px 16px rgba(0,0,0,0.04);">
-                            <!-- Corporate Brand Header -->
+                          <table class="email-container" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width:520px;background-color:#FFFFFF;border-radius:18px;overflow:hidden;border:1px solid #E9D5FF;box-shadow:0 10px 25px -5px rgba(91,33,182,0.08);">
+                            <!-- Brand Header -->
                             <tr>
-                              <td style="background:linear-gradient(135deg, #1E1035 0%, #3B1676 100%);padding:24px 28px;text-align:left;">
-                                <span style="font-size:22px;font-weight:800;color:#FFFFFF;letter-spacing:-0.02em;">Zira <span style="color:#FBBF24;">GO!</span></span>
-                                <div style="font-size:11px;font-weight:600;color:#DDD6FE;letter-spacing:0.08em;text-transform:uppercase;margin-top:2px;">Landmark University Campus Transit</div>
+                              <td class="header-cell" style="background:linear-gradient(135deg, #1E0B36 0%, #2E1065 50%, #4C1D95 100%);padding:24px 28px;text-align:left;">
+                                <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                                  <tr>
+                                    <td valign="middle" style="padding:0;">
+                                      <table border="0" cellspacing="0" cellpadding="0">
+                                        <tr>
+                                          <td valign="middle" style="padding-right:14px;">
+                                            <img src="${logoInfo.src}" alt="Zira Go" width="46" height="46" style="display:block;width:46px;height:46px;border-radius:12px;background:#FFFFFF;padding:3px;box-shadow:0 4px 10px rgba(0,0,0,0.25);object-fit:contain;">
+                                          </td>
+                                          <td valign="middle">
+                                            <div class="brand-title" style="font-size:21px;font-weight:900;color:#FFFFFF;letter-spacing:-0.02em;line-height:1.1;">
+                                              Zira <span style="color:#C084FC;">GO!</span>
+                                            </div>
+                                            <div style="font-size:10px;font-weight:700;color:#E9D5FF;letter-spacing:0.12em;text-transform:uppercase;margin-top:3px;">
+                                              Campus Tap & Move • Transit
+                                            </div>
+                                          </td>
+                                        </tr>
+                                      </table>
+                                    </td>
+                                    <td class="badge-cell" align="right" valign="middle" style="padding:0;white-space:nowrap;width:120px;">
+                                      <span style="display:inline-block;padding:5px 12px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);border-radius:999px;color:#FFFFFF;font-size:11px;font-weight:700;letter-spacing:0.04em;white-space:nowrap;">
+                                        Verification
+                                      </span>
+                                    </td>
+                                  </tr>
+                                </table>
                               </td>
                             </tr>
                             <!-- Content Section -->
                             <tr>
-                              <td style="padding:28px 28px 24px 28px;">
-                                <h2 style="margin:0 0 10px 0;font-size:18px;font-weight:800;color:#0F172A;letter-spacing:-0.01em;">Account Verification Code</h2>
-                                <p style="font-size:14px;color:#475569;line-height:1.55;margin:0 0 20px 0;">Use the 6-digit verification code below to confirm your identity and complete your account registration:</p>
+                              <td class="body-cell" style="padding:30px 28px 24px 28px;">
+                                <h2 style="margin:0 0 10px 0;font-size:19px;font-weight:800;color:#0F172A;letter-spacing:-0.015em;">Account Verification Code</h2>
+                                <p style="font-size:14px;color:#475569;line-height:1.55;margin:0 0 18px 0;">Use the 6-digit one-time code below to verify your email address and activate your Zira Go account:</p>
                                 
-                                <div style="background:#F3EEFF;border:1.5px solid #DDD6FE;border-radius:12px;padding:18px;text-align:center;margin:18px 0 22px 0;">
-                                  <div style="font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:36px;font-weight:800;letter-spacing:8px;color:#6D28D9;line-height:1;">${otp}</div>
+                                <div class="otp-box" style="background:#FAF5FF;border:2px dashed #C084FC;border-radius:14px;padding:20px 16px;text-align:center;margin:20px 0 22px 0;">
+                                  <div class="otp-code" style="font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:36px;font-weight:900;letter-spacing:8px;color:#6D28D9;line-height:1;">${otp}</div>
                                 </div>
 
                                 <p style="font-size:12.5px;color:#64748B;line-height:1.5;margin:0;">This one-time passcode expires in 10 minutes. If you did not initiate this request, no action is required.</p>
@@ -170,8 +237,8 @@ router.post('/send-otp', async (req, res) => {
                             </tr>
                             <!-- Footer Section -->
                             <tr>
-                              <td style="background-color:#F8FAFC;border-top:1px solid #E2E8F0;padding:16px 28px;font-size:11px;color:#94A3B8;text-align:left;">
-                                Zira Go Security & Authentication • Landmark University
+                              <td class="footer-cell" style="background-color:#FAF5FF;border-top:1px solid #F3E8FF;padding:16px 28px;font-size:11.5px;color:#64748B;text-align:left;">
+                                <strong style="color:#2E1065;">Zira Go Security & Authentication</strong> • Landmark University
                               </td>
                             </tr>
                           </table>
@@ -185,6 +252,8 @@ router.post('/send-otp', async (req, res) => {
             return res.json({ success: true, message: 'Verification code sent to your email.' });
         } catch (mailErr) {
             console.warn('[Email Warning] Failed to send via Resend:', mailErr.message);
+        }
+    }
         }
     }
 
@@ -508,35 +577,77 @@ router.post('/forgot-password', async (req, res) => {
         if (emailConfigured) {
             try {
                 const recipientName = found.rows[0].full_name ? ' ' + found.rows[0].full_name : '';
+                const logoInfo = getAuthLogoInfo();
+                const attachments = logoInfo.attachment ? [logoInfo.attachment] : [];
                 await sendEmail({
                     fromName: 'Zira Go Campus Transit',
                     to: email,
                     subject: 'Reset your Zira Go password',
+                    attachments,
                     html: `
                       <!DOCTYPE html>
-                      <html>
-                      <head><meta charset="utf-8"></head>
-                      <body style="margin:0;padding:0;background-color:#F8FAFC;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0F172A;">
-                        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color:#F8FAFC;padding:32px 16px;">
+                      <html lang="en">
+                      <head>
+                        <meta charset="utf-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <meta name="color-scheme" content="light dark">
+                        <style>
+                          @media only screen and (max-width: 540px) {
+                            .email-wrapper { padding: 12px 8px !important; }
+                            .email-container { width: 100% !important; max-width: 100% !important; border-radius: 14px !important; }
+                            .header-cell { padding: 20px 18px !important; }
+                            .brand-title { font-size: 19px !important; }
+                            .badge-cell { padding-top: 10px !important; display: block !important; text-align: left !important; width: 100% !important; }
+                            .body-cell { padding: 22px 18px !important; }
+                            .footer-cell { padding: 16px 18px !important; }
+                          }
+                        </style>
+                      </head>
+                      <body style="margin:0;padding:0;background-color:#F5F3FF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;color:#0F172A;">
+                        <table class="email-wrapper" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color:#F5F3FF;padding:32px 16px;">
                           <tr>
                             <td align="center">
-                              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width:500px;background-color:#FFFFFF;border-radius:16px;overflow:hidden;border:1px solid #E2E8F0;box-shadow:0 4px 16px rgba(0,0,0,0.04);">
-                                <!-- Corporate Brand Header -->
+                              <table class="email-container" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width:520px;background-color:#FFFFFF;border-radius:18px;overflow:hidden;border:1px solid #E9D5FF;box-shadow:0 10px 25px -5px rgba(91,33,182,0.08);">
+                                <!-- Brand Header -->
                                 <tr>
-                                  <td style="background:linear-gradient(135deg, #1E1035 0%, #3B1676 100%);padding:24px 28px;text-align:left;">
-                                    <span style="font-size:22px;font-weight:800;color:#FFFFFF;letter-spacing:-0.02em;">Zira <span style="color:#FBBF24;">GO!</span></span>
-                                    <div style="font-size:11px;font-weight:600;color:#DDD6FE;letter-spacing:0.08em;text-transform:uppercase;margin-top:2px;">Landmark University Campus Transit</div>
+                                  <td class="header-cell" style="background:linear-gradient(135deg, #1E0B36 0%, #2E1065 50%, #4C1D95 100%);padding:24px 28px;text-align:left;">
+                                    <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                                      <tr>
+                                        <td valign="middle" style="padding:0;">
+                                          <table border="0" cellspacing="0" cellpadding="0">
+                                            <tr>
+                                              <td valign="middle" style="padding-right:14px;">
+                                                <img src="${logoInfo.src}" alt="Zira Go" width="46" height="46" style="display:block;width:46px;height:46px;border-radius:12px;background:#FFFFFF;padding:3px;box-shadow:0 4px 10px rgba(0,0,0,0.25);object-fit:contain;">
+                                              </td>
+                                              <td valign="middle">
+                                                <div class="brand-title" style="font-size:21px;font-weight:900;color:#FFFFFF;letter-spacing:-0.02em;line-height:1.1;">
+                                                  Zira <span style="color:#C084FC;">GO!</span>
+                                                </div>
+                                                <div style="font-size:10px;font-weight:700;color:#E9D5FF;letter-spacing:0.12em;text-transform:uppercase;margin-top:3px;">
+                                                  Campus Tap & Move • Transit
+                                                </div>
+                                              </td>
+                                            </tr>
+                                          </table>
+                                        </td>
+                                        <td class="badge-cell" align="right" valign="middle" style="padding:0;white-space:nowrap;width:120px;">
+                                          <span style="display:inline-block;padding:5px 12px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);border-radius:999px;color:#FFFFFF;font-size:11px;font-weight:700;letter-spacing:0.04em;white-space:nowrap;">
+                                            Security
+                                          </span>
+                                        </td>
+                                      </tr>
+                                    </table>
                                   </td>
                                 </tr>
                                 <!-- Content Section -->
                                 <tr>
-                                  <td style="padding:28px 28px 24px 28px;">
-                                    <h2 style="margin:0 0 10px 0;font-size:18px;font-weight:800;color:#0F172A;letter-spacing:-0.01em;">Password Reset Authorization</h2>
+                                  <td class="body-cell" style="padding:30px 28px 24px 28px;">
+                                    <h2 style="margin:0 0 10px 0;font-size:19px;font-weight:800;color:#0F172A;letter-spacing:-0.015em;">Password Reset Authorization</h2>
                                     <p style="font-size:14px;color:#475569;line-height:1.55;margin:0 0 16px 0;">Hello${recipientName},</p>
                                     <p style="font-size:14px;color:#475569;line-height:1.55;margin:0 0 22px 0;">We received an authorized request to reset the password for your Zira Go ${role} account. Click the button below to establish a new password:</p>
                                     
-                                    <div style="text-align:center;margin:24px 0 24px 0;">
-                                      <a href="${resetLink}" style="display:inline-block;background:#6D28D9;color:#FFFFFF;text-decoration:none;font-weight:700;font-size:14px;padding:14px 28px;border-radius:10px;box-shadow:0 4px 12px rgba(109,40,217,0.25);">Reset Password</a>
+                                    <div style="text-align:center;margin:24px 0 26px 0;">
+                                      <a href="${resetLink}" style="display:inline-block;background:linear-gradient(135deg, #6D28D9 0%, #7C3AED 100%);color:#FFFFFF;text-decoration:none;font-weight:700;font-size:14px;padding:14px 30px;border-radius:10px;box-shadow:0 4px 14px rgba(109,40,217,0.35);">Reset Password</a>
                                     </div>
 
                                     <p style="font-size:12.5px;color:#64748B;line-height:1.5;margin:0;">This secure link is single-use and expires in 30 minutes. If you did not request this change, please ignore this email and your password will remain unchanged.</p>
@@ -544,8 +655,8 @@ router.post('/forgot-password', async (req, res) => {
                                 </tr>
                                 <!-- Footer Section -->
                                 <tr>
-                                  <td style="background-color:#F8FAFC;border-top:1px solid #E2E8F0;padding:16px 28px;font-size:11px;color:#94A3B8;text-align:left;">
-                                    Zira Go Security & Authentication • Landmark University
+                                  <td class="footer-cell" style="background-color:#FAF5FF;border-top:1px solid #F3E8FF;padding:16px 28px;font-size:11.5px;color:#64748B;text-align:left;">
+                                    <strong style="color:#2E1065;">Zira Go Security & Authentication</strong> • Landmark University
                                   </td>
                                 </tr>
                               </table>

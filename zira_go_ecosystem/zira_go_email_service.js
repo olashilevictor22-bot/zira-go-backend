@@ -15,26 +15,35 @@ if (isConfigured) {
 
 // Throws on failure — callers decide how to handle/log it, same pattern as
 // the old mailer.sendMail() calls this replaces.
-async function sendEmail({ to, subject, html, text, fromName = 'Zira Go' }) {
+async function sendEmail({ to, subject, html, text, fromName = 'Zira Go', attachments = [] }) {
   if (!isConfigured) {
     throw new Error('RESEND_API_KEY is not configured.');
   }
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
   try {
+    const payload = {
+      from: `${fromName} <${EMAIL_FROM}>`,
+      to: Array.isArray(to) ? to : [to],
+      subject,
+      html,
+      ...(text ? { text } : {})
+    };
+    if (Array.isArray(attachments) && attachments.length > 0) {
+      payload.attachments = attachments.map(att => ({
+        filename: att.filename,
+        content: att.content, // base64 string
+        content_type: att.content_type || att.contentType,
+        cid: att.cid
+      }));
+    }
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${RESEND_API_KEY}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        from: `${fromName} <${EMAIL_FROM}>`,
-        to: [to],
-        subject,
-        html,
-        ...(text ? { text } : {})
-      }),
+      body: JSON.stringify(payload),
       signal: controller.signal
     });
     if (!response.ok) {
