@@ -341,43 +341,153 @@
   }
 
   /* Theme Mode Selector in Profile/Settings Modal */
-  .theme-mode-selector {
+  .theme-mode-track {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    margin-top: 8px;
+    gap: 5px;
+    padding: 4px;
+    border-radius: 14px;
+    background: var(--panel-alt);
+    border: 1.5px solid var(--line);
+    margin-top: 6px;
   }
   .theme-mode-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    height: 42px;
+    padding: 0 8px;
+    border-radius: 10px;
+    border: none;
+    background: transparent;
+    color: var(--text-dim);
+    font: 700 12.5px 'Sora', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    outline: none !important;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  .theme-mode-btn:hover:not(.selected) {
+    color: var(--text);
+    background: color-mix(in srgb, var(--line) 40%, transparent);
+  }
+  .theme-mode-btn.selected {
+    background: linear-gradient(100deg, var(--accent), var(--accent-2));
+    color: #FFFFFF;
+    box-shadow: 0 3px 12px rgba(109, 40, 217, 0.28);
+  }
+  .theme-mode-btn .tmb-icon {
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+  }
+  .theme-mode-btn.selected .tmb-icon {
+    transform: scale(1.08);
+  }
+  .theme-mode-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    padding: 9px 12px;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--accent) 7%, var(--panel-alt));
+    border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--line));
+  }
+  .tmb-status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+    box-shadow: 0 0 6px var(--accent);
+  }
+  .tmb-status-text {
+    font-size: 11.5px;
+    line-height: 1.4;
+    color: var(--text-dim);
+    font-weight: 500;
+  }
+
+  /* =========================================================================
+     HOME PAGE BOTTOM COLOR GRADIENT AURA & END-OF-FEED BADGE
+     ========================================================================= */
+  .page-end-glow-wrap {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    padding: 10px 6px;
-    border-radius: 12px;
-    border: 1.5px solid var(--line);
-    background: var(--panel-alt);
-    color: var(--text-dim);
-    font: 700 12px 'Sora', sans-serif;
-    cursor: pointer;
-    transition: all 0.2s ease;
+    text-align: center;
+    padding: 26px 16px 18px;
+    position: relative;
+    margin-top: 6px;
+    overflow: hidden;
+    border-radius: 20px;
+    background: linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--accent) 7%, transparent) 55%, color-mix(in srgb, var(--accent) 18%, transparent) 100%);
+    border-bottom: 2px solid color-mix(in srgb, var(--accent) 35%, transparent);
+    box-shadow: 0 10px 30px -10px color-mix(in srgb, var(--accent) 25%, transparent);
   }
-  .theme-mode-btn:hover {
-    border-color: var(--accent);
-    color: var(--accent);
+  .page-end-gradient-glow {
+    position: absolute;
+    bottom: -35px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 85%;
+    height: 70px;
+    background: radial-gradient(ellipse at center, color-mix(in srgb, var(--accent) 55%, transparent) 0%, transparent 70%);
+    filter: blur(18px);
+    pointer-events: none;
+    animation: bottomAuraPulse 3.2s ease-in-out infinite;
+  }
+  @keyframes bottomAuraPulse {
+    0%, 100% { opacity: 0.6; transform: translateX(-50%) scale(1); }
+    50% { opacity: 1; transform: translateX(-50%) scale(1.18); }
+  }
+  .page-end-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 16px;
+    border-radius: 999px;
     background: var(--panel);
+    border: 1.5px solid color-mix(in srgb, var(--accent) 32%, var(--line));
+    box-shadow: 0 4px 16px rgba(109, 40, 217, 0.16);
+    font: 700 12px 'Sora', sans-serif;
+    color: var(--text);
+    letter-spacing: 0.02em;
+    z-index: 2;
   }
-  .theme-mode-btn.selected {
-    border-color: var(--accent);
-    background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 15%, var(--panel)), var(--panel));
+  .end-pulse-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+  }
+  .end-sparkle {
     color: var(--accent);
-    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.15);
+    font-size: 13px;
+    animation: sparkleSpin 4s linear infinite;
   }
-  .theme-mode-hint {
-    font-size: 11.5px;
+  @keyframes sparkleSpin {
+    0% { transform: rotate(0deg) scale(1); }
+    50% { transform: rotate(180deg) scale(1.2); }
+    100% { transform: rotate(360deg) scale(1); }
+  }
+  .page-end-subtext {
+    font-size: 11px;
+    font-weight: 600;
     color: var(--text-dim);
     margin-top: 8px;
-    line-height: 1.4;
+    letter-spacing: 0.04em;
+    z-index: 2;
+  }
+
+  /* Universal touch-scroller momentum */
+  #main-content, .modal-card, #allCodesList, #fullTx, #busListingsContainer, #notificationList, .chat-body, .spotlight-marquee {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
   }
 
   /* Currency symbol rendered as a small glowing gold coin badge */
@@ -1977,6 +2087,17 @@
         </div>
       </section>
 
+      <!-- 6. END OF PAGE COLOR GRADIENT AURA & INDICATOR -->
+      <div class="page-end-glow-wrap" id="pageEndIndicator">
+        <div class="page-end-gradient-glow"></div>
+        <div class="page-end-pill">
+          <span class="end-pulse-dot"></span>
+          <span>You've reached the end</span>
+          <span class="end-sparkle">✦</span>
+        </div>
+        <div class="page-end-subtext">Landmark Campus Transit • Always on move</div>
+      </div>
+
     </main>
   </div>
 
@@ -2327,21 +2448,24 @@
     <!-- Group 1: Appearance & Theme -->
     <div class="profile-menu-group">
       <div class="profile-group-label">Appearance & Theme</div>
-      <div class="theme-mode-selector">
+      <div class="theme-mode-track">
         <button type="button" class="theme-mode-btn" id="themeBtnLight" onclick="setThemeMode('light')">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+          <svg class="tmb-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
           <span>Light</span>
         </button>
         <button type="button" class="theme-mode-btn" id="themeBtnDark" onclick="setThemeMode('dark')">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+          <svg class="tmb-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
           <span>Dark</span>
         </button>
         <button type="button" class="theme-mode-btn" id="themeBtnAuto" onclick="setThemeMode('auto')">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-          <span>Auto (Time)</span>
+          <svg class="tmb-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          <span>Auto</span>
         </button>
       </div>
-      <div class="theme-mode-hint" id="themeModeHint">Light mode (7 AM – 7 PM) / Dark mode (7 PM – 7 AM) based on time.</div>
+      <div class="theme-mode-banner">
+        <div class="tmb-status-dot" id="themeStatusDot"></div>
+        <span class="tmb-status-text" id="themeModeHint">Auto mode active: shifts between Light (7 AM) and Dark (7 PM).</span>
+      </div>
     </div>
 
     <!-- Group 2: Security & Protection -->
@@ -4279,16 +4403,23 @@ function updateThemeSelectorUI(mode, effectiveTheme) {
   const btnDark = document.getElementById('themeBtnDark');
   const btnAuto = document.getElementById('themeBtnAuto');
   const hint = document.getElementById('themeModeHint');
+  const dot = document.getElementById('themeStatusDot');
 
   if (btnLight) btnLight.classList.toggle('selected', mode === 'light');
   if (btnDark) btnDark.classList.toggle('selected', mode === 'dark');
   if (btnAuto) btnAuto.classList.toggle('selected', mode === 'auto');
 
+  if (dot) {
+    dot.style.background = mode === 'auto' ? '#10B981' : 'var(--accent)';
+    dot.style.boxShadow = mode === 'auto' ? '0 0 6px rgba(16, 185, 129, 0.6)' : '0 0 6px var(--accent)';
+  }
+
   if (hint) {
     if (mode === 'auto') {
-      hint.textContent = `Auto active: currently ${effectiveTheme === 'light' ? 'Daytime (Light Mode)' : 'Nighttime (Dark Mode)'} based on device time (7 AM – 7 PM light).`;
+      const isDay = effectiveTheme === 'light';
+      hint.innerHTML = `<b style="color:var(--text)">Auto Schedule Active</b>: currently <b style="color:var(--accent)">${isDay ? '☀️ Daytime (Light)' : '🌙 Nighttime (Dark)'}</b> (7 AM – 7 PM light).`;
     } else {
-      hint.textContent = `Manual mode active: ${mode === 'light' ? 'Light mode' : 'Dark mode'} fixed.`;
+      hint.innerHTML = `<b style="color:var(--text)">Manual Override Active</b>: Locked to <b>${mode === 'light' ? '☀️ Light Mode' : '🌙 Dark Mode'}</b>.`;
     }
   }
 }
@@ -4782,68 +4913,130 @@ window.addEventListener('load', () => {
 });
 
 // =========================================================================
-// RUBBER-BAND SCROLL EFFECT
-// #main-content is a custom nested scroller, so the browser's native
-// iOS-style bounce doesn't apply here on its own. This adds the same
-// elastic "pull and spring back" feel at the very top/bottom, on both
-// touch (phones/tablets) and mouse-wheel/trackpad (desktop).
+// UNIVERSAL RUBBER-BAND SCROLL & OVERSCROLL BOUNCE ENGINE
+// Adds silky iOS-style spring bounce to the main page scroller, all modal cards,
+// internal ledger/code lists, and horizontal scroll carousels on both touch
+// and desktop trackpad/wheel.
 // =========================================================================
-(function () {
-  const scroller = document.getElementById('main-content');
-  const content = scroller ? scroller.querySelector(':scope > main') : null;
-  if (!scroller || !content) return;
+(function initUniversalRubberBand() {
+  const pageGlow = document.getElementById('pageEndIndicator');
 
-  const MAX_STRETCH = 64;   // px cap on how far the visual pull can go
-  const RESISTANCE = 0.42;  // 0..1, lower = stiffer
-  let pulling = false;
-  let startY = 0;
+  function attachRubberBand(scroller, options = {}) {
+    if (!scroller || scroller._rubberBandAttached) return;
+    scroller._rubberBandAttached = true;
 
-  function atTop() { return scroller.scrollTop <= 0; }
-  function atBottom() { return Math.ceil(scroller.scrollTop + scroller.clientHeight) >= scroller.scrollHeight - 1; }
+    const isHorizontal = options.horizontal || false;
+    const maxStretch = options.maxStretch || 50;
+    const resistance = options.resistance || 0.38;
+    const isMain = options.isMain || false;
+    const target = options.target || (scroller.classList.contains('modal-card') ? scroller : (scroller.firstElementChild || scroller));
 
-  function applyPull(px) {
-    content.style.transition = 'none';
-    content.style.transform = `translateY(${px}px)`;
-  }
-  function releasePull() {
-    content.style.transition = 'transform 0.38s cubic-bezier(.16,1,.3,1)';
-    content.style.transform = 'translateY(0px)';
-  }
+    let pulling = false;
+    let startPos = 0;
+    let wheelOffset = 0;
+    let wheelTimer = null;
 
-  scroller.addEventListener('touchstart', (e) => {
-    if (e.touches.length !== 1) return;
-    startY = e.touches[0].clientY;
-    pulling = false;
-  }, { passive: true });
+    function atStart() {
+      return isHorizontal ? (scroller.scrollLeft <= 0) : (scroller.scrollTop <= 0);
+    }
+    function atEnd() {
+      if (isHorizontal) {
+        return Math.ceil(scroller.scrollLeft + scroller.clientWidth) >= scroller.scrollWidth - 1;
+      }
+      return Math.ceil(scroller.scrollTop + scroller.clientHeight) >= scroller.scrollHeight - 1;
+    }
 
-  scroller.addEventListener('touchmove', (e) => {
-    const diff = e.touches[0].clientY - startY;
-    if (diff > 0 && atTop()) {
-      pulling = true;
-      applyPull(Math.min(MAX_STRETCH, diff * RESISTANCE));
-    } else if (diff < 0 && atBottom()) {
-      pulling = true;
-      applyPull(Math.max(-MAX_STRETCH, diff * RESISTANCE));
-    } else if (pulling) {
-      releasePull();
+    function applyStretch(px) {
+      if (!target) return;
+      target.style.transition = 'none';
+      if (isHorizontal) {
+        target.style.transform = `translateX(${px}px)`;
+      } else {
+        target.style.transform = `translateY(${px}px)`;
+      }
+      if (isMain && pageGlow && px < 0) {
+        const glowIntensity = Math.min(1.4, 0.6 + Math.abs(px) / 35);
+        pageGlow.style.filter = `drop-shadow(0 0 ${Math.abs(px) * 0.8}px var(--accent))`;
+        pageGlow.style.transform = `scale(${1 + Math.abs(px) * 0.0015})`;
+      }
+    }
+
+    function releaseStretch() {
+      if (!target) return;
+      target.style.transition = 'transform 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+      target.style.transform = 'translate(0px, 0px)';
+      if (isMain && pageGlow) {
+        pageGlow.style.transition = 'filter 0.4s ease, transform 0.4s ease';
+        pageGlow.style.filter = '';
+        pageGlow.style.transform = '';
+      }
+    }
+
+    // Touch Support (Phones / Tablets)
+    scroller.addEventListener('touchstart', (e) => {
+      if (e.touches.length !== 1) return;
+      startPos = isHorizontal ? e.touches[0].clientX : e.touches[0].clientY;
       pulling = false;
-    }
-  }, { passive: true });
+    }, { passive: true });
 
-  scroller.addEventListener('touchend', () => { if (pulling) { releasePull(); pulling = false; } });
-  scroller.addEventListener('touchcancel', () => { if (pulling) { releasePull(); pulling = false; } });
+    scroller.addEventListener('touchmove', (e) => {
+      if (e.touches.length !== 1) return;
+      const currentPos = isHorizontal ? e.touches[0].clientX : e.touches[0].clientY;
+      const diff = currentPos - startPos;
 
-  let wheelPull = 0;
-  let wheelTimer = null;
-  scroller.addEventListener('wheel', (e) => {
-    const goingUp = e.deltaY < 0, goingDown = e.deltaY > 0;
-    if ((goingUp && atTop()) || (goingDown && atBottom())) {
-      wheelPull = Math.max(-MAX_STRETCH, Math.min(MAX_STRETCH, wheelPull - e.deltaY * RESISTANCE * 0.5));
-      applyPull(wheelPull);
-      clearTimeout(wheelTimer);
-      wheelTimer = setTimeout(() => { releasePull(); wheelPull = 0; }, 120);
-    }
-  }, { passive: true });
+      if (diff > 0 && atStart()) {
+        pulling = true;
+        applyStretch(Math.min(maxStretch, diff * resistance));
+      } else if (diff < 0 && atEnd()) {
+        pulling = true;
+        applyStretch(Math.max(-maxStretch, diff * resistance));
+      } else if (pulling) {
+        releaseStretch();
+        pulling = false;
+      }
+    }, { passive: true });
+
+    scroller.addEventListener('touchend', () => { if (pulling) { releaseStretch(); pulling = false; } });
+    scroller.addEventListener('touchcancel', () => { if (pulling) { releaseStretch(); pulling = false; } });
+
+    // Desktop Wheel & Trackpad Overscroll
+    scroller.addEventListener('wheel', (e) => {
+      const delta = isHorizontal ? e.deltaX : e.deltaY;
+      const goingBefore = delta < 0;
+      const goingAfter = delta > 0;
+
+      if ((goingBefore && atStart()) || (goingAfter && atEnd())) {
+        wheelOffset = Math.max(-maxStretch, Math.min(maxStretch, wheelOffset - delta * resistance * 0.45));
+        applyStretch(wheelOffset);
+        clearTimeout(wheelTimer);
+        wheelTimer = setTimeout(() => {
+          releaseStretch();
+          wheelOffset = 0;
+        }, 110);
+      }
+    }, { passive: true });
+  }
+
+  // Attach to main dashboard scroller
+  const mainScroller = document.getElementById('main-content');
+  if (mainScroller) {
+    const mainEl = mainScroller.querySelector(':scope > main');
+    attachRubberBand(mainScroller, { target: mainEl, maxStretch: 65, resistance: 0.42, isMain: true });
+  }
+
+  // Universal binder for modals, lists, and horizontal carousels
+  function bindAllScrollers() {
+    document.querySelectorAll('.modal-card, #allCodesList, #fullTx, #busListingsContainer, #notificationList, .chat-body').forEach(el => {
+      attachRubberBand(el, { maxStretch: 36, resistance: 0.35 });
+    });
+    document.querySelectorAll('.spotlight-marquee, #codeFilterPills').forEach(el => {
+      attachRubberBand(el, { horizontal: true, maxStretch: 30, resistance: 0.32 });
+    });
+  }
+
+  bindAllScrollers();
+  const observer = new MutationObserver(() => bindAllScrollers());
+  observer.observe(document.body, { childList: true, subtree: true });
 })();
 
 </script>
