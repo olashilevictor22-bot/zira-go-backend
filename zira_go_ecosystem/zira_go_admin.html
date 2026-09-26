@@ -1195,7 +1195,7 @@
       <div class="panel-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
         <div>
           <h3 class="panel-title">Platform change timeline</h3>
-          <div style="font-size:12px;color:var(--text-dim)">A permanent record of Victor and engineering platform updates — filter by who made a change or which area it touched.</div>
+          <div style="font-size:12px;color:var(--text-dim)">A permanent record of Victor, Anti gravity, and Claude engineering platform updates — filter by who made a change or which area it touched.</div>
         </div>
         <button type="button" class="btn-sm primary" onclick="openPublishTimelineModal()" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;font-weight:700">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
@@ -1795,47 +1795,68 @@
   }
 
   async function loadStudentLedger() {
-    const q = document.getElementById('searchStudent').value;
+    const q = (document.getElementById('searchStudent')?.value || '').trim();
     try {
       const res = await fetch(`${API_BASE}/admin/ledgers/students?search=${encodeURIComponent(q)}`);
       if (res.status === 401 || res.status === 403) {
-        document.getElementById('tblStudents').innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--danger)">Your admin session has expired. Please sign in again.</td></tr>';
+        document.getElementById('tblStudents').innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--danger)">Your admin session has expired. Please sign in again.</td></tr>';
+        document.getElementById('tblStudentLedger').innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--danger)">Your admin session has expired. Please sign in again.</td></tr>';
         return;
       }
       if (!res.ok) throw new Error('Could not load student registrations.');
       const data = await res.json();
 
       const tblStu = document.getElementById('tblStudents');
-      tblStu.innerHTML = (data.students || []).map(s => `
-        <tr>
-          <td><b>${s.regNo}</b></td>
-          <td>${s.email || '—'}</td>
-          <td><b style="color:var(--success)">₦${s.balance.toLocaleString()}</b></td>
-          <td>${s.joinedAt}</td>
-          <td style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn-sm" onclick="openWalletLedger(${s.id},'student','${s.regNo.replace(/'/g, '&#39;')}')">Ledger</button><button class="btn-sm primary" onclick="openWalletAdjustment(${s.id},'student','${s.regNo.replace(/'/g, '&#39;')}','credit')">Credit</button><button class="btn-sm danger" onclick="openWalletAdjustment(${s.id},'student','${s.regNo.replace(/'/g, '&#39;')}','debit')">Debit</button></td>
-        </tr>
-      `).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">No students found.</td></tr>';
+      if (tblStu) {
+        tblStu.innerHTML = (data.students || []).map(s => `
+          <tr>
+            <td><b>${s.regNo}</b></td>
+            <td>${s.email || '—'}</td>
+            <td><b style="color:var(--success)">₦${(s.balance || 0).toLocaleString()}</b></td>
+            <td>${s.joinedAt}</td>
+            <td style="white-space:nowrap"><div style="display:inline-flex;gap:6px;align-items:center;flex-wrap:nowrap"><button class="btn-sm" onclick="openWalletLedger(${s.id},'student','${(s.regNo || 'Student').replace(/'/g, '&#39;')}')">Ledger</button><button class="btn-sm primary" onclick="openWalletAdjustment(${s.id},'student','${(s.regNo || 'Student').replace(/'/g, '&#39;')}','credit')">Credit</button><button class="btn-sm danger" onclick="openWalletAdjustment(${s.id},'student','${(s.regNo || 'Student').replace(/'/g, '&#39;')}','debit')">Debit</button></div></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">No students found.</td></tr>';
+      }
 
       const tblLedger = document.getElementById('tblStudentLedger');
-      tblLedger.innerHTML = (data.ledger || []).map(l => `
-        <tr>
-          <td><b>${l.receiptNumber}</b></td>
-          <td>${l.regNo}</td>
-          <td>${l.description || l.type}</td>
-          <td><b>₦${l.amount.toLocaleString()}</b></td>
-          <td>${l.gateway}</td>
-          <td><span class="badge ${l.status === 'success' ? 'success' : 'pending'}">${l.status}</span></td>
-          <td>${l.date}</td>
-        </tr>
-      `).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No transactions yet.</td></tr>';
+      if (tblLedger) {
+        tblLedger.innerHTML = (data.ledger || []).map(l => {
+          const isPending = (l.status || '').toLowerCase() === 'pending';
+          const isFailed = (l.status || '').toLowerCase() === 'failed' || (l.status || '').toLowerCase() === 'cancelled';
+          const statusBadge = isPending ? 'pending' : (isFailed ? 'danger' : 'success');
+          const amountColor = isPending ? 'var(--warning)' : (isFailed ? 'var(--danger)' : 'var(--text)');
+          return `
+            <tr>
+              <td><b>${l.receiptNumber}</b></td>
+              <td><b>${l.regNo}</b>${l.email ? `<br><small style="color:var(--text-dim)">${l.email}</small>` : ''}</td>
+              <td>${l.description || l.type}</td>
+              <td><b style="color:${amountColor}">₦${(l.amount || 0).toLocaleString()}</b></td>
+              <td>${l.gateway}</td>
+              <td><span class="badge ${statusBadge}">${l.status}</span></td>
+              <td><small style="color:var(--text-dim)">${l.date}</small></td>
+            </tr>
+          `;
+        }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No transactions yet.</td></tr>';
+      }
     } catch (e) {
       console.error(e);
+      const tblStu = document.getElementById('tblStudents');
+      if (tblStu) tblStu.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--danger)">Could not load student records.</td></tr>';
+      const tblLedger = document.getElementById('tblStudentLedger');
+      if (tblLedger) tblLedger.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--danger)">Could not load student ledger.</td></tr>';
     }
   }
 
   async function loadDriverLedger() {
     try {
       const res = await fetch(`${API_BASE}/admin/ledgers/drivers`);
+      if (res.status === 401 || res.status === 403) {
+        document.getElementById('tblDrivers').innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--danger)">Your admin session has expired. Please sign in again.</td></tr>';
+        document.getElementById('tblDriverWithdrawals').innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--danger)">Your admin session has expired. Please sign in again.</td></tr>';
+        return;
+      }
+      if (!res.ok) throw new Error('Could not load driver records.');
       const data = await res.json();
       window.allDrivers = data.drivers || [];
       window.allDriverWithdrawals = data.withdrawals || [];
@@ -1843,6 +1864,10 @@
       renderDriverWithdrawals();
     } catch (e) {
       console.error(e);
+      const tblDri = document.getElementById('tblDrivers');
+      if (tblDri) tblDri.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--danger)">Could not load driver records.</td></tr>';
+      const tblWth = document.getElementById('tblDriverWithdrawals');
+      if (tblWth) tblWth.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--danger)">Could not load withdrawals.</td></tr>';
     }
   }
 
@@ -2117,22 +2142,30 @@
   function openWalletCredit(id, role, label) { openWalletAdjustment(id,role,label,'credit'); }
   function openWalletAdjustment(id, role, label, type) { walletCreditTarget={id,role,label,type}; document.querySelector('#modalWalletCredit .wallet-credit-title').textContent=type==='credit'?'Credit wallet':'Debit wallet'; document.getElementById('walletCreditUser').textContent=`${role === 'student' ? 'Student' : 'Driver'} · ${label}`;document.getElementById('walletCreditAmount').value='';document.getElementById('walletCreditReason').value='';document.getElementById('walletCreditSubmit').textContent=type==='credit'?'Credit wallet':'Debit wallet';document.getElementById('modalWalletCredit').classList.add('active'); }
   async function submitWalletCredit() { const amount=Number(document.getElementById('walletCreditAmount').value),reason=document.getElementById('walletCreditReason').value.trim(),button=document.getElementById('walletCreditSubmit'),type=walletCreditTarget?.type||'credit';if(!walletCreditTarget)return;if(!Number.isFinite(amount)||amount<=0)return showAdminNotice('Enter a valid amount.',true);if(!reason)return showAdminNotice('A reason is required for every adjustment.',true);button.disabled=true;button.textContent=type==='credit'?'Crediting…':'Debiting…';try{const res=await fetch(`${API_BASE}/admin/adjust-balance`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:walletCreditTarget.id,role:walletCreditTarget.role,type,amount,reason})});const data=await res.json();if(!res.ok)throw new Error(data.error||`Could not ${type} wallet.`);closeModal('modalWalletCredit');showAdminNotice(`Wallet ${type}ed. New balance: ₦${Number(data.newBalance).toLocaleString()}`);walletCreditTarget.role==='student'?loadStudentLedger():loadDriverLedger();}catch(err){showAdminNotice(err.message||`Could not ${type} wallet.`,true);}finally{button.disabled=false;button.textContent=type==='credit'?'Credit wallet':'Debit wallet';} }
+  function walletLedgerText(text, styles = {}) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    Object.assign(div.style, styles);
+    return div;
+  }
+
   async function openWalletLedger(id, role, label) {
     const rows = document.getElementById('walletLedgerRows'),
           title = document.getElementById('walletLedgerTitle'),
           meta = document.getElementById('walletLedgerMeta');
-    title.textContent = `${label} — wallet ledger`;
-    meta.textContent = 'Loading complete transaction history…';
-    rows.replaceChildren();
-    document.getElementById('modalWalletLedger').classList.add('active');
+    if (title) title.textContent = `${label} — wallet ledger`;
+    if (meta) meta.textContent = 'Loading complete transaction history…';
+    if (rows) rows.replaceChildren();
+    document.getElementById('modalWalletLedger')?.classList.add('active');
+    ziraSound.open();
     try {
       const res = await fetch(`${API_BASE}/admin/${role}/${id}/ledger`);
-      const data = await res.json();
       if (!res.ok) throw new Error('Could not load ledger.');
+      const data = await res.json();
       const tx = data.transactions || [];
-      meta.textContent = `${tx.length.toLocaleString()} transaction${tx.length === 1 ? '' : 's'} — complete history`;
+      if (meta) meta.textContent = `${tx.length.toLocaleString()} transaction${tx.length === 1 ? '' : 's'} — complete history`;
       if (!tx.length) {
-        rows.append(walletLedgerText('No wallet transactions found.', { padding: '18px', color: 'var(--text-dim)', textAlign: 'center' }));
+        rows.append(walletLedgerText('No wallet transactions found for this account.', { padding: '18px', color: 'var(--text-dim)', textAlign: 'center' }));
         return;
       }
       tx.forEach(t => {

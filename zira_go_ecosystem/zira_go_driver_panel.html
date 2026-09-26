@@ -1608,6 +1608,11 @@ async function loadDriverProfile() {
 
     const availText = document.getElementById('wdAvailableText');
     if (availText) availText.textContent = balanceFormatted;
+
+    if (window.ZiraPrivacy && window.ZiraPrivacy.setIdentity) {
+      window.ZiraPrivacy.setIdentity(`DRIVER: ${data.fullName || 'Landmark Driver'} (#${DRIVER_ID}) • PLATE: ${data.vehiclePlate || 'CAMPUS-SHUTTLE'}`);
+    }
+
     return data;
   } catch (err) {
     console.warn('[Driver Profile Error]', err);

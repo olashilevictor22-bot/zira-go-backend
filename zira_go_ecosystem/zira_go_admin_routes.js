@@ -255,11 +255,12 @@ router.get('/ledgers/students', async (req, res) => {
 
         // 2. Student wallet transactions ledger
         const txQuery = `
-            SELECT wt.id, wt.student_id, s.reg_no, s.email, wt.type, wt.amount,
-                   wt.fee_amount, wt.gateway, wt.receipt_number, wt.status,
+            SELECT wt.id, wt.student_id, COALESCE(s.reg_no, 'Student') AS reg_no, COALESCE(s.email, '') AS email,
+                   wt.type, wt.amount, wt.fee_amount, wt.gateway, wt.receipt_number, wt.status,
                    wt.description, wt.created_at
             FROM wallet_transactions wt
-            JOIN students s ON s.id = wt.student_id
+            LEFT JOIN students s ON s.id = wt.student_id
+            WHERE wt.student_id IS NOT NULL OR wt.type IN ('funding', 'ride_debit', 'admin_credit', 'admin_debit')
             ORDER BY wt.created_at DESC
             LIMIT 100
         `;
@@ -270,20 +271,20 @@ router.get('/ledgers/students', async (req, res) => {
                 id: s.id,
                 email: s.email,
                 regNo: s.reg_no || '—',
-                balance: Number(s.wallet_balance),
+                balance: Number(s.wallet_balance || 0),
                 joinedAt: new Date(s.created_at).toLocaleDateString()
             })),
             ledger: txs.rows.map(t => ({
                 id: t.id,
-                regNo: t.reg_no,
-                email: t.email,
+                regNo: t.reg_no || '—',
+                email: t.email || '',
                 type: t.type,
-                amount: Number(t.amount),
-                fee: Number(t.fee_amount),
+                amount: Number(t.amount || 0),
+                fee: Number(t.fee_amount || 0),
                 gateway: t.gateway || 'Zira Go Core',
                 receiptNumber: t.receipt_number || `ZG-${t.id}`,
-                status: t.status,
-                description: t.description,
+                status: t.status || 'success',
+                description: t.description || t.type,
                 date: new Date(t.created_at).toLocaleDateString('en-US', {
                     month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
                 })
@@ -309,12 +310,12 @@ router.get('/ledgers/drivers', async (req, res) => {
         );
 
         const withdrawals = await pool.query(
-            `SELECT dw.id, dw.driver_id, d.full_name, dw.amount, dw.fee,
-                    dw.bank_name, dw.account_number, dw.account_name,
+            `SELECT dw.id, dw.driver_id, COALESCE(d.full_name, dw.account_name, 'Driver') AS full_name,
+                    dw.amount, dw.fee, dw.bank_name, dw.account_number, dw.account_name,
                     dw.matched_registered_name, dw.status, dw.reference,
                     dw.receipt_number, dw.created_at
              FROM driver_withdrawals dw
-             JOIN drivers d ON d.id = dw.driver_id
+             LEFT JOIN drivers d ON d.id = dw.driver_id
              ORDER BY dw.created_at DESC
              LIMIT 50`
         );
@@ -324,7 +325,7 @@ router.get('/ledgers/drivers', async (req, res) => {
                 id: d.id,
                 fullName: d.full_name || 'Driver',
                 email: d.email,
-                balance: Number(d.wallet_balance),
+                balance: Number(d.wallet_balance || 0),
                 bankName: d.bank_name || 'Not linked',
                 accountNumber: d.bank_account_number ? `••••${d.bank_account_number.slice(-4)}` : '—',
                 accountName: d.bank_account_name || '—',
@@ -337,15 +338,15 @@ router.get('/ledgers/drivers', async (req, res) => {
             withdrawals: withdrawals.rows.map(w => ({
                 id: w.id,
                 driverName: w.full_name,
-                amount: Number(w.amount),
-                fee: Number(w.fee),
-                bankName: w.bank_name,
-                accountNumber: `••••${w.account_number.slice(-4)}`,
-                accountName: w.account_name,
+                amount: Number(w.amount || 0),
+                fee: Number(w.fee || 0),
+                bankName: w.bank_name || 'Bank',
+                accountNumber: w.account_number ? `••••${String(w.account_number).slice(-4)}` : '—',
+                accountName: w.account_name || '—',
                 matched: Boolean(w.matched_registered_name),
-                status: w.status,
-                reference: w.reference,
-                receiptNumber: w.receipt_number,
+                status: w.status || 'completed',
+                reference: w.reference || `REF-${w.id}`,
+                receiptNumber: w.receipt_number || `ZG-WD-${w.id}`,
                 date: new Date(w.created_at).toLocaleDateString('en-US', {
                     month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
                 })
@@ -678,7 +679,7 @@ router.post('/drivers/:id/reject', async (req, res) => {
 
         await recordPlatformChange({
             key: '2026-09-25-editable-spotlight-and-ad-banners',
-            actor: 'Victor',
+            actor: 'Claude',
             area: 'Student wallet & Admin portal',
             title: 'Campus Spotlight and ad banners are now admin-editable',
             details: 'Admin can add, edit, reorder and remove Campus Spotlight cards and the Trending-on-Campus ad banners: image, badge, heading, description, button text, destination link, and button colour (or automatic colour matched to the image).'
@@ -686,7 +687,7 @@ router.post('/drivers/:id/reject', async (req, res) => {
 
         await recordPlatformChange({
             key: '2026-09-25-student-ad-marketplace',
-            actor: 'Victor',
+            actor: 'Claude',
             area: 'Student wallet & Admin portal',
             title: 'Students can now apply to place their own advert',
             details: 'Students submit an ad application with an email address, get an automatic "under review" email, and another when it goes live. A free first advert, admin approval queue with filters, auto-expiry that pulls the banner down, and a ₦1,000 Korapay renewal email are now all wired up.'
@@ -755,9 +756,17 @@ router.post('/drivers/:id/reject', async (req, res) => {
             title: 'Executive financial intelligence, status-aware ledgers & driver actions',
             details: 'Built complete Financial Overview screen with GMV, platform commission, float liquidity, payout queues, ad revenue metrics and interactive charts. Corrected ledger status styling so Pending transactions display in amber/orange, and aligned driver management action buttons.'
         });
+        await recordPlatformChange({
+            key: '2026-09-26-privacy-shield-and-anti-capture',
+            actor: 'Anti gravity',
+            area: 'Driver terminal, Student wallet & Admin security',
+            title: 'Privacy Shield anti-capture defense, dynamic watermark & ledger hardening',
+            details: 'Engineered multi-layered anti-screenshot and screen recording defenses with PrintScreen/Snipping Tool interception, automatic clipboard wipes, WebRTC recording guards, and live forensic dynamic watermarking. Hardened student and driver admin ledgers with resilient queries and CSV export.'
+        });
 
-        // Migrate any previous timeline entries from Claude to Victor
-        await pool.query("UPDATE platform_change_log SET actor = 'Victor' WHERE actor = 'Claude' OR actor ILIKE '%claude%'").catch(() => {});
+        // Ensure database records reflect updated actors
+        await pool.query("UPDATE platform_change_log SET actor = 'Claude' WHERE change_key IN ('2026-09-25-editable-spotlight-and-ad-banners', '2026-09-25-student-ad-marketplace')").catch(() => {});
+        await pool.query("UPDATE platform_change_log SET actor = 'Anti gravity' WHERE change_key = '2026-09-26-privacy-shield-and-anti-capture'").catch(() => {});
 
         // Seed default platform config if empty
         const cfg = await pool.query("SELECT key FROM platform_config WHERE key = 'app_settings'");
