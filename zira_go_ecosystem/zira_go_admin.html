@@ -12,6 +12,7 @@
 <script>ZiraGuard.protect('admin');</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <style>
   :root, [data-theme="light"] {
     --bg: #F8F9FD;
@@ -57,125 +58,227 @@
   h1, h2, h3, h4, .num { font-family: 'Sora', sans-serif; }
 
   /* Top Navigation Bar */
-  header {
-    background: var(--panel);
-    border-bottom: 1px solid var(--line);
-    padding: 14px 28px;
+  /* ============ App Shell: Sidebar + Topbar layout ============ */
+  body { flex-direction: row; align-items: stretch; }
+
+  .app-shell {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    width: 100%;
+    min-height: 100vh;
+  }
+
+  /* ---- Sidebar ---- */
+  .sidebar {
+    width: 264px;
+    flex-shrink: 0;
+    background: var(--panel);
+    border-right: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
     position: sticky;
     top: 0;
-    z-index: 50;
+    height: 100vh;
+    z-index: 60;
+    transition: transform 0.25s ease;
   }
-  .brand-lockup {
+  .sidebar-brand {
     display: flex;
     align-items: center;
     gap: 12px;
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--line);
   }
+  .brand-lockup { display: flex; align-items: center; gap: 12px; min-width: 0; }
   .logo-circle-badge {
-    width: 42px;
-    height: 42px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     background: #FFFFFF;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 3px;
+    flex-shrink: 0;
     box-shadow: 0 2px 10px rgba(124, 58, 237, 0.2), 0 0 0 1.5px rgba(124, 58, 237, 0.15);
   }
   .logo-circle-badge img { width: 92%; height: 92%; object-fit: contain; }
+  .brand-text { min-width: 0; }
   .brand-text .wordmark {
-    font-size: 19px;
+    font-size: 18px;
     font-weight: 800;
     line-height: 1.1;
     color: var(--accent);
+    white-space: nowrap;
   }
   .brand-text .wordmark span { color: var(--text); }
   .brand-text .tagline {
-    font-size: 9.5px;
+    font-size: 9px;
     font-weight: 700;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.1em;
     color: var(--text-dim);
+    white-space: nowrap;
   }
-
   .admin-badge {
     display: inline-flex;
     align-items: center;
     gap: 6px;
     background: rgba(124, 58, 237, 0.1);
     color: var(--accent);
-    padding: 4px 10px;
+    padding: 5px 12px;
     border-radius: 999px;
-    font-size: 11.5px;
+    font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.04em;
     border: 1px solid rgba(124, 58, 237, 0.25);
-    margin-left: 8px;
+    margin: 12px 20px 4px;
+    justify-content: center;
   }
 
-  .nav-controls {
+  .sidebar-scroll { flex: 1; overflow-y: auto; padding: 10px 12px 14px; scrollbar-width: thin; }
+  .sidebar-scroll::-webkit-scrollbar { width: 5px; }
+  .sidebar-scroll::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+  .sidebar-section-label {
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding: 16px 12px 6px;
+  }
+  .sidebar-section-label:first-child { padding-top: 6px; }
+
+  /* Sidebar nav items (replaces the old .tab-btn top-bar tabs) */
+  .tab-btn {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 11px;
+    width: 100%;
+    padding: 10px 12px;
+    margin-bottom: 2px;
+    background: none;
+    border: none;
+    border-radius: 12px;
+    color: var(--text-dim);
+    font-family: inherit;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+    text-align: left;
+    position: relative;
   }
+  .tab-btn svg { flex-shrink: 0; }
+  .tab-btn:hover { color: var(--text); background: var(--panel-alt); }
+  .tab-btn.active {
+    color: var(--accent);
+    font-weight: 700;
+    background: var(--accent-glow);
+  }
+  .tab-btn .tab-badge { margin-left: auto; }
+
+  .sidebar-footer {
+    padding: 12px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .view-as-row {
+    display: flex; gap:6px; align-items:center; padding:8px 10px;
+    border:1px solid var(--line); border-radius:12px; background:var(--panel-alt);
+    font-size:11.5px;
+  }
+  .view-as-row span.vlabel { font-weight:700; color:var(--text-dim); }
+  .view-as-row a { font-weight:800; color:var(--accent); text-decoration:none; margin-left:auto; padding-left: 4px; }
   .theme-toggle-btn, .btn-logout {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 7px 14px;
-    border-radius: 999px;
+    justify-content: center;
+    gap: 7px;
+    padding: 9px 14px;
+    border-radius: 12px;
     font-size: 12.5px;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
     transition: all 0.2s;
     background: var(--panel-alt);
     border: 1px solid var(--line);
     color: var(--text);
+    width: 100%;
+    font-family: inherit;
   }
   .theme-toggle-btn:hover { border-color: var(--accent); color: var(--accent); }
   .btn-logout:hover { background: rgba(225, 29, 72, 0.1); color: var(--danger); border-color: var(--danger); }
 
+  .sidebar-backdrop { display: none; }
+
+  /* ---- Topbar (shown in the content column, above main) ---- */
+  .topbar {
+    background: var(--panel);
+    border-bottom: 1px solid var(--line);
+    padding: 14px 28px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  .topbar-title-wrap { min-width: 0; }
+  .topbar-title { font-family: 'Sora', sans-serif; font-size: 17px; font-weight: 700; color: var(--text); line-height: 1.2; }
+  .topbar-subtitle { font-size: 11.5px; color: var(--text-dim); margin-top: 1px; }
+  .hamburger-btn {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--panel-alt);
+    color: var(--text);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .nav-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  /* ---- Content column ---- */
+  .content-col { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
   /* Main Container */
   main {
     flex: 1;
-    max-width: 1280px;
     width: 100%;
+    max-width: 1320px;
     margin: 0 auto;
-    padding: 24px;
+    padding: 24px 28px 40px;
     display: flex;
     flex-direction: column;
     gap: 22px;
   }
 
-  /* Navigation Tabs */
-  .admin-tabs {
-    display: flex;
-    gap: 8px;
-    border-bottom: 1.5px solid var(--line);
-    padding-bottom: 2px;
-    overflow-x: auto;
-  }
-  .tab-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 18px;
-    background: none;
-    border: none;
-    border-bottom: 2px solid transparent;
-    color: var(--text-dim);
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    white-space: nowrap;
-  }
-  .tab-btn:hover { color: var(--text); }
-  .tab-btn.active {
-    color: var(--accent);
-    border-bottom-color: var(--accent);
-    font-weight: 700;
+  @media (max-width: 980px) {
+    .sidebar {
+      position: fixed;
+      left: 0; top: 0;
+      transform: translateX(-100%);
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.02);
+    }
+    .sidebar.open { transform: translateX(0); box-shadow: 20px 0 40px rgba(0,0,0,0.25); }
+    .hamburger-btn { display: inline-flex; }
+    .sidebar-backdrop {
+      display: none;
+      position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+      z-index: 55;
+    }
+    .sidebar-backdrop.open { display: block; }
+    main { padding: 18px 16px 32px; }
+    .topbar { padding: 12px 16px; }
   }
 
   /* KPI Grid */
@@ -616,72 +719,100 @@
   <div class="splash-status">Loading Admin Intelligence Portal...</div>
 </div>
 
-<!-- Header -->
-<header>
-  <div class="brand-lockup">
+<div class="app-shell">
+<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar(false)"></div>
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
     <div class="logo-circle-badge">
       <img src="zira_go_logo.png" alt="Zira Go">
     </div>
     <div class="brand-text">
       <div class="wordmark">Zira <span>GO!</span></div>
-      <span class="tagline">ADMIN INTELLIGENCE & CONTROL</span>
+      <span class="tagline">ADMIN INTELLIGENCE</span>
     </div>
-    <span class="admin-badge">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-      SYSTEM ADMIN
-    </span>
   </div>
+  <span class="admin-badge">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    SYSTEM ADMIN
+  </span>
 
-  <div class="nav-controls">
-    <div style="display:flex;gap:6px;align-items:center;padding:5px 8px;border:1px solid var(--line);border-radius:10px;background:var(--panel-alt)"><span style="font-size:11px;font-weight:700;color:var(--text-dim)">View as</span><a href="zira_go_student_wallet.html?adminPreview=student" target="_blank" style="font-size:11px;font-weight:800;color:var(--accent);text-decoration:none">Student</a><a href="zira_go_driver_panel.html?adminPreview=driver" target="_blank" style="font-size:11px;font-weight:800;color:var(--accent);text-decoration:none">Driver</a></div>
+  <nav class="sidebar-scroll">
+    <div class="sidebar-section-label">Overview</div>
+    <button class="tab-btn active" data-tab="analytics" data-title="Executive Analytics" data-subtitle="Platform-wide performance at a glance" onclick="switchTab('analytics')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Executive Analytics
+    </button>
+    <button class="tab-btn" data-tab="finances" data-title="Financial Overview" data-subtitle="Revenue, liquidity and the audit ledger" onclick="switchTab('finances')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+      Financial Overview
+    </button>
+
+    <div class="sidebar-section-label">People</div>
+    <button class="tab-btn" data-tab="students" data-title="Student Ledger" data-subtitle="Registered students, balances and funding" onclick="switchTab('students')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      Student Ledger
+    </button>
+    <button class="tab-btn" data-tab="drivers" data-title="Driver Ledger & Payouts" data-subtitle="Driver balances, trips and disbursements" onclick="switchTab('drivers')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="14" rx="2"/><circle cx="7.5" cy="14.5" r="1.5"/><circle cx="16.5" cy="14.5" r="1.5"/></svg>
+      Driver Ledger & Payouts
+    </button>
+    <button class="tab-btn" data-tab="bankReviews" data-title="Bank Reviews" data-subtitle="Verify driver bank and payout details" onclick="switchTab('bankReviews')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      Bank Reviews
+    </button>
+
+    <div class="sidebar-section-label">Operations</div>
+    <button class="tab-btn" data-tab="operations" data-title="Operations Desk" data-subtitle="Feature toggles and experience settings" onclick="switchTab('operations')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Operations Desk
+    </button>
+    <button class="tab-btn" data-tab="support" data-title="Live Support" data-subtitle="Chat with students and drivers in real time" onclick="switchTab('support')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      Live Support <span class="tab-badge" id="supTabBadge" hidden></span>
+    </button>
+
+    <div class="sidebar-section-label">Growth</div>
+    <button class="tab-btn" data-tab="content" data-title="Spotlight & Ads" data-subtitle="Manage campus spotlight banners and adverts" onclick="switchTab('content')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      Spotlight & Ads
+    </button>
+    <button class="tab-btn" data-tab="adApplications" data-title="Ad Applications" data-subtitle="Review incoming brand advertising requests" onclick="switchTab('adApplications')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="13" y2="13"/></svg>
+      Ad Applications <span class="tab-badge" id="adAppTabBadge" hidden></span>
+    </button>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="view-as-row">
+      <span class="vlabel">View as</span>
+      <a href="zira_go_student_wallet.html?adminPreview=student" target="_blank">Student</a>
+      <a href="zira_go_driver_panel.html?adminPreview=driver" target="_blank">Driver</a>
+    </div>
+    <button class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleAdminTheme()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+      <span id="themeToggleLabel">Dark mode</span>
+    </button>
     <button class="btn-logout" onclick="logoutAdmin()">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       Sign Out
     </button>
   </div>
+</aside>
+
+<div class="content-col">
+<header class="topbar">
+  <button class="hamburger-btn" onclick="toggleSidebar()" aria-label="Toggle menu">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+  <div class="topbar-title-wrap">
+    <div class="topbar-title" id="topbarTitle">Executive Analytics</div>
+    <div class="topbar-subtitle" id="topbarSubtitle">Platform-wide performance at a glance</div>
+  </div>
+  <div class="nav-controls"></div>
 </header>
 
 <main>
-  <!-- Navigation Tabs -->
-  <div class="admin-tabs">
-    <button class="tab-btn active" data-tab="analytics" onclick="switchTab('analytics')">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-      Executive Analytics
-    </button>
-    <button class="tab-btn" data-tab="finances" onclick="switchTab('finances')">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-      Financial Overview
-    </button>
-    <button class="tab-btn" data-tab="students" onclick="switchTab('students')">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-      Student Ledger
-    </button>
-    <button class="tab-btn" data-tab="drivers" onclick="switchTab('drivers')">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="14" rx="2"/><circle cx="7.5" cy="14.5" r="1.5"/><circle cx="16.5" cy="14.5" r="1.5"/></svg>
-      Driver Ledger & Payouts
-    </button>
-    <button class="tab-btn" data-tab="bankReviews" onclick="switchTab('bankReviews')">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-      Bank Reviews
-    </button>
-    <button class="tab-btn" data-tab="operations" onclick="switchTab('operations')">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      Operations Desk
-    </button>
-    <button class="tab-btn" data-tab="support" onclick="switchTab('support')">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-      Live Support <span class="tab-badge" id="supTabBadge" hidden></span>
-    </button>
-    <button class="tab-btn" data-tab="content" onclick="switchTab('content')">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-      Spotlight & Ads
-    </button>
-    <button class="tab-btn" data-tab="adApplications" onclick="switchTab('adApplications')">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="13" y2="13"/></svg>
-      Ad Applications <span class="tab-badge" id="adAppTabBadge" hidden></span>
-    </button>
-  </div>
-
   <!-- TAB 1: EXECUTIVE ANALYTICS -->
   <div class="tab-pane active" id="paneAnalytics">
     <div class="kpi-grid">
@@ -1098,9 +1229,10 @@
             <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#F59E0B"></span> Outflow</span>
           </div>
         </div>
-        <div id="finLiquidityChartContainer" style="height:210px;display:flex;align-items:flex-end;gap:12px;padding:16px 10px 10px;position:relative">
-          <!-- Dynamic Chart Bars Rendered Here -->
+        <div style="height:230px;position:relative">
+          <canvas id="finLiquidityChart"></canvas>
         </div>
+        <div id="finLiquidityEmpty" style="display:none;text-align:center;color:var(--text-dim);font-size:12.5px;padding:20px">No historical liquidity points recorded.</div>
       </div>
 
       <!-- Chart 2: Revenue Stream Composition -->
@@ -1111,8 +1243,13 @@
             <div style="font-size:12px;color:var(--text-dim)">Breakdown of where Zira Go earnings and treasury reserves originate</div>
           </div>
         </div>
-        <div id="finRevenueStreamsBreakdown" style="display:flex;flex-direction:column;gap:12px;padding:8px 4px">
-          <!-- Stream progress bars & percentages rendered dynamically -->
+        <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+          <div style="width:150px;height:150px;position:relative;flex-shrink:0">
+            <canvas id="finRevenueDonut"></canvas>
+          </div>
+          <div id="finRevenueStreamsBreakdown" style="flex:1;min-width:180px;display:flex;flex-direction:column;gap:10px">
+            <!-- Legend rows with amounts & percentages rendered dynamically -->
+          </div>
         </div>
       </div>
     </div>
@@ -1623,6 +1760,8 @@
     </div>
   </div>
 </main>
+</div><!-- /content-col -->
+</div><!-- /app-shell -->
 
 <div class="modal-overlay" id="modalContentCard"><div class="modal-card" style="max-width:560px">
   <button class="modal-close" onclick="closeModal('modalContentCard')">✕</button>
@@ -1880,10 +2019,49 @@
     overlay.addEventListener('mousedown', (e) => { if (e.target === overlay) closeModal(overlay.id); });
   });
 
+  function toggleSidebar(force) {
+    const sb = document.getElementById('sidebar');
+    const bd = document.getElementById('sidebarBackdrop');
+    const open = typeof force === 'boolean' ? force : !sb.classList.contains('open');
+    sb.classList.toggle('open', open);
+    bd.classList.toggle('open', open);
+  }
+
+  function toggleAdminTheme() {
+    const html = document.documentElement;
+    const isDark = html.getAttribute('data-theme') === 'dark';
+    const next = isDark ? 'light' : 'dark';
+    html.setAttribute('data-theme', next);
+    try { localStorage.setItem('ziraAdminTheme', next); } catch (e) {}
+    const label = document.getElementById('themeToggleLabel');
+    if (label) label.textContent = next === 'dark' ? 'Light mode' : 'Dark mode';
+  }
+  (function initAdminTheme() {
+    let saved = null;
+    try { saved = localStorage.getItem('ziraAdminTheme'); } catch (e) {}
+    if (saved === 'dark' || saved === 'light') {
+      document.documentElement.setAttribute('data-theme', saved);
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+      const label = document.getElementById('themeToggleLabel');
+      if (label) label.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? 'Light mode' : 'Dark mode';
+    });
+  })();
+
   function switchTab(tab) {
     document.querySelectorAll('.tab-btn').forEach((b) => {
-      b.classList.toggle('active', b.getAttribute('data-tab') === tab);
+      const isActive = b.getAttribute('data-tab') === tab;
+      b.classList.toggle('active', isActive);
+      if (isActive) {
+        const title = b.getAttribute('data-title');
+        const sub = b.getAttribute('data-subtitle');
+        const titleEl = document.getElementById('topbarTitle');
+        const subEl = document.getElementById('topbarSubtitle');
+        if (titleEl && title) titleEl.textContent = title;
+        if (subEl && sub) subEl.textContent = sub;
+      }
     });
+    if (window.innerWidth <= 980) toggleSidebar(false);
 
     document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
     if (tab === 'analytics') {
@@ -2062,37 +2240,64 @@
     }
   }
 
+  let _liquidityChartInstance = null;
   function renderLiquidityChart(dailyTrends) {
-    const container = document.getElementById('finLiquidityChartContainer');
-    if (!container) return;
+    const canvas = document.getElementById('finLiquidityChart');
+    const emptyEl = document.getElementById('finLiquidityEmpty');
+    if (!canvas) return;
     if (!dailyTrends || !dailyTrends.length) {
-      container.innerHTML = '<div style="margin:auto;color:var(--text-dim);font-size:12.5px">No historical liquidity points recorded.</div>';
+      canvas.style.display = 'none';
+      if (emptyEl) emptyEl.style.display = 'block';
       return;
     }
+    canvas.style.display = 'block';
+    if (emptyEl) emptyEl.style.display = 'none';
 
-    const maxVal = Math.max(...dailyTrends.map(d => Math.max(d.funding || 0, d.payouts || 0)), 1000);
+    const styles = getComputedStyle(document.documentElement);
+    const gridColor = styles.getPropertyValue('--line').trim() || '#E2E8F0';
+    const textDim = styles.getPropertyValue('--text-dim').trim() || '#64748B';
 
-    container.innerHTML = dailyTrends.map(d => {
-      const fundHeight = Math.max(6, Math.round(((d.funding || 0) / maxVal) * 140));
-      const payHeight = Math.max(6, Math.round(((d.payouts || 0) / maxVal) * 140));
+    const labels = dailyTrends.map(d => d.day);
+    const inflow = dailyTrends.map(d => d.funding || 0);
+    const outflow = dailyTrends.map(d => d.payouts || 0);
 
-      return `
-        <div style="flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;gap:6px">
-          <div style="display:flex;gap:4px;align-items:flex-end;height:150px;width:100%;justify-content:center">
-            <!-- Inflow Bar -->
-            <div title="${d.day} Inflow: ₦${(d.funding || 0).toLocaleString()}" style="width:40%;max-width:18px;height:${fundHeight}px;background:linear-gradient(180deg, #34D399, #10B981);border-radius:4px 4px 0 0;transition:height 0.4s ease;cursor:pointer"></div>
-            <!-- Outflow Bar -->
-            <div title="${d.day} Outflow: ₦${(d.payouts || 0).toLocaleString()}" style="width:40%;max-width:18px;height:${payHeight}px;background:linear-gradient(180deg, #FBBF24, #D97706);border-radius:4px 4px 0 0;transition:height 0.4s ease;cursor:pointer"></div>
-          </div>
-          <span style="font-size:11px;font-weight:700;color:var(--text-dim)">${d.day}</span>
-        </div>
-      `;
-    }).join('');
+    if (_liquidityChartInstance) { _liquidityChartInstance.destroy(); }
+    _liquidityChartInstance = new Chart(canvas.getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Inflow', data: inflow, backgroundColor: '#10B981', borderRadius: 6, maxBarThickness: 22 },
+          { label: 'Outflow', data: outflow, backgroundColor: '#F59E0B', borderRadius: 6, maxBarThickness: 22 }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ₦${(ctx.parsed.y || 0).toLocaleString()}` }
+          }
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: textDim, font: { size: 11, weight: '600' } } },
+          y: {
+            grid: { color: gridColor },
+            border: { display: false },
+            ticks: { color: textDim, font: { size: 11 }, callback: (v) => v >= 1000 ? `₦${(v / 1000)}k` : `₦${v}` }
+          }
+        }
+      }
+    });
   }
 
+  let _revenueDonutInstance = null;
   function renderRevenueStreamsBreakdown(kpi) {
-    const container = document.getElementById('finRevenueStreamsBreakdown');
-    if (!container) return;
+    const legend = document.getElementById('finRevenueStreamsBreakdown');
+    const canvas = document.getElementById('finRevenueDonut');
+    if (!legend || !canvas) return;
 
     const rideFees = kpi.tripFeeRevenue || 0;
     const fundFees = kpi.fundingFeeRevenue || 0;
@@ -2100,25 +2305,48 @@
     const totalRev = Math.max(rideFees + fundFees + adRev, 1);
 
     const streams = [
-      { name: 'Transit Fare Commission (₦10/ride)', amount: rideFees, color: '#6D28D9' },
-      { name: 'Gateway Top-up Processing (₦100/deposit)', amount: fundFees, color: '#10B981' },
-      { name: 'Spotlight & Banner Advertising', amount: adRev, color: '#F59E0B' }
+      { name: 'Transit Fare Commission', amount: rideFees, color: '#6D28D9' },
+      { name: 'Gateway Top-up Fees', amount: fundFees, color: '#10B981' },
+      { name: 'Spotlight & Banner Ads', amount: adRev, color: '#F59E0B' }
     ];
 
-    container.innerHTML = streams.map(s => {
+    legend.innerHTML = streams.map(s => {
       const pct = Math.round((s.amount / totalRev) * 100);
       return `
-        <div>
-          <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;margin-bottom:4px">
-            <span style="font-weight:700;color:var(--text);display:flex;align-items:center;gap:6px"><span>${s.name}</span></span>
-            <span style="font-weight:800;color:var(--text)">₦${s.amount.toLocaleString()} <span style="font-size:11px;color:var(--text-dim)">(${pct}%)</span></span>
-          </div>
-          <div style="width:100%;height:8px;background:var(--line);border-radius:999px;overflow:hidden">
-            <div style="width:${pct}%;height:100%;background:${s.color};border-radius:999px;transition:width 0.4s ease"></div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="width:10px;height:10px;border-radius:3px;background:${s.color};flex-shrink:0"></span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.name}</div>
+            <div style="font-size:11.5px;color:var(--text-dim)">₦${s.amount.toLocaleString()} <span style="opacity:.8">(${pct}%)</span></div>
           </div>
         </div>
       `;
     }).join('');
+
+    if (_revenueDonutInstance) { _revenueDonutInstance.destroy(); }
+    _revenueDonutInstance = new Chart(canvas.getContext('2d'), {
+      type: 'doughnut',
+      data: {
+        labels: streams.map(s => s.name),
+        datasets: [{
+          data: streams.map(s => s.amount),
+          backgroundColor: streams.map(s => s.color),
+          borderWidth: 0,
+          hoverOffset: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '68%',
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: { label: (ctx) => ` ₦${(ctx.parsed || 0).toLocaleString()}` }
+          }
+        }
+      }
+    });
   }
 
   function renderFinancialTx() {
