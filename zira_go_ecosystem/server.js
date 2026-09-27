@@ -162,6 +162,58 @@ app.get('/api/public/content-cards', async (req, res) => {
     }
 });
 
+// Public Bus Ride Home schedules (active only) — same table the admin
+// portal's "Bus Ride Home" card manages, so a listing added or hidden
+// there is what students actually see here.
+app.get('/api/public/bus-schedules', async (req, res) => {
+    try {
+        const rows = await pool.query(
+            `SELECT * FROM bus_schedules WHERE active = true ORDER BY date ASC, departure_time ASC, id ASC`
+        );
+        const schedules = rows.rows.map(r => ({
+            id: Number(r.id),
+            title: r.title,
+            organizer: r.organizer,
+            isSchool: r.is_school,
+            category: r.category,
+            dest: r.dest,
+            destDetail: r.dest_detail,
+            date: r.date,
+            dateDisplay: new Date(r.date).toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }),
+            departureTime: r.departure_time,
+            boardingPoint: r.boarding_point,
+            fare: Number(r.fare),
+            seatsTotal: Number(r.seats_total),
+            seatsRemaining: Number(r.seats_remaining),
+            features: Array.isArray(r.features) ? r.features : []
+        }));
+        res.json({ schedules });
+    } catch (e) {
+        console.error('[server]', e);
+        res.status(500).json({ error: 'internal_error' });
+    }
+});
+
+// Reserving a seat only needs to be logged in (student or driver), and
+// atomically decrements seats_remaining so the count is shared across
+// everyone looking at the same listing instead of living in one tab's memory.
+app.post('/api/public/bus-schedules/:id/reserve', requireAuth, async (req, res) => {
+    try {
+        const result = await pool.query(
+            `UPDATE bus_schedules SET seats_remaining = seats_remaining - 1, updated_at = now()
+             WHERE id = $1 AND active = true AND seats_remaining > 0
+             RETURNING *`,
+            [req.params.id]
+        );
+        if (!result.rows.length) return res.status(409).json({ error: 'sold_out', message: 'Sorry, this bus is fully booked.' });
+        const r = result.rows[0];
+        res.json({ success: true, seatsRemaining: Number(r.seats_remaining) });
+    } catch (e) {
+        console.error('[server]', e);
+        res.status(500).json({ error: 'internal_error', message: 'Could not reserve that seat. Please try again.' });
+    }
+});
+
 // Public Dynamic Config (Fares, Gateway, Hero Banner)
 app.get('/api/public/config', async (req, res) => {
     try {

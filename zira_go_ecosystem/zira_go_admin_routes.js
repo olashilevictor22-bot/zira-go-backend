@@ -952,6 +952,57 @@ router.post('/drivers/:id/reject', async (req, res) => {
         // restart that missed the 1st-of-the-month check), then re-check daily.
         checkTitheMonthlyRollover().catch(err => console.warn('[Tithe Rollover Warning]', err.message));
         setInterval(() => { checkTitheMonthlyRollover().catch(err => console.warn('[Tithe Rollover Warning]', err.message)); }, 12 * 60 * 60 * 1000);
+
+        // ------------------------------------------------------------
+        // Bus Ride Home — schedules used to live only as a hardcoded
+        // array inside the student wallet HTML, invisible to this admin
+        // portal (the admin CRUD UI existed but had no table/routes
+        // behind it). This creates the real table and, the first time it
+        // runs, seeds it with the same listings students were already
+        // seeing, so nothing appears to disappear for them.
+        // ------------------------------------------------------------
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS bus_schedules (
+                id BIGSERIAL PRIMARY KEY,
+                title TEXT NOT NULL,
+                organizer TEXT NOT NULL DEFAULT '',
+                category TEXT NOT NULL DEFAULT 'coaster',
+                is_school BOOLEAN NOT NULL DEFAULT false,
+                dest TEXT NOT NULL,
+                dest_detail TEXT NOT NULL,
+                date DATE NOT NULL,
+                departure_time TEXT NOT NULL,
+                boarding_point TEXT NOT NULL DEFAULT '',
+                fare NUMERIC(10,2) NOT NULL,
+                seats_total INTEGER NOT NULL,
+                seats_remaining INTEGER NOT NULL,
+                driver_name TEXT,
+                driver_phone TEXT,
+                features JSONB NOT NULL DEFAULT '[]',
+                active BOOLEAN NOT NULL DEFAULT true,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            );
+            CREATE INDEX IF NOT EXISTS idx_bus_schedules_date ON bus_schedules (date);
+        `);
+        const busCount = await pool.query('SELECT COUNT(*) FROM bus_schedules');
+        if (Number(busCount.rows[0].count) === 0) {
+            const seedBuses = [
+                ['Landmark Student Council Executive Coaster', 'Organized by School / Student Council', 'coaster', true, 'Lagos', 'Lagos (Berger, Ikeja & Lekki)', '2026-09-26', '06:30 AM', 'Senate Car Park / Main Gate', 12500, 30, 12, ['Comfortable AC Coaster', 'Guaranteed Luggage Space', 'Security Escort Approved']],
+                ['Campus Kulture Luxury AC Coach', 'Campus Kulture Official Charter', 'coaster', false, 'Abuja', 'Abuja (Utako & Central Area)', '2026-09-26', '06:00 AM', 'Chapel Plaza Car Park', 14000, 32, 8, ['Luxury AC Coach', 'Free WiFi & USB Charging', 'Luggage Space Guaranteed']],
+                ['South-West Student Union Coaster', 'Organized by School / Student Council', 'coaster', true, 'Ibadan', 'Ibadan (Iwo Road & Challenge)', '2026-09-26', '07:00 AM', 'Senate Car Park', 8500, 30, 16, ['Comfortable AC Coaster', 'Direct Non-stop Transit', 'Student Union Verified']],
+                ['Delta & Edo Student Express Sienna', 'Executive Student Charter', 'sienna', false, 'Benin City', 'Benin City (Uselu & Ring Road)', '2026-09-26', '06:45 AM', 'Commercial Center Car Park', 11000, 7, 3, ['Express Sienna', 'AC Fully Operational', 'Express Highway Transit']],
+                ['South-South Executive Vacation Coach', 'Organized by School / Student Council', 'coaster', true, 'Port Harcourt', 'Port Harcourt (Waterlines & GRA)', '2026-09-26', '05:30 AM', 'Senate Car Park', 18500, 28, 9, ['Comfortable AC Coaster', 'Security Escort Approved', 'Guaranteed Luggage Space']],
+                ['Kwara Metro Daily Shuttle', 'Campus Transit Hub', 'sienna', false, 'Ilorin', 'Ilorin (Post Office & Tipper Garage)', '2026-09-26', '08:00 AM', 'Landmark Main Gate', 3500, 7, 4, ['Express Sienna', 'Fast Daily Transit']]
+            ];
+            for (const row of seedBuses) {
+                await pool.query(
+                    `INSERT INTO bus_schedules (title, organizer, category, is_school, dest, dest_detail, date, departure_time, boarding_point, fare, seats_total, seats_remaining, features)
+                     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
+                    [...row.slice(0, 12), JSON.stringify(row[12])]
+                );
+            }
+        }
     } catch (e) {
         console.warn('[Admin Routes Init Warning]', e.message);
     }
@@ -1771,6 +1822,97 @@ router.post('/tithe/pay', async (req, res) => {
     } catch (err) {
         console.error('[Tithe Pay Error]', err);
         res.status(500).json({ error: 'internal_error', message: 'Could not start the tithe payout. Please try again.' });
+    }
+});
+
+// ------------------------------------------------------------------
+// Bus Ride Home — admin CRUD (real backend for the schedules/routes/
+// drivers card; the student-facing side reads the same table via the
+// public /api/public/bus-schedules endpoint in server.js).
+// ------------------------------------------------------------------
+function mapBusRow(r) {
+    return {
+        id: Number(r.id),
+        title: r.title,
+        organizer: r.organizer,
+        category: r.category,
+        isSchool: r.is_school,
+        dest: r.dest,
+        destDetail: r.dest_detail,
+        date: r.date,
+        departureTime: r.departure_time,
+        boardingPoint: r.boarding_point,
+        fare: Number(r.fare),
+        seatsTotal: Number(r.seats_total),
+        seatsRemaining: Number(r.seats_remaining),
+        driverName: r.driver_name,
+        driverPhone: r.driver_phone,
+        features: Array.isArray(r.features) ? r.features : [],
+        active: r.active,
+        updatedAt: r.updated_at
+    };
+}
+
+router.get('/bus-schedules', async (req, res) => {
+    try {
+        const rows = await pool.query('SELECT * FROM bus_schedules ORDER BY date ASC, departure_time ASC, id ASC');
+        res.json({ schedules: rows.rows.map(mapBusRow) });
+    } catch (err) {
+        console.error('[Bus Schedules List Error]', err);
+        res.status(500).json({ error: 'internal_error', message: 'Could not load bus schedules.' });
+    }
+});
+
+router.post('/bus-schedules', async (req, res) => {
+    try {
+        const b = req.body;
+        if (!b.title || !b.organizer || !b.dest || !b.destDetail || !b.date || !b.departureTime) {
+            return res.status(400).json({ message: 'Fill in the listing title, organizer, destination, route detail, date and departure time.' });
+        }
+        if (!(Number(b.fare) > 0)) return res.status(400).json({ message: 'Enter a valid fare greater than 0.' });
+        if (!Number.isInteger(Number(b.seatsTotal)) || Number(b.seatsTotal) <= 0) return res.status(400).json({ message: 'Enter a valid total seat count.' });
+        const seatsRemaining = b.seatsRemaining !== undefined && b.seatsRemaining !== null ? Number(b.seatsRemaining) : Number(b.seatsTotal);
+
+        const result = await pool.query(
+            `INSERT INTO bus_schedules (title, organizer, category, is_school, dest, dest_detail, date, departure_time, boarding_point, fare, seats_total, seats_remaining, driver_name, driver_phone, features, active)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *`,
+            [b.title, b.organizer, b.category || 'coaster', Boolean(b.isSchool), b.dest, b.destDetail, b.date, b.departureTime, b.boardingPoint || '', Number(b.fare), Number(b.seatsTotal), seatsRemaining, b.driverName || null, b.driverPhone || null, JSON.stringify(b.features || []), b.active !== false]
+        );
+        await logAdminAction(req, { action: 'bus_schedule_create', targetType: 'bus_schedule', targetId: result.rows[0].id, details: b });
+        res.json({ success: true, schedule: mapBusRow(result.rows[0]) });
+    } catch (err) {
+        console.error('[Bus Schedule Create Error]', err);
+        res.status(500).json({ error: 'internal_error', message: 'Could not save that bus listing.' });
+    }
+});
+
+router.put('/bus-schedules/:id', async (req, res) => {
+    try {
+        const existing = await pool.query('SELECT * FROM bus_schedules WHERE id = $1', [req.params.id]);
+        if (!existing.rows.length) return res.status(404).json({ error: 'not_found', message: 'Bus listing not found.' });
+        const cur = mapBusRow(existing.rows[0]);
+        const b = { ...cur, ...req.body };
+        const result = await pool.query(
+            `UPDATE bus_schedules SET title=$1, organizer=$2, category=$3, is_school=$4, dest=$5, dest_detail=$6, date=$7, departure_time=$8, boarding_point=$9, fare=$10, seats_total=$11, seats_remaining=$12, driver_name=$13, driver_phone=$14, features=$15, active=$16, updated_at=now()
+             WHERE id = $17 RETURNING *`,
+            [b.title, b.organizer, b.category, Boolean(b.isSchool), b.dest, b.destDetail, b.date, b.departureTime, b.boardingPoint || '', Number(b.fare), Number(b.seatsTotal), Number(b.seatsRemaining), b.driverName || null, b.driverPhone || null, JSON.stringify(b.features || []), Boolean(b.active), req.params.id]
+        );
+        await logAdminAction(req, { action: 'bus_schedule_update', targetType: 'bus_schedule', targetId: req.params.id, details: req.body });
+        res.json({ success: true, schedule: mapBusRow(result.rows[0]) });
+    } catch (err) {
+        console.error('[Bus Schedule Update Error]', err);
+        res.status(500).json({ error: 'internal_error', message: 'Could not update that bus listing.' });
+    }
+});
+
+router.delete('/bus-schedules/:id', async (req, res) => {
+    try {
+        await pool.query('DELETE FROM bus_schedules WHERE id = $1', [req.params.id]);
+        await logAdminAction(req, { action: 'bus_schedule_delete', targetType: 'bus_schedule', targetId: req.params.id });
+        res.json({ success: true });
+    } catch (err) {
+        console.error('[Bus Schedule Delete Error]', err);
+        res.status(500).json({ error: 'internal_error', message: 'Could not delete that bus listing.' });
     }
 });
 
