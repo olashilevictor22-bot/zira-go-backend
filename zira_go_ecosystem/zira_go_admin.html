@@ -460,6 +460,14 @@
   .badge.pending { background: rgba(217, 119, 6, 0.12); color: var(--warning); }
   .badge.danger { background: rgba(225, 29, 72, 0.12); color: var(--danger); }
 
+  /* Compact on/off switch used by the Company Tithe card. */
+  .switch { position: relative; display: inline-block; width: 42px; height: 24px; flex: none; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch .slider { position: absolute; inset: 0; background: var(--line); border-radius: 999px; cursor: pointer; transition: background .15s; }
+  .switch .slider::before { content: ""; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: transform .15s; box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+  .switch input:checked + .slider { background: var(--success); }
+  .switch input:checked + .slider::before { transform: translateX(18px); }
+
   .btn-sm {
     padding: 5px 12px;
     border-radius: 8px;
@@ -1617,6 +1625,69 @@
       <div style="display:flex;align-items:center;gap:12px;margin-top:14px">
         <button class="btn-sm primary" onclick="saveConfig()" style="font-weight:700;padding:8px 20px">Save Experience Settings</button>
         <span id="operationsNotice" style="font-size:12px;color:var(--text-dim)"></span>
+      </div>
+    </div>
+
+    <!-- Company Tithe -->
+    <div class="panel-card" data-panel-id="opTithe" style="border-top:3px solid #059669">
+      <div class="panel-header">
+        <div>
+          <h3 class="panel-title">Company Tithe</h3>
+          <div style="font-size:12px;color:var(--text-dim)">A percentage of net profit (revenue minus VPS hosting cost), reset every calendar month. Emails you the amount owed on the 1st, and can be paid straight from here.</div>
+        </div>
+        <button type="button" class="btn-panel-toggle" title="Minimize / Expand section" aria-expanded="true" onclick="togglePanelMinimize(this)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--panel-alt)">
+        <div>
+          <b style="font-size:13px">Tithe tracking</b>
+          <div style="font-size:11.5px;color:var(--text-dim);margin-top:2px">When off, nothing is calculated, paid, or emailed.</div>
+        </div>
+        <label class="switch"><input id="titheEnabled" type="checkbox" onchange="setTitheEnabled(this.checked)"><span class="slider"></span></label>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:14px">
+        <div style="padding:12px;border-radius:12px;background:var(--panel-alt);border:1px solid var(--line)">
+          <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em">Revenue (<span id="titheMonthLabel">this month</span>)</div>
+          <div id="titheRevenue" style="font-size:18px;font-weight:800;margin-top:4px">₦0</div>
+        </div>
+        <div style="padding:12px;border-radius:12px;background:var(--panel-alt);border:1px solid var(--line)">
+          <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em">VPS cost</div>
+          <div id="titheVps" style="font-size:18px;font-weight:800;margin-top:4px">₦0</div>
+        </div>
+        <div style="padding:12px;border-radius:12px;background:var(--panel-alt);border:1px solid var(--line)">
+          <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em">Net profit</div>
+          <div id="titheNetProfit" style="font-size:18px;font-weight:800;margin-top:4px">₦0</div>
+        </div>
+        <div style="padding:12px;border-radius:12px;background:rgba(5,150,105,0.08);border:1px solid var(--success)">
+          <div style="font-size:11px;color:var(--success);text-transform:uppercase;letter-spacing:.04em">Tithe due (<span id="tithePercentLabel">10</span>%)</div>
+          <div id="titheAmount" style="font-size:18px;font-weight:800;margin-top:4px;color:var(--success)">₦0</div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line)">
+        <div style="font-size:11.5px;font-weight:700;color:var(--text-dim);margin-bottom:8px">Payout account</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">
+          <label style="font-size:12px;font-weight:700">Tithe %<input class="search-input" id="tithePercentInput" type="number" min="0" max="100" step="0.5" style="max-width:none;margin-top:5px" placeholder="10"></label>
+          <label style="font-size:12px;font-weight:700">Bank<select id="titheBank" class="search-input" style="max-width:none;margin-top:5px"><option value="">Select bank…</option></select></label>
+          <label style="font-size:12px;font-weight:700">Account number<input class="search-input" id="titheAccountNumber" maxlength="10" style="max-width:none;margin-top:5px" placeholder="0123456789"></label>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap">
+          <button class="btn-sm" onclick="verifyTitheAccount()">Verify account</button>
+          <span id="titheAccountName" style="font-size:12.5px;font-weight:700;color:var(--success)"></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:14px;flex-wrap:wrap">
+          <button class="btn-sm primary" onclick="saveTitheAccount()" style="font-weight:700;padding:8px 18px">Save details</button>
+          <button class="btn-sm" onclick="payTitheNow()" style="font-weight:700;padding:8px 18px;background:var(--success);color:#fff;border-color:var(--success)">Pay Tithe Now</button>
+          <span id="titheNotice" style="font-size:12px;color:var(--text-dim)"></span>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line)">
+        <div style="font-size:11.5px;font-weight:700;color:var(--text-dim);margin-bottom:8px">Monthly history</div>
+        <div id="titheHistory" style="display:grid;gap:8px"><span style="color:var(--text-dim);font-size:12px">No months recorded yet.</span></div>
       </div>
     </div>
 
@@ -3005,10 +3076,127 @@
       }).join('') || '<span style="color:var(--text-dim)">No PIN reviews yet.</span>';
       
       await loadChangeTimeline(true);
+      loadTithe();
     } catch (e) {
       console.error(e);
       showAdminNotice('Could not load some Operations data. Refresh and sign in again if this continues.', true);
     }
+  }
+
+  // ------------------------------------------------------------------
+  // Company Tithe — 10% (configurable) of net profit, reset every month.
+  // ------------------------------------------------------------------
+  let titheBanksLoaded = false;
+  const nairaFmt = v => `₦${Number(v || 0).toLocaleString('en-NG', { maximumFractionDigits: 2 })}`;
+
+  async function loadTithe() {
+    try {
+      const res = await fetch(`${API_BASE}/admin/tithe`);
+      if (!res.ok) return;
+      const data = await res.json();
+      renderTithe(data);
+      if (!titheBanksLoaded) loadTitheBanks(data.settings.bankCode);
+    } catch (e) { console.error('[Tithe] load failed', e); }
+  }
+
+  function renderTithe(data) {
+    const { settings, currentMonth, history } = data;
+    document.getElementById('titheEnabled').checked = !!settings.enabled;
+    document.getElementById('tithePercentInput').value = settings.percent;
+    document.getElementById('tithePercentLabel').textContent = settings.percent;
+    document.getElementById('titheAccountNumber').value = settings.accountNumber || '';
+    document.getElementById('titheAccountName').textContent = settings.accountName ? `Verified: ${settings.accountName}` : '';
+    document.getElementById('titheMonthLabel').textContent = currentMonth.label;
+    document.getElementById('titheRevenue').textContent = nairaFmt(currentMonth.revenue);
+    document.getElementById('titheVps').textContent = nairaFmt(currentMonth.vpsCost);
+    document.getElementById('titheNetProfit').textContent = nairaFmt(currentMonth.netProfit);
+    document.getElementById('titheAmount').textContent = nairaFmt(currentMonth.titheAmount);
+
+    const historyBox = document.getElementById('titheHistory');
+    if (!history || !history.length) {
+      historyBox.innerHTML = '<span style="color:var(--text-dim);font-size:12px">No months recorded yet.</span>';
+    } else {
+      const statusBadge = s => s === 'paid' || s === 'processing' ? `<span class="badge success">${s}</span>` : (s === 'failed' ? `<span class="badge danger">failed</span>` : `<span class="badge pending">unpaid</span>`);
+      historyBox.innerHTML = history.map(h => {
+        const label = new Date(h.periodMonth).toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+        return `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel-alt)">
+          <div><b style="font-size:12.5px">${label}</b><div style="font-size:11px;color:var(--text-dim);margin-top:2px">Net profit ${nairaFmt(h.netProfit)} · Tithe ${nairaFmt(h.titheAmount)}</div></div>
+          ${statusBadge(h.status)}
+        </div>`;
+      }).join('');
+    }
+  }
+
+  async function loadTitheBanks(currentBankCode) {
+    try {
+      const res = await fetch(`${API_BASE}/admin/tithe/banks`);
+      if (!res.ok) throw new Error('bank list unavailable');
+      const { banks } = await res.json();
+      const sel = document.getElementById('titheBank');
+      sel.innerHTML = '<option value="">Select bank…</option>' + banks.map(b => `<option value="${b.code}">${b.name}</option>`).join('');
+      if (currentBankCode) sel.value = currentBankCode;
+      titheBanksLoaded = true;
+    } catch (e) { console.warn('[Tithe] banks load failed', e); }
+  }
+
+  async function setTitheEnabled(enabled) {
+    try {
+      const res = await fetch(`${API_BASE}/admin/tithe/settings`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ enabled }) });
+      if (!res.ok) throw new Error();
+      showAdminNotice(enabled ? 'Tithe tracking turned on.' : 'Tithe tracking turned off.');
+      loadTithe();
+    } catch (e) {
+      showAdminNotice('Could not update the tithe toggle.', true);
+      loadTithe();
+    }
+  }
+
+  async function verifyTitheAccount() {
+    const accountNumber = document.getElementById('titheAccountNumber').value.trim();
+    const bankCode = document.getElementById('titheBank').value;
+    if (!bankCode) return showAdminNotice('Pick a bank first.', true);
+    document.getElementById('titheAccountName').textContent = 'Verifying…';
+    try {
+      const res = await fetch(`${API_BASE}/admin/tithe/resolve`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accountNumber, bankCode }) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Verification failed');
+      document.getElementById('titheAccountName').textContent = `Verified: ${data.accountName}`;
+      document.getElementById('titheAccountName').dataset.verifiedName = data.accountName;
+    } catch (e) {
+      document.getElementById('titheAccountName').textContent = '';
+      showAdminNotice(e.message, true);
+    }
+  }
+
+  async function saveTitheAccount() {
+    const bankCode = document.getElementById('titheBank').value;
+    const bankName = document.getElementById('titheBank').selectedOptions[0]?.textContent || '';
+    const accountNumber = document.getElementById('titheAccountNumber').value.trim();
+    const percent = document.getElementById('tithePercentInput').value;
+    const accountName = document.getElementById('titheAccountName').dataset.verifiedName || undefined;
+    try {
+      const res = await fetch(`${API_BASE}/admin/tithe/settings`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ percent, accountNumber, bankCode, bankName, accountName }) });
+      if (!res.ok) throw new Error('Save failed');
+      showAdminNotice('Tithe details saved.');
+      loadTithe();
+    } catch (e) { showAdminNotice('Could not save tithe details.', true); }
+  }
+
+  async function payTitheNow() {
+    const accountNumber = document.getElementById('titheAccountNumber').value.trim();
+    const bankCode = document.getElementById('titheBank').value;
+    const bankName = document.getElementById('titheBank').selectedOptions[0]?.textContent || '';
+    const amountText = document.getElementById('titheAmount').textContent;
+    if (!accountNumber || !bankCode) return showAdminNotice('Add and verify a payout account first.', true);
+    if (!confirm(`Send ${amountText} to this account now? This cannot be undone.`)) return;
+    showAdminNotice('Sending tithe payment…');
+    try {
+      const res = await fetch(`${API_BASE}/admin/tithe/pay`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accountNumber, bankCode, bankName }) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Payment failed');
+      showAdminNotice(`Tithe payment sent — ${nairaFmt(data.amount)}.`);
+      loadTithe();
+    } catch (e) { showAdminNotice(e.message, true); }
   }
 
   // Platform change timeline: who (Codex/ChatGPT/Claude/Admin) did what,

@@ -11,6 +11,8 @@ const { notify, notifyRole } = require('./zira_go_notification_routes');
 const { expireOneApplication } = require('./zira_go_ads_routes');
 const { openStream, addAdminStream, removeAdminStream, emitToAdmins } = require('./zira_go_realtime');
 const { generateReleaseSummary, generateFinancialInsights } = require('./zira_go_gemini_service');
+const { initiateDriverPayout, resolveAccountName, getNigerianBanks } = require('./zira_go_payment_service');
+const { sendEmail } = require('./zira_go_email_service');
 
 async function recordPlatformChange({ key, actor = 'Codex', area = 'Platform', title, details }) {
     const result = await pool.query(
@@ -47,6 +49,116 @@ async function logAdminAction(req, { action, targetType = null, targetId = null,
         );
     } catch (err) {
         console.error('[Admin Audit Log Error]', err.message);
+    }
+}
+
+// ------------------------------------------------------------------
+// Company Tithe helpers
+// ------------------------------------------------------------------
+const VPS_MONTHLY_COST = Number(process.env.VPS_MONTHLY_COST) || 13000;
+
+async function getTitheSettings() {
+    const row = await pool.query("SELECT value FROM platform_config WHERE key = 'tithe_settings'");
+    const defaults = { enabled: false, percent: 10, accountNumber: '', bankCode: '', bankName: '', accountName: '', lastEmailedPeriod: null };
+    return { ...defaults, ...(row.rows[0]?.value || {}) };
+}
+
+async function saveTitheSettings(next) {
+    await pool.query(
+        `INSERT INTO platform_config (key, value, updated_at) VALUES ('tithe_settings', $1, now())
+         ON CONFLICT (key) DO UPDATE SET value = $1, updated_at = now()`,
+        [JSON.stringify(next)]
+    );
+    return next;
+}
+
+function monthKey(d) { return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`; }
+function monthStart(d) { return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1)); }
+function addMonths(d, n) { return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + n, 1)); }
+
+// Revenue for a given [from, to) window, on the same basis as /analytics'
+// all-time platformRevenue figure (trip commission + funding fees + ad
+// renewal revenue), so the tithe is calculated off real platform income.
+async function computeRevenueForWindow(from, to) {
+    const feeRes = await pool.query(
+        `SELECT COALESCE(SUM(platform_fee), 0) AS v FROM trip_charges WHERE status = 'success' AND created_at >= $1 AND created_at < $2`,
+        [from, to]
+    );
+    const fundingFeeRes = await pool.query(
+        `SELECT COALESCE(SUM(fee_amount), 0) AS v FROM wallet_transactions WHERE type = 'funding' AND status = 'success' AND created_at >= $1 AND created_at < $2`,
+        [from, to]
+    );
+    const adRes = await pool.query(
+        `SELECT COALESCE(SUM(renewal_amount), 0) AS v FROM ad_applications
+         WHERE (renewed_at IS NOT NULL OR is_free_ad = false)
+           AND COALESCE(renewed_at, live_at, created_at) >= $1 AND COALESCE(renewed_at, live_at, created_at) < $2`,
+        [from, to]
+    ).catch(() => ({ rows: [{ v: 0 }] }));
+    return Number(feeRes.rows[0].v) + Number(fundingFeeRes.rows[0].v) + Number(adRes.rows[0].v);
+}
+
+async function computeTitheFigures(from, to, percent) {
+    const revenue = await computeRevenueForWindow(from, to);
+    const netProfit = Math.max(0, revenue - VPS_MONTHLY_COST);
+    const titheAmount = Math.round((netProfit * (Number(percent) || 0) / 100) * 100) / 100;
+    return { revenue, vpsCost: VPS_MONTHLY_COST, netProfit, titheAmount };
+}
+
+function titheEmailHtml({ periodLabel, revenue, vpsCost, netProfit, percent, titheAmount }) {
+    const n = v => `\u20a6${Number(v).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `<div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto">
+        <h2 style="margin-bottom:4px">Company Tithe — ${periodLabel}</h2>
+        <p style="color:#555;margin-top:0">Here's how much is due for the month that just closed.</p>
+        <table style="width:100%;border-collapse:collapse;font-size:14px;margin-top:12px">
+            <tr><td style="padding:8px 0;border-bottom:1px solid #eee">Platform revenue</td><td style="padding:8px 0;border-bottom:1px solid #eee;text-align:right">${n(revenue)}</td></tr>
+            <tr><td style="padding:8px 0;border-bottom:1px solid #eee">VPS hosting cost</td><td style="padding:8px 0;border-bottom:1px solid #eee;text-align:right">-${n(vpsCost)}</td></tr>
+            <tr><td style="padding:8px 0;border-bottom:1px solid #eee"><b>Net profit</b></td><td style="padding:8px 0;border-bottom:1px solid #eee;text-align:right"><b>${n(netProfit)}</b></td></tr>
+            <tr><td style="padding:12px 0 0">Tithe (${percent}%)</td><td style="padding:12px 0 0;text-align:right;font-size:20px;font-weight:800;color:#059669">${n(titheAmount)}</td></tr>
+        </table>
+        <p style="color:#777;font-size:12px;margin-top:20px">Head to the Operations Desk in the Zira Go admin portal to pay this straight from the platform's payout balance.</p>
+    </div>`;
+}
+
+// Runs on boot and every 12h. If a calendar month has closed since the last
+// time we emailed, lock in that month's figures as a tithe_payments row
+// (so the month "resets" — the next figure starts counting from zero) and
+// email the admin the amount owed. Never touches the account/pay flow.
+async function checkTitheMonthlyRollover() {
+    const settings = await getTitheSettings();
+    if (!settings.enabled) return;
+    const now = new Date();
+    const thisMonthStart = monthStart(now);
+    let cursor = settings.lastEmailedPeriod ? addMonths(new Date(`${settings.lastEmailedPeriod}-01T00:00:00Z`), 1) : addMonths(thisMonthStart, -1);
+    // Never process the current, still-open month.
+    while (cursor < thisMonthStart) {
+        const periodEnd = addMonths(cursor, 1);
+        const periodKey = monthKey(cursor);
+        const figures = await computeTitheFigures(cursor, periodEnd, settings.percent);
+        const existing = await pool.query('SELECT id FROM tithe_payments WHERE period_month = $1', [cursor]);
+        if (!existing.rows.length) {
+            await pool.query(
+                `INSERT INTO tithe_payments (period_month, revenue_amount, vps_cost_amount, net_profit_amount, tithe_percent, tithe_amount, account_number, bank_code, bank_name, status)
+                 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'unpaid')`,
+                [cursor, figures.revenue, figures.vpsCost, figures.netProfit, settings.percent, figures.titheAmount, settings.accountNumber || null, settings.bankCode || null, settings.bankName || null]
+            );
+        }
+        try {
+            const admins = await pool.query('SELECT email FROM admins WHERE email IS NOT NULL');
+            const periodLabel = cursor.toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+            for (const a of admins.rows) {
+                await sendEmail({
+                    to: a.email,
+                    subject: `Company tithe due for ${periodLabel}: \u20a6${figures.titheAmount.toLocaleString()}`,
+                    html: titheEmailHtml({ periodLabel, ...figures, percent: settings.percent })
+                }).catch(err => console.warn('[Tithe Email Warning]', err.message));
+            }
+            await pool.query('UPDATE tithe_payments SET emailed_at = now() WHERE period_month = $1', [cursor]);
+        } catch (err) {
+            console.warn('[Tithe Email Lookup Warning]', err.message);
+        }
+        settings.lastEmailedPeriod = periodKey;
+        await saveTitheSettings(settings);
+        cursor = periodEnd;
     }
 }
 
@@ -790,6 +902,56 @@ router.post('/drivers/:id/reject', async (req, res) => {
                 })]
             );
         }
+
+        // ------------------------------------------------------------
+        // Company Tithe — a fixed percentage of the platform's monthly
+        // net profit (revenue minus VPS hosting cost), tracked per
+        // calendar month, with a payout record kept whether it was paid
+        // by bank transfer or not. Resets automatically on the 1st of
+        // each month; see checkTitheMonthlyRollover() below.
+        // ------------------------------------------------------------
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS tithe_payments (
+                id BIGSERIAL PRIMARY KEY,
+                period_month DATE NOT NULL UNIQUE,
+                revenue_amount NUMERIC(14,2) NOT NULL DEFAULT 0,
+                vps_cost_amount NUMERIC(14,2) NOT NULL DEFAULT 0,
+                net_profit_amount NUMERIC(14,2) NOT NULL DEFAULT 0,
+                tithe_percent NUMERIC(5,2) NOT NULL DEFAULT 10,
+                tithe_amount NUMERIC(14,2) NOT NULL DEFAULT 0,
+                account_number TEXT,
+                bank_code TEXT,
+                bank_name TEXT,
+                account_name TEXT,
+                status TEXT NOT NULL DEFAULT 'unpaid' CHECK (status IN ('unpaid','processing','paid','failed')),
+                provider TEXT,
+                provider_reference TEXT,
+                emailed_at TIMESTAMPTZ,
+                paid_at TIMESTAMPTZ,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            );
+            CREATE INDEX IF NOT EXISTS idx_tithe_payments_period ON tithe_payments (period_month DESC);
+        `);
+        const titheCfg = await pool.query("SELECT key FROM platform_config WHERE key = 'tithe_settings'");
+        if (!titheCfg.rows.length) {
+            await pool.query(
+                `INSERT INTO platform_config (key, value) VALUES ('tithe_settings', $1)`,
+                [JSON.stringify({
+                    enabled: false,
+                    percent: 10,
+                    accountNumber: '',
+                    bankCode: '',
+                    bankName: '',
+                    accountName: '',
+                    lastEmailedPeriod: null
+                })]
+            );
+        }
+        // Catch up on the monthly email immediately on boot (covers a server
+        // restart that missed the 1st-of-the-month check), then re-check daily.
+        checkTitheMonthlyRollover().catch(err => console.warn('[Tithe Rollover Warning]', err.message));
+        setInterval(() => { checkTitheMonthlyRollover().catch(err => console.warn('[Tithe Rollover Warning]', err.message)); }, 12 * 60 * 60 * 1000);
     } catch (e) {
         console.warn('[Admin Routes Init Warning]', e.message);
     }
@@ -1470,6 +1632,145 @@ router.post('/config', async (req, res) => {
     } catch (err) {
         console.error('[zira_go_admin_routes]', err);
         res.status(500).json({ error: 'internal_error' });
+    }
+});
+
+// ------------------------------------------------------------------
+// Company Tithe — Operations Desk
+// ------------------------------------------------------------------
+router.get('/tithe', async (req, res) => {
+    try {
+        const settings = await getTitheSettings();
+        const now = new Date();
+        const current = await computeTitheFigures(monthStart(now), addMonths(monthStart(now), 1), settings.percent);
+        const history = await pool.query('SELECT * FROM tithe_payments ORDER BY period_month DESC LIMIT 12');
+        res.json({
+            settings,
+            currentMonth: {
+                label: now.toLocaleString('en-US', { month: 'long', year: 'numeric' }),
+                ...current
+            },
+            history: history.rows.map(r => ({
+                id: r.id,
+                periodMonth: r.period_month,
+                revenue: Number(r.revenue_amount),
+                vpsCost: Number(r.vps_cost_amount),
+                netProfit: Number(r.net_profit_amount),
+                percent: Number(r.tithe_percent),
+                titheAmount: Number(r.tithe_amount),
+                accountNumber: r.account_number,
+                bankName: r.bank_name,
+                accountName: r.account_name,
+                status: r.status,
+                paidAt: r.paid_at,
+                emailedAt: r.emailed_at
+            }))
+        });
+    } catch (err) {
+        console.error('[Tithe Get Error]', err);
+        res.status(500).json({ error: 'internal_error' });
+    }
+});
+
+router.get('/tithe/banks', async (req, res) => {
+    try { res.json({ banks: await getNigerianBanks() }); }
+    catch (err) { res.status(503).json({ error: 'bank_list_unavailable', message: 'Live bank list is temporarily unavailable. Please try again.' }); }
+});
+
+router.post('/tithe/resolve', async (req, res) => {
+    const normalizedAccountNumber = String(req.body.accountNumber || '').replace(/\s/g, '');
+    const { bankCode } = req.body;
+    if (!/^\d{10}$/.test(normalizedAccountNumber) || !bankCode) return res.status(400).json({ error: 'missing_fields', message: 'Enter a valid 10-digit account number and pick a bank.' });
+    try {
+        const { accountName } = await resolveAccountName(normalizedAccountNumber, bankCode);
+        res.json({ accountName, accountNumber: normalizedAccountNumber, bankCode });
+    } catch (err) {
+        console.error('[Tithe Resolve Error]', err.reasons || err.message);
+        res.status(422).json({ error: 'resolve_failed', message: "Couldn't verify that account number with the bank. Double-check the details and try again." });
+    }
+});
+
+// Toggle on/off and save the payout account. Percent defaults to 10 and is
+// only changed if explicitly sent, so the toggle button alone never resets it.
+router.post('/tithe/settings', async (req, res) => {
+    try {
+        const current = await getTitheSettings();
+        const { enabled, percent, accountNumber, bankCode, bankName, accountName } = req.body;
+        const next = {
+            ...current,
+            enabled: typeof enabled === 'boolean' ? enabled : current.enabled,
+            percent: percent !== undefined && percent !== null && percent !== '' ? Number(percent) : current.percent,
+            accountNumber: accountNumber !== undefined ? String(accountNumber).replace(/\s/g, '') : current.accountNumber,
+            bankCode: bankCode !== undefined ? bankCode : current.bankCode,
+            bankName: bankName !== undefined ? bankName : current.bankName,
+            accountName: accountName !== undefined ? accountName : current.accountName
+        };
+        await saveTitheSettings(next);
+        await logAdminAction(req, { action: 'tithe_settings_update', targetType: 'tithe_settings', details: { before: current, after: next } });
+        res.json({ success: true, settings: next });
+    } catch (err) {
+        console.error('[Tithe Settings Error]', err);
+        res.status(500).json({ error: 'internal_error' });
+    }
+});
+
+// Pays the current month's tithe (so far) straight to the saved account via
+// Flutterwave transfer, then emails the admin a receipt at their own login
+// email — no separate email setup needed.
+router.post('/tithe/pay', async (req, res) => {
+    try {
+        const settings = await getTitheSettings();
+        const accountNumber = String(req.body.accountNumber || settings.accountNumber || '').replace(/\s/g, '');
+        const bankCode = req.body.bankCode || settings.bankCode;
+        const bankName = req.body.bankName || settings.bankName;
+        if (!/^\d{10}$/.test(accountNumber) || !bankCode) {
+            return res.status(400).json({ error: 'missing_account', message: 'Add a valid account number and bank before paying the tithe.' });
+        }
+        const now = new Date();
+        const from = monthStart(now);
+        const to = addMonths(from, 1);
+        const figures = await computeTitheFigures(from, to, settings.percent);
+        const amount = req.body.amount ? Number(req.body.amount) : figures.titheAmount;
+        if (!(amount > 0)) return res.status(400).json({ error: 'nothing_due', message: 'There is nothing due for this month yet.' });
+
+        const reference = `TITHE-${from.getUTCFullYear()}${String(from.getUTCMonth() + 1).padStart(2, '0')}-${Date.now()}`;
+        let payout;
+        try {
+            payout = await initiateDriverPayout({ accountNumber, bankCode, amount, reference, narration: 'Zira Go company tithe' });
+        } catch (payErr) {
+            await pool.query(
+                `INSERT INTO tithe_payments (period_month, revenue_amount, vps_cost_amount, net_profit_amount, tithe_percent, tithe_amount, account_number, bank_code, bank_name, status)
+                 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'failed')
+                 ON CONFLICT (period_month) DO UPDATE SET tithe_amount = $6, account_number = $7, bank_code = $8, bank_name = $9, status = 'failed', updated_at = now()`,
+                [from, figures.revenue, figures.vpsCost, figures.netProfit, settings.percent, amount, accountNumber, bankCode, bankName || null]
+            );
+            return res.status(502).json({ error: 'payout_failed', message: payErr.message });
+        }
+
+        await pool.query(
+            `INSERT INTO tithe_payments (period_month, revenue_amount, vps_cost_amount, net_profit_amount, tithe_percent, tithe_amount, account_number, bank_code, bank_name, status, provider, provider_reference, paid_at)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'processing',$10,$11, now())
+             ON CONFLICT (period_month) DO UPDATE SET tithe_amount = $6, account_number = $7, bank_code = $8, bank_name = $9, status = 'processing', provider = $10, provider_reference = $11, paid_at = now(), updated_at = now()`,
+            [from, figures.revenue, figures.vpsCost, figures.netProfit, settings.percent, amount, accountNumber, bankCode, bankName || null, payout.provider, payout.providerReference]
+        );
+
+        // Remember the account for next time, without requiring a separate save step.
+        await saveTitheSettings({ ...settings, accountNumber, bankCode, bankName: bankName || settings.bankName });
+
+        await logAdminAction(req, { action: 'tithe_pay', targetType: 'tithe_payments', targetId: reference, details: { amount, accountNumber, bankCode } });
+
+        if (req.adminEmail) {
+            await sendEmail({
+                to: req.adminEmail,
+                subject: `Tithe payment sent — \u20a6${amount.toLocaleString()}`,
+                html: `<p>A tithe payment of <b>\u20a6${amount.toLocaleString()}</b> for ${now.toLocaleString('en-US', { month: 'long', year: 'numeric' })} was just sent to account ${accountNumber}${bankName ? ' (' + bankName + ')' : ''}. Reference: ${payout.providerReference}. Status: ${payout.status}.</p>`
+            }).catch(err => console.warn('[Tithe Receipt Email Warning]', err.message));
+        }
+
+        res.json({ success: true, amount, reference: payout.providerReference, status: payout.status });
+    } catch (err) {
+        console.error('[Tithe Pay Error]', err);
+        res.status(500).json({ error: 'internal_error', message: 'Could not start the tithe payout. Please try again.' });
     }
 });
 
