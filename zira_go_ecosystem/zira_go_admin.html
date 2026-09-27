@@ -1262,6 +1262,58 @@
       </div>
     </div>
 
+    <!-- Expenses, Company Tithe & Profit/Loss -->
+    <div class="panel-card" data-panel-id="finExpenses" style="margin-top:16px">
+      <div class="panel-header">
+        <div>
+          <h3 class="panel-title">Expenses & Profit/Loss</h3>
+          <div style="font-size:12px;color:var(--text-dim)">Every expense line item here is subtracted from revenue to get net profit — add or remove as your costs change.</div>
+        </div>
+        <button type="button" class="btn-panel-toggle" title="Minimize / Expand section" aria-expanded="true" onclick="togglePanelMinimize(this)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+      </div>
+
+      <!-- This month at a glance -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px">
+        <div style="padding:12px;border-radius:12px;background:var(--panel-alt);border:1px solid var(--line)">
+          <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em">Revenue (this month)</div>
+          <div id="finExpRevenue" style="font-size:18px;font-weight:800;margin-top:4px">₦0</div>
+        </div>
+        <div style="padding:12px;border-radius:12px;background:var(--panel-alt);border:1px solid var(--line)">
+          <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em">Total expenses</div>
+          <div id="finExpTotal" style="font-size:18px;font-weight:800;margin-top:4px">₦0</div>
+        </div>
+        <div style="padding:12px;border-radius:12px;background:var(--panel-alt);border:1px solid var(--line)">
+          <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em">Profit / Loss</div>
+          <div id="finExpProfit" style="font-size:18px;font-weight:800;margin-top:4px">₦0</div>
+        </div>
+        <div style="padding:12px;border-radius:12px;background:rgba(5,150,105,0.08);border:1px solid var(--success)">
+          <div style="font-size:11px;color:var(--success);text-transform:uppercase;letter-spacing:.04em">Company tithe due</div>
+          <div id="finExpTithe" style="font-size:18px;font-weight:800;margin-top:4px;color:var(--success)">₦0</div>
+        </div>
+      </div>
+
+      <!-- Profit/Loss trend chart -->
+      <div style="height:230px;position:relative;margin-bottom:18px">
+        <canvas id="finProfitLossChart"></canvas>
+      </div>
+
+      <!-- Expenses list & add form -->
+      <div style="padding-top:14px;border-top:1px solid var(--line)">
+        <div style="font-size:11.5px;font-weight:700;color:var(--text-dim);margin-bottom:8px">Expense line items</div>
+        <div id="expensesList" style="display:grid;gap:8px;margin-bottom:14px"><span style="color:var(--text-dim);font-size:12px">Loading…</span></div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;align-items:end">
+          <label style="font-size:12px;font-weight:700">Title<input class="search-input" id="expTitle" style="max-width:none;margin-top:5px" placeholder="e.g. Office rent"></label>
+          <label style="font-size:12px;font-weight:700">Amount (₦)<input class="search-input" id="expAmount" type="number" min="0" step="1" style="max-width:none;margin-top:5px" placeholder="0"></label>
+          <label style="font-size:12px;font-weight:700">Frequency<select class="search-input" id="expFrequency" style="max-width:none;margin-top:5px"><option value="monthly">Monthly (recurring)</option><option value="one_time">One-time</option></select></label>
+          <label style="font-size:12px;font-weight:700" id="expDateWrap"><span id="expDateLabel">Starts on</span><input class="search-input" id="expOccurredOn" type="date" style="max-width:none;margin-top:5px"></label>
+          <button class="btn-sm primary" onclick="addExpense()" style="font-weight:700;padding:9px 18px;height:fit-content">+ Add Expense</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Comprehensive Financial Ledger & Payout Queue -->
     <div class="panel-card" data-panel-id="finAuditLedger" style="margin-top:16px">
       <div class="panel-header">
@@ -1643,7 +1695,7 @@
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--panel-alt)">
         <div>
           <b style="font-size:13px">Tithe tracking</b>
-          <div style="font-size:11.5px;color:var(--text-dim);margin-top:2px">When off, nothing is calculated, paid, or emailed.</div>
+          <div style="font-size:11.5px;color:var(--text-dim);margin-top:2px">When off, the tithe amount stays ₦0 and can't be paid. Your monthly profit/loss summary is still tracked below and in Financial Overview.</div>
         </div>
         <label class="switch"><input id="titheEnabled" type="checkbox" onchange="setTitheEnabled(this.checked)"><span class="slider"></span></label>
       </div>
@@ -1654,7 +1706,7 @@
           <div id="titheRevenue" style="font-size:18px;font-weight:800;margin-top:4px">₦0</div>
         </div>
         <div style="padding:12px;border-radius:12px;background:var(--panel-alt);border:1px solid var(--line)">
-          <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em">VPS cost</div>
+          <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em">Expenses</div>
           <div id="titheVps" style="font-size:18px;font-weight:800;margin-top:4px">₦0</div>
         </div>
         <div style="padding:12px;border-radius:12px;background:var(--panel-alt);border:1px solid var(--line)">
@@ -2243,9 +2295,147 @@
 
       // Trigger Zibo Financial Insights
       fetchZiboFinancialInsights();
+
+      // Expenses, tithe summary & profit/loss trend
+      loadFinancialExpensesSection();
     } catch (err) {
       console.error('Error loading financial overview:', err);
     }
+  }
+
+  // ------------------------------------------------------------------
+  // Expenses, Company Tithe summary & Profit/Loss trend (Financial Overview)
+  // ------------------------------------------------------------------
+  let _profitLossChartInstance = null;
+
+  async function loadFinancialExpensesSection() {
+    loadExpenses();
+    loadTitheSummaryForFinancials();
+    loadProfitLossTrend();
+  }
+
+  async function loadExpenses() {
+    const box = document.getElementById('expensesList');
+    try {
+      const res = await fetch(`${API_BASE}/admin/expenses`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Could not load expenses.');
+      const expenses = data.expenses || [];
+      if (!expenses.length) {
+        box.innerHTML = '<span style="color:var(--text-dim);font-size:12px">No expenses added yet.</span>';
+        return;
+      }
+      box.innerHTML = expenses.map(e => `
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel-alt);${e.active ? '' : 'opacity:.5'}">
+          <div>
+            <b style="font-size:12.5px">${e.title}</b>
+            <div style="font-size:11px;color:var(--text-dim);margin-top:2px">${nairaFmt(e.amount)} · ${e.frequency === 'monthly' ? 'Monthly' : 'One-time · ' + new Date(e.occurredOn).toLocaleDateString('en-GB')}</div>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <button class="btn-sm" onclick="toggleExpenseActive(${e.id}, ${!e.active})">${e.active ? 'Disable' : 'Enable'}</button>
+            <button class="btn-sm" onclick="deleteExpense(${e.id})" style="color:var(--danger);border-color:var(--danger)">Remove</button>
+          </div>
+        </div>`).join('');
+    } catch (e) {
+      box.innerHTML = `<span style="color:var(--danger);font-size:12px">${e.message}</span>`;
+    }
+  }
+
+  async function addExpense() {
+    const title = document.getElementById('expTitle').value.trim();
+    const amount = document.getElementById('expAmount').value;
+    const frequency = document.getElementById('expFrequency').value;
+    const occurredOn = document.getElementById('expOccurredOn').value || undefined;
+    if (!title || !(Number(amount) > 0)) return showAdminNotice('Enter a title and an amount greater than 0.', true);
+    try {
+      const res = await fetch(`${API_BASE}/admin/expenses`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, amount, frequency, occurredOn }) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Could not add that expense.');
+      document.getElementById('expTitle').value = '';
+      document.getElementById('expAmount').value = '';
+      document.getElementById('expOccurredOn').value = '';
+      showAdminNotice('Expense added.');
+      loadFinancialExpensesSection();
+    } catch (e) { showAdminNotice(e.message, true); }
+  }
+
+  async function toggleExpenseActive(id, active) {
+    try {
+      const res = await fetch(`${API_BASE}/admin/expenses/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ active }) });
+      if (!res.ok) throw new Error();
+      loadFinancialExpensesSection();
+    } catch (e) { showAdminNotice('Could not update that expense.', true); }
+  }
+
+  async function deleteExpense(id) {
+    if (!confirm('Remove this expense line item? This cannot be undone.')) return;
+    try {
+      const res = await fetch(`${API_BASE}/admin/expenses/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error();
+      showAdminNotice('Expense removed.');
+      loadFinancialExpensesSection();
+    } catch (e) { showAdminNotice('Could not remove that expense.', true); }
+  }
+
+  // Toggle the "starts on" vs "date" label depending on frequency, and default it to today.
+  document.addEventListener('DOMContentLoaded', () => {
+    const freqEl = document.getElementById('expFrequency');
+    const dateEl = document.getElementById('expOccurredOn');
+    const labelEl = document.getElementById('expDateLabel');
+    if (freqEl && dateEl) {
+      dateEl.valueAsDate = new Date();
+      freqEl.addEventListener('change', () => { labelEl.textContent = freqEl.value === 'one_time' ? 'Date' : 'Starts on'; });
+    }
+  });
+
+  async function loadTitheSummaryForFinancials() {
+    try {
+      const res = await fetch(`${API_BASE}/admin/tithe`);
+      if (!res.ok) return;
+      const data = await res.json();
+      document.getElementById('finExpRevenue').textContent = nairaFmt(data.currentMonth.revenue);
+      document.getElementById('finExpTotal').textContent = nairaFmt(data.currentMonth.expenses);
+      const profitEl = document.getElementById('finExpProfit');
+      profitEl.textContent = nairaFmt(data.currentMonth.netProfit);
+      profitEl.style.color = data.currentMonth.netProfit < 0 ? 'var(--danger)' : 'var(--success)';
+      document.getElementById('finExpTithe').textContent = nairaFmt(data.currentMonth.titheAmount);
+    } catch (e) { console.error('[Financial Tithe Summary]', e); }
+  }
+
+  async function loadProfitLossTrend() {
+    try {
+      const res = await fetch(`${API_BASE}/admin/financials/monthly-summary`);
+      const data = await res.json();
+      if (!res.ok) throw new Error();
+      renderProfitLossChart(data.months || []);
+    } catch (e) { console.error('[Profit/Loss Trend]', e); }
+  }
+
+  function renderProfitLossChart(months) {
+    const canvas = document.getElementById('finProfitLossChart');
+    if (!canvas) return;
+    if (_profitLossChartInstance) _profitLossChartInstance.destroy();
+    _profitLossChartInstance = new Chart(canvas.getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: months.map(m => m.label),
+        datasets: [
+          { type: 'bar', label: 'Revenue', data: months.map(m => m.revenue), backgroundColor: 'rgba(16,185,129,0.55)', borderRadius: 4, order: 2 },
+          { type: 'bar', label: 'Expenses', data: months.map(m => m.expenses), backgroundColor: 'rgba(217,119,6,0.55)', borderRadius: 4, order: 2 },
+          { type: 'line', label: 'Net Profit', data: months.map(m => m.netProfit), borderColor: '#6D28D9', backgroundColor: '#6D28D9', tension: 0.35, pointRadius: 3, order: 1 }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } },
+        scales: {
+          y: { ticks: { callback: v => `₦${Number(v).toLocaleString()}` }, grid: { color: 'rgba(0,0,0,0.05)' } },
+          x: { grid: { display: false } }
+        }
+      }
+    });
   }
 
   async function fetchZiboFinancialInsights() {
@@ -3087,7 +3277,7 @@
   // Company Tithe — 10% (configurable) of net profit, reset every month.
   // ------------------------------------------------------------------
   let titheBanksLoaded = false;
-  const nairaFmt = v => `₦${Number(v || 0).toLocaleString('en-NG', { maximumFractionDigits: 2 })}`;
+  const nairaFmt = v => { const n = Number(v || 0); return `${n < 0 ? '-' : ''}₦${Math.abs(n).toLocaleString('en-NG', { maximumFractionDigits: 2 })}`; };
 
   async function loadTithe() {
     try {
@@ -3108,8 +3298,10 @@
     document.getElementById('titheAccountName').textContent = settings.accountName ? `Verified: ${settings.accountName}` : '';
     document.getElementById('titheMonthLabel').textContent = currentMonth.label;
     document.getElementById('titheRevenue').textContent = nairaFmt(currentMonth.revenue);
-    document.getElementById('titheVps').textContent = nairaFmt(currentMonth.vpsCost);
-    document.getElementById('titheNetProfit').textContent = nairaFmt(currentMonth.netProfit);
+    document.getElementById('titheVps').textContent = nairaFmt(currentMonth.expenses);
+    const npEl = document.getElementById('titheNetProfit');
+    npEl.textContent = nairaFmt(currentMonth.netProfit);
+    npEl.style.color = currentMonth.netProfit < 0 ? 'var(--danger)' : 'var(--text)';
     document.getElementById('titheAmount').textContent = nairaFmt(currentMonth.titheAmount);
 
     const historyBox = document.getElementById('titheHistory');
@@ -4156,8 +4348,10 @@
       const box = document.getElementById('busScheduleList');
       try {
         const r = await fetch(API);
-        const d = await r.json();
-        if (!r.ok) throw new Error(d.message || 'Could not load bus schedules.');
+        const text = await r.text();
+        let d = {};
+        if (text) { try { d = JSON.parse(text); } catch { throw new Error(`Server returned an unexpected response (status ${r.status}). Please refresh and try again.`); } }
+        if (!r.ok) throw new Error(d.message || `Could not load bus schedules (status ${r.status}).`);
         cache = d.schedules || [];
         render();
       } catch (e) {
@@ -4255,8 +4449,10 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body)
         });
-        const d = await r.json();
-        if (!r.ok) throw new Error(d.message || 'Could not save.');
+        const text = await r.text();
+        let d = {};
+        if (text) { try { d = JSON.parse(text); } catch { throw new Error(`Server returned an unexpected response (status ${r.status}).`); } }
+        if (!r.ok) throw new Error(d.message || `Could not save (status ${r.status}).`);
         closeModal('modalBusSchedule');
         adminToast(isEdit ? 'Bus updated.' : 'Bus added.');
         await load();

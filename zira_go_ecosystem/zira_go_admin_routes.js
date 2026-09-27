@@ -53,10 +53,8 @@ async function logAdminAction(req, { action, targetType = null, targetId = null,
 }
 
 // ------------------------------------------------------------------
-// Company Tithe helpers
+// Company Tithe & Financial Overview helpers
 // ------------------------------------------------------------------
-const VPS_MONTHLY_COST = Number(process.env.VPS_MONTHLY_COST) || 13000;
-
 async function getTitheSettings() {
     const row = await pool.query("SELECT value FROM platform_config WHERE key = 'tithe_settings'");
     const defaults = { enabled: false, percent: 10, accountNumber: '', bankCode: '', bankName: '', accountName: '', lastEmailedPeriod: null };
@@ -97,35 +95,60 @@ async function computeRevenueForWindow(from, to) {
     return Number(feeRes.rows[0].v) + Number(fundingFeeRes.rows[0].v) + Number(adRes.rows[0].v);
 }
 
-async function computeTitheFigures(from, to, percent) {
-    const revenue = await computeRevenueForWindow(from, to);
-    const netProfit = Math.max(0, revenue - VPS_MONTHLY_COST);
-    const titheAmount = Math.round((netProfit * (Number(percent) || 0) / 100) * 100) / 100;
-    return { revenue, vpsCost: VPS_MONTHLY_COST, netProfit, titheAmount };
+// Expenses for a [from, to) month window: every active recurring monthly
+// expense that had already started by the end of that window, plus any
+// one-time expense actually logged inside that window. Admin-managed via
+// the `expenses` table (Financial Overview → Expenses), so removing or
+// adding a line item changes every month's profit/loss from here on.
+async function computeExpensesForWindow(from, to) {
+    const monthlyRes = await pool.query(
+        `SELECT COALESCE(SUM(amount), 0) AS v FROM expenses WHERE frequency = 'monthly' AND active = true AND occurred_on < $1`,
+        [to]
+    );
+    const oneTimeRes = await pool.query(
+        `SELECT COALESCE(SUM(amount), 0) AS v FROM expenses WHERE frequency = 'one_time' AND occurred_on >= $1 AND occurred_on < $2`,
+        [from, to]
+    );
+    return Number(monthlyRes.rows[0].v) + Number(oneTimeRes.rows[0].v);
 }
 
-function titheEmailHtml({ periodLabel, revenue, vpsCost, netProfit, percent, titheAmount }) {
+// netProfit is allowed to go negative here (a real loss month should show as
+// one), but a loss never produces a tithe — titheAmount floors at 0.
+async function computeTitheFigures(from, to, percent) {
+    const revenue = await computeRevenueForWindow(from, to);
+    const expenses = await computeExpensesForWindow(from, to);
+    const netProfit = revenue - expenses;
+    const titheAmount = netProfit > 0 ? Math.round((netProfit * (Number(percent) || 0) / 100) * 100) / 100 : 0;
+    return { revenue, expenses, netProfit, titheAmount };
+}
+
+function titheEmailHtml({ periodLabel, revenue, expenses, netProfit, percent, titheAmount }) {
     const n = v => `\u20a6${Number(v).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const lossRow = netProfit < 0
+        ? `<tr><td style="padding:8px 0;border-bottom:1px solid #eee;color:#DC2626"><b>Net loss</b></td><td style="padding:8px 0;border-bottom:1px solid #eee;text-align:right;color:#DC2626"><b>${n(Math.abs(netProfit))}</b></td></tr>`
+        : `<tr><td style="padding:8px 0;border-bottom:1px solid #eee"><b>Net profit</b></td><td style="padding:8px 0;border-bottom:1px solid #eee;text-align:right"><b>${n(netProfit)}</b></td></tr>`;
     return `<div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto">
-        <h2 style="margin-bottom:4px">Company Tithe — ${periodLabel}</h2>
-        <p style="color:#555;margin-top:0">Here's how much is due for the month that just closed.</p>
+        <h2 style="margin-bottom:4px">Monthly Financial Summary — ${periodLabel}</h2>
+        <p style="color:#555;margin-top:0">Here's how the month that just closed came out, and what's due for company tithe.</p>
         <table style="width:100%;border-collapse:collapse;font-size:14px;margin-top:12px">
             <tr><td style="padding:8px 0;border-bottom:1px solid #eee">Platform revenue</td><td style="padding:8px 0;border-bottom:1px solid #eee;text-align:right">${n(revenue)}</td></tr>
-            <tr><td style="padding:8px 0;border-bottom:1px solid #eee">VPS hosting cost</td><td style="padding:8px 0;border-bottom:1px solid #eee;text-align:right">-${n(vpsCost)}</td></tr>
-            <tr><td style="padding:8px 0;border-bottom:1px solid #eee"><b>Net profit</b></td><td style="padding:8px 0;border-bottom:1px solid #eee;text-align:right"><b>${n(netProfit)}</b></td></tr>
+            <tr><td style="padding:8px 0;border-bottom:1px solid #eee">Total expenses</td><td style="padding:8px 0;border-bottom:1px solid #eee;text-align:right">-${n(expenses)}</td></tr>
+            ${lossRow}
             <tr><td style="padding:12px 0 0">Tithe (${percent}%)</td><td style="padding:12px 0 0;text-align:right;font-size:20px;font-weight:800;color:#059669">${n(titheAmount)}</td></tr>
         </table>
-        <p style="color:#777;font-size:12px;margin-top:20px">Head to the Operations Desk in the Zira Go admin portal to pay this straight from the platform's payout balance.</p>
+        <p style="color:#777;font-size:12px;margin-top:20px">Head to the Operations Desk in the Zira Go admin portal to pay the tithe straight from the platform's payout balance, or the Financial Overview tab to manage expense line items.</p>
     </div>`;
 }
 
 // Runs on boot and every 12h. If a calendar month has closed since the last
 // time we emailed, lock in that month's figures as a tithe_payments row
 // (so the month "resets" — the next figure starts counting from zero) and
-// email the admin the amount owed. Never touches the account/pay flow.
+// email the admin a full revenue/expenses/profit summary. Never touches the
+// account/pay flow. Runs regardless of the tithe toggle, since the monthly
+// summary itself (profit or loss) is useful even with tithing turned off —
+// only the tithe line reads ₦0 when there's nothing to give.
 async function checkTitheMonthlyRollover() {
     const settings = await getTitheSettings();
-    if (!settings.enabled) return;
     const now = new Date();
     const thisMonthStart = monthStart(now);
     let cursor = settings.lastEmailedPeriod ? addMonths(new Date(`${settings.lastEmailedPeriod}-01T00:00:00Z`), 1) : addMonths(thisMonthStart, -1);
@@ -134,12 +157,13 @@ async function checkTitheMonthlyRollover() {
         const periodEnd = addMonths(cursor, 1);
         const periodKey = monthKey(cursor);
         const figures = await computeTitheFigures(cursor, periodEnd, settings.percent);
+        if (!settings.enabled) figures.titheAmount = 0;
         const existing = await pool.query('SELECT id FROM tithe_payments WHERE period_month = $1', [cursor]);
         if (!existing.rows.length) {
             await pool.query(
                 `INSERT INTO tithe_payments (period_month, revenue_amount, vps_cost_amount, net_profit_amount, tithe_percent, tithe_amount, account_number, bank_code, bank_name, status)
                  VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'unpaid')`,
-                [cursor, figures.revenue, figures.vpsCost, figures.netProfit, settings.percent, figures.titheAmount, settings.accountNumber || null, settings.bankCode || null, settings.bankName || null]
+                [cursor, figures.revenue, figures.expenses, figures.netProfit, settings.percent, figures.titheAmount, settings.accountNumber || null, settings.bankCode || null, settings.bankName || null]
             );
         }
         try {
@@ -148,7 +172,7 @@ async function checkTitheMonthlyRollover() {
             for (const a of admins.rows) {
                 await sendEmail({
                     to: a.email,
-                    subject: `Company tithe due for ${periodLabel}: \u20a6${figures.titheAmount.toLocaleString()}`,
+                    subject: `Monthly financial summary for ${periodLabel}: ${figures.netProfit >= 0 ? 'profit' : 'loss'} of \u20a6${Math.abs(figures.netProfit).toLocaleString()}`,
                     html: titheEmailHtml({ periodLabel, ...figures, percent: settings.percent })
                 }).catch(err => console.warn('[Tithe Email Warning]', err.message));
             }
@@ -948,6 +972,35 @@ router.post('/drivers/:id/reject', async (req, res) => {
                 })]
             );
         }
+
+        // ------------------------------------------------------------
+        // Expenses — admin-managed line items that net against revenue
+        // for the Financial Overview profit/loss view and the company
+        // tithe calculation. Seeded once with the platform's VPS hosting
+        // cost (previously a fixed env var) so nothing changes on first
+        // deploy; from here on it's fully editable from the admin UI.
+        // ------------------------------------------------------------
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS expenses (
+                id BIGSERIAL PRIMARY KEY,
+                title TEXT NOT NULL,
+                amount NUMERIC(14,2) NOT NULL,
+                frequency TEXT NOT NULL DEFAULT 'monthly' CHECK (frequency IN ('monthly','one_time')),
+                occurred_on DATE NOT NULL DEFAULT CURRENT_DATE,
+                active BOOLEAN NOT NULL DEFAULT true,
+                notes TEXT,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            );
+        `);
+        const expenseCount = await pool.query('SELECT COUNT(*) FROM expenses');
+        if (Number(expenseCount.rows[0].count) === 0) {
+            await pool.query(
+                `INSERT INTO expenses (title, amount, frequency, occurred_on, active, notes)
+                 VALUES ('VPS Hosting', $1, 'monthly', CURRENT_DATE, true, 'Migrated from the old VPS_MONTHLY_COST setting.')`,
+                [Number(process.env.VPS_MONTHLY_COST) || 13000]
+            );
+        }
         // Catch up on the monthly email immediately on boot (covers a server
         // restart that missed the 1st-of-the-month check), then re-check daily.
         checkTitheMonthlyRollover().catch(err => console.warn('[Tithe Rollover Warning]', err.message));
@@ -1705,7 +1758,7 @@ router.get('/tithe', async (req, res) => {
                 id: r.id,
                 periodMonth: r.period_month,
                 revenue: Number(r.revenue_amount),
-                vpsCost: Number(r.vps_cost_amount),
+                expenses: Number(r.vps_cost_amount),
                 netProfit: Number(r.net_profit_amount),
                 percent: Number(r.tithe_percent),
                 titheAmount: Number(r.tithe_amount),
@@ -1793,7 +1846,7 @@ router.post('/tithe/pay', async (req, res) => {
                 `INSERT INTO tithe_payments (period_month, revenue_amount, vps_cost_amount, net_profit_amount, tithe_percent, tithe_amount, account_number, bank_code, bank_name, status)
                  VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'failed')
                  ON CONFLICT (period_month) DO UPDATE SET tithe_amount = $6, account_number = $7, bank_code = $8, bank_name = $9, status = 'failed', updated_at = now()`,
-                [from, figures.revenue, figures.vpsCost, figures.netProfit, settings.percent, amount, accountNumber, bankCode, bankName || null]
+                [from, figures.revenue, figures.expenses, figures.netProfit, settings.percent, amount, accountNumber, bankCode, bankName || null]
             );
             return res.status(502).json({ error: 'payout_failed', message: payErr.message });
         }
@@ -1802,7 +1855,7 @@ router.post('/tithe/pay', async (req, res) => {
             `INSERT INTO tithe_payments (period_month, revenue_amount, vps_cost_amount, net_profit_amount, tithe_percent, tithe_amount, account_number, bank_code, bank_name, status, provider, provider_reference, paid_at)
              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'processing',$10,$11, now())
              ON CONFLICT (period_month) DO UPDATE SET tithe_amount = $6, account_number = $7, bank_code = $8, bank_name = $9, status = 'processing', provider = $10, provider_reference = $11, paid_at = now(), updated_at = now()`,
-            [from, figures.revenue, figures.vpsCost, figures.netProfit, settings.percent, amount, accountNumber, bankCode, bankName || null, payout.provider, payout.providerReference]
+            [from, figures.revenue, figures.expenses, figures.netProfit, settings.percent, amount, accountNumber, bankCode, bankName || null, payout.provider, payout.providerReference]
         );
 
         // Remember the account for next time, without requiring a separate save step.
@@ -1822,6 +1875,114 @@ router.post('/tithe/pay', async (req, res) => {
     } catch (err) {
         console.error('[Tithe Pay Error]', err);
         res.status(500).json({ error: 'internal_error', message: 'Could not start the tithe payout. Please try again.' });
+    }
+});
+
+// ------------------------------------------------------------------
+// Expenses — Financial Overview
+// ------------------------------------------------------------------
+function mapExpenseRow(r) {
+    return {
+        id: Number(r.id),
+        title: r.title,
+        amount: Number(r.amount),
+        frequency: r.frequency,
+        occurredOn: r.occurred_on,
+        active: r.active,
+        notes: r.notes
+    };
+}
+
+router.get('/expenses', async (req, res) => {
+    try {
+        const rows = await pool.query('SELECT * FROM expenses ORDER BY active DESC, created_at DESC');
+        res.json({ expenses: rows.rows.map(mapExpenseRow) });
+    } catch (err) {
+        console.error('[Expenses List Error]', err);
+        res.status(500).json({ error: 'internal_error', message: 'Could not load expenses.' });
+    }
+});
+
+router.post('/expenses', async (req, res) => {
+    try {
+        const { title, amount, frequency, occurredOn, notes } = req.body;
+        if (!title || !(Number(amount) > 0)) return res.status(400).json({ message: 'Enter a title and an amount greater than 0.' });
+        const freq = frequency === 'one_time' ? 'one_time' : 'monthly';
+        const result = await pool.query(
+            `INSERT INTO expenses (title, amount, frequency, occurred_on, notes) VALUES ($1,$2,$3,COALESCE($4, CURRENT_DATE),$5) RETURNING *`,
+            [title, Number(amount), freq, occurredOn || null, notes || null]
+        );
+        await logAdminAction(req, { action: 'expense_create', targetType: 'expense', targetId: result.rows[0].id, details: req.body });
+        res.json({ success: true, expense: mapExpenseRow(result.rows[0]) });
+    } catch (err) {
+        console.error('[Expense Create Error]', err);
+        res.status(500).json({ error: 'internal_error', message: 'Could not save that expense.' });
+    }
+});
+
+router.put('/expenses/:id', async (req, res) => {
+    try {
+        const existing = await pool.query('SELECT * FROM expenses WHERE id = $1', [req.params.id]);
+        if (!existing.rows.length) return res.status(404).json({ error: 'not_found' });
+        const cur = mapExpenseRow(existing.rows[0]);
+        const b = { ...cur, ...req.body };
+        const result = await pool.query(
+            `UPDATE expenses SET title=$1, amount=$2, frequency=$3, occurred_on=$4, active=$5, notes=$6, updated_at=now() WHERE id=$7 RETURNING *`,
+            [b.title, Number(b.amount), b.frequency === 'one_time' ? 'one_time' : 'monthly', b.occurredOn, Boolean(b.active), b.notes || null, req.params.id]
+        );
+        await logAdminAction(req, { action: 'expense_update', targetType: 'expense', targetId: req.params.id, details: req.body });
+        res.json({ success: true, expense: mapExpenseRow(result.rows[0]) });
+    } catch (err) {
+        console.error('[Expense Update Error]', err);
+        res.status(500).json({ error: 'internal_error', message: 'Could not update that expense.' });
+    }
+});
+
+router.delete('/expenses/:id', async (req, res) => {
+    try {
+        await pool.query('DELETE FROM expenses WHERE id = $1', [req.params.id]);
+        await logAdminAction(req, { action: 'expense_delete', targetType: 'expense', targetId: req.params.id });
+        res.json({ success: true });
+    } catch (err) {
+        console.error('[Expense Delete Error]', err);
+        res.status(500).json({ error: 'internal_error', message: 'Could not delete that expense.' });
+    }
+});
+
+// 12-month revenue/expenses/profit trend for the Financial Overview chart —
+// the last 11 closed months come straight from the tithe_payments rollover
+// record (so it matches the emailed summary exactly), and the current,
+// still-open month is computed live.
+router.get('/financials/monthly-summary', async (req, res) => {
+    try {
+        const now = new Date();
+        const from = addMonths(monthStart(now), -11);
+        const closed = await pool.query(
+            `SELECT * FROM tithe_payments WHERE period_month >= $1 AND period_month < $2 ORDER BY period_month ASC`,
+            [from, monthStart(now)]
+        );
+        const byMonth = new Map(closed.rows.map(r => [monthKey(new Date(r.period_month)), r]));
+        const settings = await getTitheSettings();
+        const months = [];
+        for (let i = 11; i >= 0; i--) {
+            const start = addMonths(monthStart(now), -i);
+            const key = monthKey(start);
+            const label = start.toLocaleString('en-US', { month: 'short', year: '2-digit', timeZone: 'UTC' });
+            if (i === 0) {
+                const live = await computeTitheFigures(start, addMonths(start, 1), settings.percent);
+                months.push({ periodMonth: key, label, revenue: live.revenue, expenses: live.expenses, netProfit: live.netProfit });
+            } else if (byMonth.has(key)) {
+                const r = byMonth.get(key);
+                months.push({ periodMonth: key, label, revenue: Number(r.revenue_amount), expenses: Number(r.vps_cost_amount), netProfit: Number(r.net_profit_amount) });
+            } else {
+                const live = await computeTitheFigures(start, addMonths(start, 1), settings.percent);
+                months.push({ periodMonth: key, label, revenue: live.revenue, expenses: live.expenses, netProfit: live.netProfit });
+            }
+        }
+        res.json({ months });
+    } catch (err) {
+        console.error('[Financial Monthly Summary Error]', err);
+        res.status(500).json({ error: 'internal_error', message: 'Could not load the monthly trend.' });
     }
 });
 

@@ -1467,7 +1467,7 @@
   button.secondary:hover { border-color: var(--accent); }
 
   label { display: block; font-size: 13px; color: var(--text-dim); margin-bottom: 6px; text-align: left; }
-  input[type=text], input[type=number], select, textarea {
+  input[type=text], input[type=number], input[type=date], select, textarea {
     width: 100%;
     padding: 12px 14px;
     border-radius: 14px;
@@ -1480,6 +1480,9 @@
     outline: none;
     transition: border-color 0.2s;
   }
+  input[type=date] { line-height: 1.3; }
+  input[type=date]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.55; }
+  input[type=date]::-webkit-calendar-picker-indicator:hover { opacity: 0.9; }
   input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 
   /* Code Display inside Ride Modal */
@@ -1576,6 +1579,22 @@
     overflow-x: auto;
     padding-bottom: 4px;
   }
+  .bus-filter-bar .tab-btn-pill {
+    white-space: nowrap;
+    flex: none;
+    padding: 8px 16px;
+    font-size: 12.5px;
+  }
+  .bus-listings-scroll {
+    overflow-y: auto;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+    scrollbar-width: thin;
+    scrollbar-color: var(--line) transparent;
+  }
+  .bus-listings-scroll::-webkit-scrollbar { width: 5px; }
+  .bus-listings-scroll::-webkit-scrollbar-thumb { background: var(--line); border-radius: 999px; }
+  .bus-listings-scroll::-webkit-scrollbar-track { background: transparent; }
   .bus-card {
     background: var(--panel-alt);
     border: 1.5px solid var(--line);
@@ -2857,7 +2876,7 @@
     </div>
 
     <!-- Bus Listings Container — the ONLY scroll region in this modal -->
-    <div id="busListingsContainer" style="flex:1 1 auto;min-height:120px;overflow-y:auto;padding-right:2px;display:flex;flex-direction:column;gap:10px;margin-top:10px">
+    <div id="busListingsContainer" class="bus-listings-scroll" style="flex:1 1 auto;min-height:120px;padding-right:2px;display:flex;flex-direction:column;gap:10px;margin-top:10px">
       <!-- Generated via JS -->
     </div>
 
@@ -4088,7 +4107,9 @@ async function loadBusSchedules() {
   try {
     if (container && !busSchedulesLoaded) container.innerHTML = `<div style="text-align:center;padding:32px 16px;color:var(--text-dim);font-size:13px">Loading buses…</div>`;
     const res = await fetch(`/api/public/bus-schedules`);
-    const data = await res.json();
+    const text = await res.text();
+    let data = {};
+    if (text) { try { data = JSON.parse(text); } catch { throw new Error('Server returned an unexpected response.'); } }
     if (!res.ok) throw new Error(data.message || 'Could not load buses.');
     busSchedules = data.schedules || [];
     busSchedulesLoaded = true;
@@ -4213,7 +4234,9 @@ async function reserveBusSeat(busId) {
   // took the last seat first, this call fails and nothing local changes.
   try {
     const res = await fetch(`/api/public/bus-schedules/${busId}/reserve`, { method: 'POST', headers: studentHeaders });
-    const data = await res.json();
+    const text = await res.text();
+    let data = {};
+    if (text) { try { data = JSON.parse(text); } catch { /* leave data as {} — handled by res.status below */ } }
     if (!res.ok) { showToast(data.message || (res.status === 401 ? 'Please sign in again to reserve a seat.' : 'Could not reserve that seat.')); if (data.error === 'sold_out') { bus.seatsRemaining = 0; renderBuses(); } return; }
     bus.seatsRemaining = data.seatsRemaining;
   } catch (e) {
@@ -5028,6 +5051,10 @@ window.addEventListener('load', () => {
   // Universal binder for modals, lists, and horizontal carousels
   function bindAllScrollers() {
     document.querySelectorAll('.modal-card, #allCodesList, #fullTx, #busListingsContainer, #notificationList, .chat-body').forEach(el => {
+      // Bus Ride Home manages its own single scroll region (#busListingsContainer)
+      // and opted out of the elastic bounce — it was making the whole popup
+      // drift during an ordinary scroll instead of just the list inside it.
+      if (el.closest && el.closest('#modalBusRideHome')) return;
       attachRubberBand(el, { maxStretch: 36, resistance: 0.35 });
     });
     document.querySelectorAll('.spotlight-marquee, #codeFilterPills').forEach(el => {
